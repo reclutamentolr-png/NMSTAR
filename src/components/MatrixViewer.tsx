@@ -54,19 +54,19 @@ export default function MatrixViewer({ children }: MatrixViewerProps) {
 
   return (
     <div className="relative w-full">
-      {/* Controlli Zoom */}
+            {/* Controlli Zoom */}
       <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
-        <button onClick={handleZoomIn} className="p-2 hover:bg-gray-100 rounded transition-colors" title="Zoom In">
+        <button onClick={handleZoomIn} className="p-2 hover:bg-gray-100 rounded transition-colors" aria-label="Zoom In">
           <ZoomIn className="w-5 h-5 text-gray-700" />
         </button>
-        <button onClick={handleZoomOut} className="p-2 hover:bg-gray-100 rounded transition-colors" title="Zoom Out">
+        <button onClick={handleZoomOut} className="p-2 hover:bg-gray-100 rounded transition-colors" aria-label="Zoom Out">
           <ZoomOut className="w-5 h-5 text-gray-700" />
         </button>
-        <button onClick={handleReset} className="p-2 hover:bg-gray-100 rounded transition-colors" title="Reset Vista">
+        <button onClick={handleReset} className="p-2 hover:bg-gray-100 rounded transition-colors" aria-label="Reset Vista">
           <RotateCcw className="w-5 h-5 text-gray-700" />
         </button>
         <div className="border-t border-gray-200 pt-2 flex justify-center">
-          <Move className="w-5 h-5 text-gray-400" title="Trascina per muoverti" />
+          <Move className="w-5 h-5 text-gray-400" aria-label="Trascina per muoverti" />
         </div>
         <div className="text-xs text-gray-500 text-center font-mono">
           {Math.round(scale * 100)}%

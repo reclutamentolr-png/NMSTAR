@@ -8,10 +8,10 @@ export default async function ReferralPage({ params }: { params: Promise<{ code:
   
   const supabase = await createClient()
 
-  // 2. Usa la funzione sicura per cercare lo sponsor
+    // 2. Usa la funzione sicura per cercare lo sponsor
   const { data: sponsorData, error } = await supabase
     .rpc('get_public_profile_by_referral', { p_referral_code: normalizedCode })
-    .single()
+    .single() as { data: { referral_code: string; country_code: string; first_name: string; last_name: string } | null, error: any }
 
   // 3. Se il codice non esiste o c'è un errore, mostra messaggio
   if (error || !sponsorData) {
