@@ -83,7 +83,7 @@ export default function RegisterForm() {
           first_name: formData.first_name,
           last_name: formData.last_name,
           country_code: formData.country_code,
-          referral_code: generateReferralCode(),
+          referral_code: generateReferralCode(formData.country_code), // ✅ AGGIORNATO: passa il paese
           subscription_status: 'free',
           date_of_birth: '2000-01-01',
         })
@@ -109,34 +109,41 @@ export default function RegisterForm() {
     }
   }
 
-  const generateReferralCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let code = 'IT-'
-    for (let i = 0; i < 5; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length))
+  // ✅ NUOVA FUNZIONE: Genera codice nel formato PAESE-0000000-X
+  const generateReferralCode = (countryCode: string) => {
+    const country = (countryCode || 'IT').toUpperCase().substring(0, 2)
+    
+    let digits = ''
+    for (let i = 0; i < 7; i++) {
+      digits += Math.floor(Math.random() * 10).toString()
     }
-    return code
+    
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const letter = letters.charAt(Math.floor(Math.random() * letters.length))
+    
+    return `${country}-${digits}-${letter}`
   }
 
+  // ✅ FUNZIONE CORRETTA: Logica del percorso (path) blindata con controllo errori
   const createMatrixNode = async (userId: string, sponsorCode: string) => {
     try {
-      // Trova l'ID dello sponsor
-      const { data: sponsorProfile } = await supabase
+      // 1. Trova l'ID dello sponsor
+      const { data: sponsorProfile, error: sponsorError } = await supabase
         .from('profiles')
         .select('id')
         .eq('referral_code', sponsorCode)
         .single()
 
-      if (!sponsorProfile) throw new Error('Sponsor non trovato.')
+      if (sponsorError || !sponsorProfile) throw new Error('Sponsor non trovato.')
 
-      // Trova il nodo matrice dello sponsor
-      const { data: sponsorNode } = await supabase
+      // 2. Trova il nodo matrice dello sponsor
+      const { data: sponsorNode, error: nodeError } = await supabase
         .from('matrix_nodes')
         .select('id, path, level')
         .eq('user_id', sponsorProfile.id)
         .single()
 
-      if (!sponsorNode) {
+      if (nodeError || !sponsorNode) {
         throw new Error('Impossibile trovare il nodo dello sponsor. Contatta il supporto.')
       }
 
@@ -144,12 +151,14 @@ export default function RegisterForm() {
       const parentPath = sponsorNode.path
       const level = sponsorNode.level + 1
 
-      // Trova la prima posizione libera (1-5) sotto lo sponsor
-      const { data: existingChildren } = await supabase
+      // 3. Trova la prima posizione libera (1-5) sotto lo sponsor
+      const { data: existingChildren, error: childrenError } = await supabase
         .from('matrix_nodes')
         .select('position')
         .eq('parent_id', parentNodeId)
         .order('position', { ascending: true })
+
+      if (childrenError) throw childrenError
 
       const usedPositions = existingChildren?.map((c: any) => c.position) || []
       let newPosition = 1
@@ -157,61 +166,13 @@ export default function RegisterForm() {
         newPosition++
       }
 
-      // Se il nodo dello sponsor è pieno (5 figli), il sistema fa spillover
-      if (newPosition > 5) {
-        const { data: allNodes } = await supabase.from('matrix_nodes').select('id, path, level')
-        let foundNode = false
-        
-        for (const node of (allNodes || [])) {
-          const { count } = await supabase
-            .from('matrix_nodes')
-            .select('*', { count: 'exact', head: true })
-            .eq('parent_id', node.id)
-          
-          if ((count || 0) < 5) {
-            const { data: children } = await supabase
-              .from('matrix_nodes')
-              .select('position')
-              .eq('parent_id', node.id)
-            
-            const usedPos = children?.map((c: any) => c.position) || []
-            let pos = 1
-            while (usedPos.includes(pos) && pos <= 5) pos++
-            
-            const newNodePath = node.path === 'root' ? `${pos}` : `${node.path}.${pos}`
-            const newNodeLevel = node.level + 1
-            const newNodeDepth = node.path === 'root' ? 0 : node.path.split('.').length
+      // 4. Inserimento diretto sotto lo sponsor (se c'è spazio)
+      if (newPosition <= 5) {
+        const newPath = `${parentPath}.${newPosition}`
+        const newDepth = parentPath.split('.').length 
 
-            await supabase.from('matrix_nodes').insert({
-              user_id: userId,
-              parent_id: node.id,
-              path: newNodePath,
-              level: newNodeLevel,
-              position: pos,
-              depth: newNodeDepth,
-            })
-            foundNode = true
-            break
-          }
-        }
-        
-        if (!foundNode) {
-          // Fallback estremo
-          await supabase.from('matrix_nodes').insert({
-            user_id: userId,
-            parent_id: null,
-            path: 'root',
-            level: 1,
-            position: 1,
-            depth: 0,
-          })
-        }
-      } else {
-        // Inserimento normale sotto lo sponsor
-        const newPath = parentPath === 'root' ? `${newPosition}` : `${parentPath}.${newPosition}`
-        const newDepth = parentPath === 'root' ? 0 : parentPath.split('.').length
-
-        await supabase.from('matrix_nodes').insert({
+        // ✅ FIX: Controllo esplicito dell'errore di inserimento
+        const { error: insertError } = await supabase.from('matrix_nodes').insert({
           user_id: userId,
           parent_id: parentNodeId,
           path: newPath,
@@ -219,10 +180,80 @@ export default function RegisterForm() {
           position: newPosition,
           depth: newDepth,
         })
+        
+        if (insertError) {
+          console.error('Errore DB insert diretto:', insertError)
+          throw new Error(`Errore nel salvataggio del nodo: ${insertError.message}`)
+        }
+      } 
+      // 5. Spillover: il nodo dello sponsor è pieno (5 figli), cerca il primo nodo con spazio
+      else {
+        const { data: allNodes, error: allNodesError } = await supabase.from('matrix_nodes').select('id, path, level')
+        if (allNodesError) throw allNodesError
+
+        let foundNode = false
+        
+        for (const node of (allNodes || [])) {
+          const { count, error: countError } = await supabase
+            .from('matrix_nodes')
+            .select('*', { count: 'exact', head: true })
+            .eq('parent_id', node.id)
+          
+          if (countError) throw countError
+          
+          if ((count || 0) < 5) {
+            const { data: children, error: spillChildrenError } = await supabase
+              .from('matrix_nodes')
+              .select('position')
+              .eq('parent_id', node.id)
+            
+            if (spillChildrenError) throw spillChildrenError
+
+            const usedPos = children?.map((c: any) => c.position) || []
+            let pos = 1
+            while (usedPos.includes(pos) && pos <= 5) pos++
+            
+            const newNodePath = `${node.path}.${pos}`
+            const newNodeLevel = node.level + 1
+            const newNodeDepth = node.path.split('.').length
+
+            // ✅ FIX: Controllo esplicito dell'errore di inserimento nello spillover
+            const { error: spillInsertError } = await supabase.from('matrix_nodes').insert({
+              user_id: userId,
+              parent_id: node.id,
+              path: newNodePath,
+              level: newNodeLevel,
+              position: pos,
+              depth: newNodeDepth,
+            })
+
+            if (spillInsertError) {
+              console.error('Errore DB insert spillover:', spillInsertError)
+              throw new Error(`Errore nel salvataggio del nodo (spillover): ${spillInsertError.message}`)
+            }
+
+            foundNode = true
+            break
+          }
+        }
+        
+        if (!foundNode) {
+          // Fallback estremo
+          const { error: fallbackError } = await supabase.from('matrix_nodes').insert({
+            user_id: userId,
+            parent_id: null,
+            path: 'root',
+            level: 1,
+            position: 1,
+            depth: 0,
+          })
+          if (fallbackError) throw fallbackError
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore creazione nodo matrice:', error)
-      throw new Error('Errore nel posizionamento in matrice. Contatta il supporto.')
+      // Lancia l'errore in modo che il form lo mostri all'utente e blocchi il redirect
+      throw new Error(error.message || 'Errore nel posizionamento in matrice.')
     }
   }
 

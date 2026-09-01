@@ -1,6 +1,7 @@
+import MatrixViewer from '@/components/MatrixViewer'
+import MatrixTree from '@/components/MatrixTree'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import MatrixTree from '@/components/MatrixTree'
 import CopyButton from '@/components/CopyButton'
 import ProfileCompleter from '@/components/ProfileCompleter'
 import Leaderboard from '@/components/Leaderboard'
@@ -42,19 +43,65 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  // 3. Recupera i discendenti (downline)
-  const { data: downlineData, error: downlineError } = await supabase
-    .rpc('get_user_downline', { 
-      p_user_id: user.id, 
-      p_max_depth: 5 
-    })
-
-  // 4. Recupera il nodo matrice dell'utente corrente
+    // 3. Recupera prima il nodo matrice dell'utente corrente (serve per il filtro)
   const { data: userNode } = await supabase
     .from('matrix_nodes')
     .select('*')
     .eq('user_id', user.id)
     .single()
+
+  // 4. Recupera tutti i nodi della matrice con i dati del profilo
+  const { data: allMatrixNodes, error: matrixError } = await supabase
+    .from('matrix_nodes')
+    .select(`
+      id,
+      user_id,
+      parent_id,
+      path,
+      level,
+      position,
+      depth,
+      created_at,
+      profiles:user_id (
+        first_name,
+        last_name,
+        referral_code,
+        country_code,
+        username
+      )
+    `)
+    .order('level', { ascending: true })
+
+  // 5. Filtra i discendenti dell'utente corrente usando il path
+  const downlineData = allMatrixNodes
+    ?.filter((node: any) => {
+      // Escludi il nodo root stesso
+      if (node.id === userNode?.id) return false
+      
+      // Verifica se il path del nodo contiene il path del root
+      const rootPath = userNode?.path
+      if (!rootPath) return false
+      
+      // Includi solo i nodi il cui path inizia con il path del root + "."
+      return node.path.startsWith(rootPath + '.')
+    })
+    .map((node: any) => ({
+      id: node.id,
+      user_id: node.user_id,
+      parent_id: node.parent_id,
+      path: node.path,
+      level: node.level,
+      position: node.position,
+      depth: node.depth,
+      created_at: node.created_at,
+      first_name: node.profiles?.first_name,
+      last_name: node.profiles?.last_name,
+      referral_code: node.profiles?.referral_code,
+      country_code: node.profiles?.country_code,
+      username: node.profiles?.username
+    }))
+
+  const downlineError = matrixError
 
   // 5. Costruisci il rootNode in modo ROBUSTO
   const correctRootId = userNode?.id || (downlineData && downlineData.length > 0 ? downlineData[0].parent_id : `root-${user.id}`)
@@ -76,9 +123,13 @@ export default async function DashboardPage() {
   }
 
   // 6. Statistiche rapide
-  const totalDownline = downlineData?.length || 0
-  const level1Count = downlineData?.filter((d: any) => d.depth === 1).length || 0
+const totalDownline = downlineData?.length || 0
 
+// ✅ FIX: Conta i figli diretti usando parent_id invece di level/depth
+// I figli diretti sono tutti i nodi che hanno parent_id = id del nodo dell'utente corrente
+const userNodeId = userNode?.id
+const level1Count = downlineData?.filter((d: any) => d.parent_id === userNodeId).length || 0
+  
   // URL di condivisione
   const shareUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/ref/${profile?.referral_code}`
 
@@ -211,13 +262,15 @@ export default async function DashboardPage() {
           </div>
           
           {downlineError ? (
-            <p className="text-red-500 text-center py-8">Errore nel caricamento della matrice: {downlineError.message}</p>
-          ) : (
-            <MatrixTree 
-              rootNode={rootNode} 
-              descendants={downlineData || []} 
-            />
-          )}
+  <p className="text-red-500 text-center py-8">Errore nel caricamento della matrice: {downlineError.message}</p>
+) : (
+  <MatrixViewer>
+    <MatrixTree 
+      rootNode={rootNode} 
+      descendants={downlineData || []} 
+    />
+  </MatrixViewer>
+)}
         </div>
 
         {/* SEZIONE 4: LEADERBOARD & GAMIFICATION */}
