@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { 
   Rocket, 
   Users, 
@@ -11,31 +12,31 @@ import {
   CheckCircle2,
   Star
 } from 'lucide-react'
-import NewUsersCarousel from '@/components/NewUsersCarousel'
+import LatestUsersRotating from '@/components/LatestUsersRotating'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 overflow-x-hidden">
       {/* Header */}
       <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <Rocket className="w-6 h-6 text-white" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">NMP</span>
+            <span className="text-lg sm:text-xl font-bold text-white">NMP</span>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link 
               href="/login"
-              className="text-white/80 hover:text-white font-medium transition-colors"
+              className="text-white/80 hover:text-white font-medium transition-colors text-sm sm:text-base"
             >
               Accedi
             </Link>
             <Link 
               href="/register"
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
             >
               Inizia Ora
             </Link>
@@ -48,77 +49,89 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20"></div>
         <div className="absolute inset-0 bg-[url('/hero-network.jpg')] bg-cover bg-center opacity-20"></div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-32">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur px-4 py-2 rounded-full text-sm font-medium text-white mb-6 border border-white/20">
-                <Star className="w-4 h-4 text-yellow-400" />
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium text-white mb-4 sm:mb-6 border border-white/20">
+                <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
                 Piattaforma #1 per Network Marketing
               </div>
               
-              <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight break-words">
                 Costruisci il Tuo
                 <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent"> Impero Digitale</span>
               </h1>
               
-              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+              <p className="text-base sm:text-xl text-gray-300 mb-6 sm:mb-8 leading-relaxed">
                 Unisciti a migliaia di imprenditori che stanno rivoluzionando il network marketing con strumenti digitali all'avanguardia e un sistema di crescita automatico.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
                 <Link 
                   href="/register"
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center justify-center gap-2"
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center justify-center gap-2"
                 >
                   Inizia Gratis
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Link>
                 <Link 
                   href="/login"
-                  className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-lg font-bold text-lg transition-all border border-white/20 flex items-center justify-center"
+                  className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all border border-white/20 flex items-center justify-center"
                 >
                   Accedi
                 </Link>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-3 sm:gap-6">
                 <div>
-                  <div className="text-3xl font-bold text-white">10K+</div>
-                  <div className="text-sm text-gray-400">Utenti Attivi</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white">10K+</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Utenti Attivi</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-white">€2M+</div>
-                  <div className="text-sm text-gray-400">Guadagni Distribuiti</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white">€2M+</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Guadagni Distribuiti</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-white">50+</div>
-                  <div className="text-sm text-gray-400">Paesi</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white">50+</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Paesi</div>
                 </div>
               </div>
             </div>
 
-            {/* Carosello Ultimi Iscritti */}
-            <div className="lg:pl-8">
-              <NewUsersCarousel />
+            {/* ✅ Carosello Ultimi Iscritti con Suspense boundary */}
+            <div className="lg:pl-8 mt-8 lg:mt-0">
+              <Suspense 
+                fallback={
+                  <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 w-full">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Star className="w-5 h-5 text-yellow-400 animate-pulse" />
+                      <h3 className="text-lg font-bold text-white">Ultimi Entrati</h3>
+                    </div>
+                    <div className="h-24 bg-white/10 rounded-xl animate-pulse"></div>
+                  </div>
+                }
+              >
+                <LatestUsersRotating />
+              </Suspense>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-black/30">
+      <section className="py-12 sm:py-20 bg-black/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 break-words">
               Tutto ciò di cui hai bisogno per crescere
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl text-gray-400 max-w-2xl mx-auto px-4">
               Strumenti professionali, automazione intelligente e una community di successo
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {[
               {
                 icon: Users,
@@ -159,13 +172,13 @@ export default function LandingPage() {
             ].map((feature, index) => (
               <div 
                 key={index}
-                className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-white/20 transition-all hover:scale-105 group"
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 sm:p-8 border border-white/10 hover:border-white/20 transition-all hover:scale-105 group"
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-7 h-7 text-white" />
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform`}>
+                  <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{feature.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">{feature.title}</h3>
+                <p className="text-gray-400 leading-relaxed text-sm sm:text-base">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -173,18 +186,18 @@ export default function LandingPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20">
+      <section className="py-12 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <h2 className="text-4xl font-bold text-white mb-6">
+              <h2 className="text-2xl sm:text-4xl font-bold text-white mb-4 sm:mb-6 break-words">
                 Perché scegliere la nostra piattaforma?
               </h2>
-              <p className="text-xl text-gray-300 mb-8">
+              <p className="text-base sm:text-xl text-gray-300 mb-6 sm:mb-8">
                 Non è solo un network marketing. È un ecosistema completo per il tuo successo digitale.
               </p>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {[
                   'Abbonamento a soli €1/mese - il più economico del mercato',
                   'Strumenti di marketing digitale inclusi gratuitamente',
@@ -194,33 +207,33 @@ export default function LandingPage() {
                   'Flessibilità totale: lavora da ovunque'
                 ].map((benefit, index) => (
                   <div key={index} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">{benefit}</span>
+                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-300 text-sm sm:text-base">{benefit}</span>
                   </div>
                 ))}
               </div>
 
               <Link 
                 href="/register"
-                className="inline-flex items-center gap-2 mt-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all shadow-xl hover:shadow-2xl"
+                className="inline-flex items-center gap-2 mt-6 sm:mt-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all shadow-xl hover:shadow-2xl"
               >
                 Unisciti Ora
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
             </div>
 
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl blur-3xl opacity-30"></div>
-              <div className="relative bg-gradient-to-br from-indigo-600/20 to-purple-600/20 backdrop-blur-lg rounded-3xl p-8 border border-white/10">
-                <div className="bg-[url('/success-growth.jpg')] bg-cover bg-center rounded-2xl h-80 mb-6"></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/10 rounded-xl p-4 text-center">
-                    <div className="text-3xl font-bold text-white mb-1">95%</div>
-                    <div className="text-sm text-gray-300">Tasso di Soddisfazione</div>
+              <div className="relative bg-gradient-to-br from-indigo-600/20 to-purple-600/20 backdrop-blur-lg rounded-3xl p-6 sm:p-8 border border-white/10">
+                <div className="bg-[url('/success-growth.jpg')] bg-cover bg-center rounded-2xl h-48 sm:h-80 mb-4 sm:mb-6"></div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center">
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">95%</div>
+                    <div className="text-xs sm:text-sm text-gray-300">Tasso di Soddisfazione</div>
                   </div>
-                  <div className="bg-white/10 rounded-xl p-4 text-center">
-                    <div className="text-3xl font-bold text-white mb-1">24/7</div>
-                    <div className="text-sm text-gray-300">Supporto Attivo</div>
+                  <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center">
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">24/7</div>
+                    <div className="text-xs sm:text-sm text-gray-300">Supporto Attivo</div>
                   </div>
                 </div>
               </div>
@@ -230,45 +243,45 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
+      <section className="py-12 sm:py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 break-words">
             Pronto a iniziare il tuo viaggio verso la libertà finanziaria?
           </h2>
-          <p className="text-xl text-white/90 mb-8">
+          <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8">
             Unisciti a migliaia di imprenditori di successo. Inizia oggi, domani sarà troppo tardi.
           </p>
           <Link 
             href="/register"
-            className="inline-flex items-center gap-2 bg-white text-indigo-600 px-10 py-5 rounded-lg font-bold text-xl transition-all shadow-2xl hover:scale-105 hover:shadow-3xl"
+            className="inline-flex items-center gap-2 bg-white text-indigo-600 px-6 sm:px-10 py-3 sm:py-5 rounded-lg font-bold text-base sm:text-xl transition-all shadow-2xl hover:scale-105 hover:shadow-3xl"
           >
             Crea il Tuo Account Gratis
-            <ArrowRight className="w-6 h-6" />
+            <ArrowRight className="w-4 h-4 sm:w-6 sm:h-6" />
           </Link>
-          <p className="text-white/70 mt-4 text-sm">
+          <p className="text-white/70 mt-4 text-xs sm:text-sm">
             ✓ Nessun costo nascosto ✓ Cancella quando vuoi ✓ Supporto dedicato
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-black/50 border-t border-white/10 py-12">
+      <footer className="bg-black/50 border-t border-white/10 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Rocket className="w-6 h-6 text-white" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">Network Marketing Program</span>
+              <span className="text-base sm:text-xl font-bold text-white">Network Marketing Program</span>
             </div>
             
-            <div className="flex gap-8 text-gray-400">
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-gray-400 text-sm">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Termini</Link>
               <Link href="/contact" className="hover:text-white transition-colors">Contatti</Link>
             </div>
 
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-400 text-xs sm:text-sm text-center">
               © 2026 NMP. Tutti i diritti riservati.
             </div>
           </div>
