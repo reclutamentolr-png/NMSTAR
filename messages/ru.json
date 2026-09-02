@@ -1,0 +1,19 @@
+{
+  "memolife": {
+    "greeting": "Ciao, {name}!",
+    "appointments": "I tuoi Appuntamenti",
+    "tasks": "Le tue Cose da Fare",
+    "bills": "Bollette & Scadenze",
+    "contacts": "La tua Rubrica",
+    "notes": "Le tue Note",
+    "calendar": "Calendario",
+    "addNew": "Nuovo {item}",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "noAppointments": "Nessun appuntamento",
+    "alertDeadlines": "Alert Scadenze",
+    "totalToPay": "Da Pagare Totale",
+    "paidThisMonth": "Pagato Questo Mese"
+  }
+}

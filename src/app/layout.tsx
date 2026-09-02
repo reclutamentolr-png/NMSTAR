@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,11 +14,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ✅ Disabilita la cache a livello di layout per evitare problemi di caching su mobile
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// ✅ Metadata ottimizzati per SEO e social sharing
 export const metadata: Metadata = {
   title: {
     default: "NMP - Network Marketing Program",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
       "Unisciti a migliaia di imprenditori che stanno rivoluzionando il network marketing con strumenti digitali all'avanguardia.",
     images: [
       {
-        url: "/og-image.jpg", // Aggiungi un'immagine 1200x630 nella cartella public
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "NMP - Network Marketing Program",
@@ -61,8 +61,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "NMP - Network Marketing Program",
-    description:
-      "La piattaforma #1 per il Network Marketing digitale.",
+    description: "La piattaforma #1 per il Network Marketing digitale.",
     images: ["/og-image.jpg"],
   },
   robots: {
@@ -78,7 +77,6 @@ export const metadata: Metadata = {
   },
 };
 
-// ✅ Viewport ottimizzata per mobile (evita zoom indesiderati su input)
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -90,19 +88,20 @@ export const viewport: Viewport = {
   ],
 };
 
-// ✅ Tipo corretto per i children (sostituisce il LayoutProps errato)
 type RootLayoutProps = {
   children: React.ReactNode;
 };
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html
-      lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-gray-50">
-        {children}
+    <html lang={locale}>
+      <body className={`min-h-full flex flex-col bg-gray-50 ${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <NextIntlClientProvider messages={messages}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

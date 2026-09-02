@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import NfcMagicButtons from '@/components/NfcMagicButtons'
-import Link from 'next/link'
+import Link from 'next-intl/link'
 
 export default async function NfcPublicPage({ params }: { params: Promise<{ code: string }> }) {
   // Next.js 15: params è una Promise

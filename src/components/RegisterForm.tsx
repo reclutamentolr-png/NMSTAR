@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+// ✅ Usa next/navigation per entrambi. Il middleware di next-intl gestirà la lingua automaticamente!
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useLocale } from 'next-intl' // ✅ Aggiungilo qui
 import Link from 'next/link'
 import { europeanCountries } from '@/lib/european-countries'
 import { User, Mail, Lock, MapPin, AlertCircle, Loader2, Rocket, Home } from 'lucide-react'
@@ -10,10 +12,13 @@ import { User, Mail, Lock, MapPin, AlertCircle, Loader2, Rocket, Home } from 'lu
 export default function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const locale = useLocale() // ✅ Ottiene 'it', 'en', ecc.
   const supabase = createClient()
 
-  // ✅ Legge sia 'sponsor' (dalla tua pagina ref) che 'ref' (per compatibilità)
+  // ✅ Legge sia 'sponsor' che 'ref' dall'URL
   const initialReferralCode = searchParams.get('sponsor') || searchParams.get('ref') || ''
+
+  // ... (il resto del tuo codice, da formData in poi, rimane IDENTICO)
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -99,9 +104,9 @@ export default function RegisterForm() {
 
       setSuccess(true)
       
-      setTimeout(() => {
-        router.push('/login')
-      }, 2500)
+         setTimeout(() => {
+     router.push(`/${locale}/login`) // ✅ Reindirizza correttamente a /it/login
+   }, 2500)
 
     } catch (err: any) {
       setError(err.message || 'Errore durante la registrazione')

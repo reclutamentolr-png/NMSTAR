@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink' // ✅ Sostituisci 'next/link'
 import { 
   Smartphone, 
   Link2, 

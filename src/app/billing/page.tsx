@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import { redirect } from 'next-intl/client
+import Link from 'next-intl/link'
 
 export default async function BillingPage() {
   const supabase = await createClient()
