@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next-intl/client
+import { redirect } from 'next-intl/client'
 
 export async function registerUser(formData: FormData) {
   const supabase = await createClient()
