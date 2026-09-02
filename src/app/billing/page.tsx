@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next-intl/client'
+import { redirect } from 'next/navigation' // ✅ CORRETTO per i Server Component
 import Link from 'next/link' // ✅ Corretto
 
 export default async function BillingPage() {

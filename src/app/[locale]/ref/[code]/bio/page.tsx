@@ -12,7 +12,7 @@ import {
   MapPin,
   ExternalLink
 } from 'lucide-react'
-import { notFound } from 'next-intl/client'
+// 
 import ShareButton from '@/components/ShareButton' // ✅ IMPORT DEL COMPONENTE CLIENT
 
 export default async function LinkInBioPublicPage({ params }: { params: Promise<{ code: string }> }) {
