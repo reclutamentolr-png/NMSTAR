@@ -274,7 +274,7 @@ export default function LandingPage() {
               {
                 icon: Gift,
                 title: 'Marketplace Premium (1€/mese)',
-                description: 'QR Code dinamici, Link in Bio, NFC Smart Hub, template WhatsApp, MemoLife AI e molto altro. Un ecosistema completo di strumenti per far crescere il tuo business a soli 12€/anno.',
+                description: 'QR Code dinamici, Link in Bio, template WhatsApp, MemoLife AI e molto altro. Un ecosistema completo di strumenti per far crescere il tuo business a soli 12€/anno.',
                 color: 'from-pink-500 to-rose-500'
               },
               {
@@ -332,7 +332,7 @@ export default function LandingPage() {
               <div className="space-y-3 sm:space-y-4">
                 {[
                   'Marketplace completo a soli 1€/mese (12€/anno)',
-                  'Strumenti professionali inclusi: QR Code, Link in Bio, NFC, WhatsApp templates',
+                  'Strumenti professionali inclusi: QR Code, Link in Bio, WhatsApp templates',
                   'Classifica pubblica e trasparente basata su meriti reali',
                   'Premi di fine anno: auto, scooter, viaggi, tecnologia',
                   'Community attiva di competitor motivati',
