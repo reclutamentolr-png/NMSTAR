@@ -1,18 +1,19 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
+// ✅ DOPO (Corretto per Next.js 15+)
 export default async function LocaleLayout({
   children,
-  params: { locale }
+  params
 }: {
-  children: React.ReactNode;
-  params: { locale: string };
+  children: React.ReactNode
+  params: Promise<{ locale: string }> // params deve essere una Promise
 }) {
-  const messages = await getMessages();
-
+  const { locale } = await params // Attendi i parametri prima di usarli
+  
   return (
-    <NextIntlClientProvider messages={messages}>
-      {children}
-    </NextIntlClientProvider>
-  );
+    <html lang={locale}>
+      <body>{children}</body>
+    </html>
+  )
 }
