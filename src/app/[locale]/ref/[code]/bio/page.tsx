@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link' // ✅ Corretto
+import Link from 'next/link'
+import { notFound } from 'next/navigation' // ✅ IMPORT AGGIUNTO PER RISOLVERE TS2304
 import { 
   Link2, 
   Camera, 
@@ -12,8 +13,8 @@ import {
   MapPin,
   ExternalLink
 } from 'lucide-react'
-// 
-import ShareButton from '@/components/ShareButton' // ✅ IMPORT DEL COMPONENTE CLIENT
+
+import ShareButton from '@/components/ShareButton'
 
 export default async function LinkInBioPublicPage({ params }: { params: Promise<{ code: string }> }) {
   const resolvedParams = await params
@@ -37,11 +38,13 @@ export default async function LinkInBioPublicPage({ params }: { params: Promise<
     .eq('referral_code', code)
     .single()
 
+  // ✅ Se c'è errore o il profilo non esiste, reindirizza alla pagina 404
   if (error || !profile) {
     notFound()
   }
 
   // 2. Trova la bio e i link personalizzati (se esistono)
+  // Qui TypeScript ora sa al 100% che 'profile' NON è null
   const { data: linkInBio } = await supabase
     .from('link_in_bio')
     .select('*')
@@ -153,7 +156,7 @@ export default async function LinkInBioPublicPage({ params }: { params: Promise<
             </div>
           )}
 
-          {/* ✅ PULSANTE CONDIVIDI CORRETTO (usa il Client Component) */}
+          {/* PULSANTE CONDIVIDI */}
           <div className="flex justify-center mb-4">
             <ShareButton url={profileUrl} />
           </div>
