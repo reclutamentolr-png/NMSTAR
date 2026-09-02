@@ -1,4 +1,4 @@
-import Link from 'next-intl/link'
+import Link from 'next/link' // ✅ Corretto
 import { ArrowLeft } from 'lucide-react'
 
 export default function NotFound() {

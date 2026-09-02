@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next-intl/link'
+import Link from 'next/link' // ✅ Corretto
 import { 
   Link2, 
   Camera, 
