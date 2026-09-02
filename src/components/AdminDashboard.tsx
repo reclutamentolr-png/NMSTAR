@@ -32,10 +32,7 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
   const supabase = createClient()
 
   const [stats, setStats] = useState({ totalUsers: 0, activeUsers: 0, totalNodes: 0, blockedUsers: 0 })
-  
-  // ✅ NUOVO: Stato per gli utenti online
   const [onlineUsers, setOnlineUsers] = useState(0)
-  
   const [users, setUsers] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loadingUsers, setLoadingUsers] = useState(false)
@@ -66,13 +63,10 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
   })
   const [savingSettings, setSavingSettings] = useState(false)
 
-  // ✅ MODIFICATO: useEffect per gestire anche il caricamento utenti online
   useEffect(() => {
     if (activeSection === 'overview') {
       loadStats()
       loadOnlineUsers()
-      
-      // Aggiorna il contatore online ogni 30 secondi
       const interval = setInterval(loadOnlineUsers, 30000)
       return () => clearInterval(interval)
     }
@@ -90,15 +84,10 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
     setStats({ totalUsers: totalUsers || 0, activeUsers: activeUsers || 0, totalNodes: totalNodes || 0, blockedUsers: blockedUsers || 0 })
   }
 
-  // ✅ NUOVO: Funzione per caricare gli utenti online (attivi negli ultimi 15 minuti)
   const loadOnlineUsers = async () => {
     try {
       const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('last_seen', fifteenMinutesAgo)
-      
+      const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen', fifteenMinutesAgo)
       setOnlineUsers(count || 0)
     } catch (error) {
       console.error('Errore caricamento utenti online:', error)
@@ -107,21 +96,13 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
 
   const loadUsers = async () => {
     setLoadingUsers(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, email, referral_code, subscription_status, is_blocked, created_at')
-      .order('created_at', { ascending: false })
-      .limit(100)
+    const { data } = await supabase.from('profiles').select('id, first_name, last_name, email, referral_code, subscription_status, is_blocked, created_at').order('created_at', { ascending: false }).limit(100)
     if (data) setUsers(data)
     setLoadingUsers(false)
   }
 
   const loadMatrixUsers = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, referral_code')
-      .order('first_name')
-      .limit(500)
+    const { data } = await supabase.from('profiles').select('id, first_name, last_name, referral_code').order('first_name').limit(500)
     if (data) setMatrixUsers(data)
   }
 
@@ -132,10 +113,8 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
       setMatrixStats({ total: 0, level1: 0, level2: 0, level3: 0, level4: 0, level5: 0 })
       return
     }
-
     setLoadingMatrix(true)
     setSelectedMatrixUserId(targetUserId)
-
     try {
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', targetUserId).single()
       const { data: userNode } = await supabase.from('matrix_nodes').select('*').eq('user_id', targetUserId).single()
@@ -204,11 +183,7 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
 
   const toggleToolEnabled = async (toolName: string, currentStatus: boolean) => {
     setSavingTool(toolName)
-    const { error } = await supabase
-      .from('marketplace_settings')
-      .update({ is_enabled: !currentStatus, updated_at: new Date().toISOString() })
-      .eq('tool_name', toolName)
-    
+    const { error } = await supabase.from('marketplace_settings').update({ is_enabled: !currentStatus, updated_at: new Date().toISOString() }).eq('tool_name', toolName)
     if (!error) {
       await loadMarketplaceData()
     } else {
@@ -239,7 +214,6 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
         key,
         value: JSON.stringify(value)
       }))
-
       for (const row of rows) {
         await supabase.from('system_settings').upsert(row, { onConflict: 'key' })
       }
@@ -313,7 +287,6 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
 
   const availableMenuItems = menuItems.filter(item => hasPermission(permissions, item.permission))
 
-  // ✅ MODIFICATO: renderOverview con la nuova card "Utenti Online"
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg">
@@ -321,7 +294,6 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
         <p className="text-indigo-100">Ecco lo stato attuale del tuo Network Marketing Program.</p>
       </div>
 
-      {/* ✅ NUOVO: Grid espansa a 5 colonne per includere "Utenti Online" */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 text-sm text-gray-500 uppercase tracking-wide">
@@ -337,8 +309,6 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
           </div>
           <div className="text-4xl font-bold text-green-600 mt-2">{stats.activeUsers}</div>
         </div>
-        
-        {/* ✅ NUOVO: Card Utenti Online */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 text-sm text-gray-500 uppercase tracking-wide">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -348,7 +318,6 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
           <div className="text-4xl font-bold text-green-600 mt-2">{onlineUsers}</div>
           <div className="text-xs text-gray-400 mt-1">Ultimi 15 min</div>
         </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 text-sm text-gray-500 uppercase tracking-wide">
             <GitBranch className="w-4 h-4" />
@@ -498,53 +467,58 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
     </div>
   )
 
-  const renderMarketplace = () => (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <ShoppingBag className="w-7 h-7" />
-          Gestione Marketplace
-        </h2>
-        <p className="text-gray-600 mt-1">Abilita o disabilita gli strumenti per tutti gli utenti</p>
-      </div>
+  // ✅ MODIFICATO: Filtriamo esplicitamente l'NFC Smart Hub dal pannello admin
+  const renderMarketplace = () => {
+    const filteredTools = marketplaceUsage.filter((tool: any) => tool.tool_name !== 'nfc-smart-hub')
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {marketplaceUsage.map((tool: any) => (
-          <div key={tool.tool_name} className={`bg-white p-6 rounded-xl border shadow-sm ${!tool.is_enabled ? 'opacity-60 bg-gray-50' : ''}`}>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 capitalize">{tool.tool_name.replace(/-/g, ' ')}</h3>
-                <p className="text-sm text-gray-500 mt-1">{tool.description || 'Strumento del marketplace'}</p>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <ShoppingBag className="w-7 h-7" />
+            Gestione Marketplace
+          </h2>
+          <p className="text-gray-600 mt-1">Abilita o disabilita gli strumenti per tutti gli utenti</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredTools.map((tool: any) => (
+            <div key={tool.tool_name} className={`bg-white p-6 rounded-xl border shadow-sm ${!tool.is_enabled ? 'opacity-60 bg-gray-50' : ''}`}>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 capitalize">{tool.tool_name.replace(/-/g, ' ')}</h3>
+                  <p className="text-sm text-gray-500 mt-1">{tool.description || 'Strumento del marketplace'}</p>
+                </div>
+                <button
+                  onClick={() => toggleToolEnabled(tool.tool_name, tool.is_enabled)}
+                  disabled={savingTool === tool.tool_name}
+                  className="focus:outline-none"
+                >
+                  {tool.is_enabled ? (
+                    <ToggleRight className="w-14 h-8 text-green-500" />
+                  ) : (
+                    <ToggleLeft className="w-14 h-8 text-gray-400" />
+                  )}
+                </button>
               </div>
-              <button
-                onClick={() => toggleToolEnabled(tool.tool_name, tool.is_enabled)}
-                disabled={savingTool === tool.tool_name}
-                className="focus:outline-none"
-              >
-                {tool.is_enabled ? (
-                  <ToggleRight className="w-14 h-8 text-green-500" />
-                ) : (
-                  <ToggleLeft className="w-14 h-8 text-gray-400" />
-                )}
-              </button>
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div>
+                  <div className="text-xs text-gray-500 uppercase">Utilizzi Totali</div>
+                  <div className="text-2xl font-bold text-indigo-600">{tool.usage_count}</div>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-xs font-semibold ${tool.is_enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {tool.is_enabled ? 'ATTIVO' : 'DISATTIVO'}
+                </div>
+              </div>
+              {savingTool === tool.tool_name && (
+                <div className="mt-3 text-xs text-indigo-600">💾 Salvataggio...</div>
+              )}
             </div>
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div>
-                <div className="text-xs text-gray-500 uppercase">Utilizzi Totali</div>
-                <div className="text-2xl font-bold text-indigo-600">{tool.usage_count}</div>
-              </div>
-              <div className={`px-3 py-1 rounded-full text-xs font-semibold ${tool.is_enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                {tool.is_enabled ? 'ATTIVO' : 'DISATTIVO'}
-              </div>
-            </div>
-            {savingTool === tool.tool_name && (
-              <div className="mt-3 text-xs text-indigo-600">💾 Salvataggio...</div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderSettings = () => (
     <div className="space-y-6">

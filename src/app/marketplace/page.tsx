@@ -26,7 +26,7 @@ export default async function MarketplacePage() {
       toolName: 'qr-generator',
       href: '/marketplace/qr-generator',
       gradient: 'bg-gradient-to-br from-indigo-500 to-purple-600',
-      iconName: 'Smartphone', // ✅ Stringa invece del componente
+      iconName: 'Smartphone',
       title: 'QR Code Dinamico',
       description: 'Genera QR code personalizzati che puntano direttamente al tuo link di referral.',
       color: 'indigo',
@@ -35,25 +35,16 @@ export default async function MarketplacePage() {
       toolName: 'link-in-bio',
       href: '/marketplace/link-in-bio',
       gradient: 'bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400',
-      iconName: 'Link2', // ✅ Stringa
+      iconName: 'Link2',
       title: 'Link in Bio',
       description: 'Crea la tua landing page personale stile Linktree con tutti i tuoi social.',
       color: 'pink',
     },
     {
-      toolName: 'nfc-smart-hub',
-      href: '/marketplace/nfc-smart-hub',
-      gradient: 'bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600',
-      iconName: 'Wifi', // ✅ Stringa
-      title: 'NFC Smart Hub',
-      description: 'Trasforma il tuo tag NFC in un biglietto da visita magico. Un tap e salvano il tuo contatto!',
-      color: 'cyan',
-    },
-    {
       toolName: 'whatsapp-messages',
       href: '/marketplace/whatsapp-messages',
       gradient: 'bg-gradient-to-br from-green-400 to-emerald-600',
-      iconName: 'MessageCircle', // ✅ Stringa
+      iconName: 'MessageCircle',
       title: 'Messaggi WhatsApp',
       description: 'Template pronti per inviare il tuo link referral via WhatsApp in pochi secondi.',
       color: 'green',
@@ -62,9 +53,9 @@ export default async function MarketplacePage() {
       toolName: 'memolife',
       href: '/marketplace/memolife',
       gradient: 'bg-gradient-to-br from-purple-500 via-pink-500 to-red-500',
-      iconName: 'Brain', // ✅ Stringa
+      iconName: 'Brain',
       title: 'MemoLife',
-      description: 'Il tuo assistente personale intelligente. Gestisci appuntamenti, task, bollette e contatti con input vocale.',
+      description: 'Organizza la tua vita quotidiana. Gestisci appuntamenti, task, bollette, contatti e note in modo semplice e veloce.',
       color: 'purple',
     },
   ]
@@ -96,7 +87,7 @@ export default async function MarketplacePage() {
               isEnabled={isToolEnabled(tool.toolName)}
               href={tool.href}
               gradient={tool.gradient}
-              iconName={tool.iconName} // ✅ Passa la stringa
+              iconName={tool.iconName}
               title={tool.title}
               description={tool.description}
               color={tool.color}

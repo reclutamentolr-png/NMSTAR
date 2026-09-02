@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { 
   Smartphone, 
   Link2, 
-  Wifi, 
   MessageCircle, 
   Brain,
   type LucideIcon 
@@ -15,7 +14,7 @@ type MarketplaceCardProps = {
   isEnabled: boolean
   href: string
   gradient: string
-  iconName: string // ✅ Ora passiamo il nome come stringa
+  iconName: string
   title: string
   description: string
   color: string
@@ -25,7 +24,6 @@ type MarketplaceCardProps = {
 const iconMap: Record<string, LucideIcon> = {
   'Smartphone': Smartphone,
   'Link2': Link2,
-  'Wifi': Wifi,
   'MessageCircle': MessageCircle,
   'Brain': Brain,
 }
@@ -41,7 +39,7 @@ export default function MarketplaceCard({
   color,
 }: MarketplaceCardProps) {
   
-  const Icon = iconMap[iconName] || Smartphone // Fallback a Smartphone se non trovato
+  const Icon = iconMap[iconName] || Smartphone
   
   const handleClick = (e: React.MouseEvent) => {
     if (!isEnabled) {

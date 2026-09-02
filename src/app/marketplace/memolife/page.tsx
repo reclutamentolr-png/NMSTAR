@@ -55,10 +55,10 @@ export default async function MemoLifePage() {
                 Il tuo assistente personale
               </div>
               <h2 className="text-2xl font-bold mb-2">
-                Organizza la tua vita con l'AI
+                Organizza la tua vita quotidiana
               </h2>
               <p className="text-white/90 text-sm max-w-2xl">
-                Ditta o scrivi cosa devi fare: MemoLife capisce e organizza tutto automaticamente.
+                Gestisci appuntamenti, bollette, task e note in un unico posto. Semplice, veloce, sempre sotto controllo.
               </p>
             </div>
             <div className="flex gap-3">

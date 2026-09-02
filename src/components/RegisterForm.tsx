@@ -73,21 +73,22 @@ export default function RegisterForm() {
       // ✅ 3. Genera uno username univoco (risolve l'errore "null value in column username")
       const generatedUsername = formData.email.split('@')[0] + '_' + Math.floor(Math.random() * 10000)
 
-      // 4. Crea il profilo nella tabella profiles
+            // 4. Crea il profilo nella tabella profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: authData.user.id,
           email: formData.email,
-          username: generatedUsername, // ✅ AGGIUNTO
+          username: generatedUsername,
           first_name: formData.first_name,
           last_name: formData.last_name,
           country_code: formData.country_code,
-          referral_code: generateReferralCode(formData.country_code), // ✅ AGGIORNATO: passa il paese
+          referral_code: generateReferralCode(formData.country_code),
           subscription_status: 'free',
           date_of_birth: '2000-01-01',
+          sponsor_id: sponsorProfile.id, // ✅ AGGIUNTO: Salva l'ID dello sponsor nel profilo!
         })
-
+        
       if (profileError) {
         console.error('Errore profilo:', profileError)
         throw new Error('Errore durante la creazione del profilo. Contatta il supporto.')

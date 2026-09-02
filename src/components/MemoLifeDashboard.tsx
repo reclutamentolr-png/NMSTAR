@@ -1,32 +1,10 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import SmartInput from './SmartInput'
 import {
-  Home,
-  Calendar,
-  CheckSquare,
-  Receipt,
-  Users,
-  FileText,
-  CalendarDays,
-  Mic,
-  Bell,
-  AlertTriangle,
-  Banknote,
-  Target,
-  Trash2,
-  Phone,
-  Mail,
-  Hand,
-  Clock,
-  Save,
-  X,
-  Plus,
-  Send,
-  TrendingUp,
-  AlertCircle
+  Home, Calendar, CheckSquare, Receipt, Users, FileText, CalendarDays,
+  Bell, AlertTriangle, Banknote, Target, Trash2, Phone, Mail,
+  Hand, Clock, Save, X, Plus, AlertCircle
 } from 'lucide-react'
 
 type MemoLifeDashboardProps = {
@@ -42,44 +20,30 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const [bills, setBills] = useState<any[]>([])
   const [contacts, setContacts] = useState<any[]>([])
   const [notes, setNotes] = useState<any[]>([])
-  
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   const [calendarView, setCalendarView] = useState<'month' | 'week'>('month')
   const [weekOffset, setWeekOffset] = useState(0)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
-  
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItem, setNewItem] = useState<any>({})
   const [successMessage, setSuccessMessage] = useState('')
-
   const [financialStats, setFinancialStats] = useState({
-    totalUnpaid: 0,
-    totalPaid: 0,
-    dueThisMonth: 0,
-    overdue: 0
+    totalUnpaid: 0, totalPaid: 0, dueThisMonth: 0, overdue: 0
   })
-
   const [upcomingAlerts, setUpcomingAlerts] = useState<any[]>([])
 
   const supabase = createClient()
 
   useEffect(() => { loadData() }, [userId, activeSection])
-
-  useEffect(() => {
-    setShowAddForm(false)
-    setNewItem({})
-  }, [activeSection])
-
-  useEffect(() => {
-    if (activeSection === 'calendar') setWeekOffset(0)
-  }, [activeSection])
+  useEffect(() => { setShowAddForm(false); setNewItem({}) }, [activeSection])
+  useEffect(() => { if (activeSection === 'calendar') setWeekOffset(0) }, [activeSection])
 
   const loadData = async () => {
-    const { count: apptCount } = await supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('date_time', new Date().toISOString())
-    const { count: taskCount } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', false)
-    const { count: billCount } = await supabase.from('bills').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('paid', false)
-    const { count: noteCount } = await supabase.from('notes').select('*', { count: 'exact', head: true }).eq('user_id', userId)
+    const { count: apptCount } = await supabase.from('appointments').select('', { count: 'exact', head: true }).eq('user_id', userId).gte('date_time', new Date().toISOString())
+    const { count: taskCount } = await supabase.from('tasks').select('', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', false)
+    const { count: billCount } = await supabase.from('bills').select('', { count: 'exact', head: true }).eq('user_id', userId).eq('paid', false)
+    const { count: noteCount } = await supabase.from('notes').select('', { count: 'exact', head: true }).eq('user_id', userId)
     setStats({ appointments: apptCount || 0, tasks: taskCount || 0, bills: billCount || 0, notes: noteCount || 0 })
 
     const { data: allBills } = await supabase.from('bills').select('*').eq('user_id', userId).order('due_date', { ascending: true })
@@ -111,7 +75,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     const totalPaid = billsData.filter(b => b.paid).reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0)
     const dueThisMonth = billsData.filter(b => !b.paid && b.due_date >= firstOfMonth && b.due_date <= lastOfMonth).reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0)
     const overdue = billsData.filter(b => !b.paid && b.due_date < todayStr).reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0)
-
     setFinancialStats({ totalUnpaid, totalPaid, dueThisMonth, overdue })
 
     const threeDaysFromNow = new Date()
@@ -129,58 +92,30 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     ])
   }
 
-  const handleSmartInput = async (text: string, parsedData: any) => {
-    try {
-      const { category, title, dateTime, dueDate, amount, priority, phone, email } = parsedData
-      let result: any = null
-      
-      if (category === 'appointment') {
-        result = await supabase.from('appointments').insert({ user_id: userId, title: title || 'Appuntamento', date_time: dateTime || new Date().toISOString(), description: text })
-        if (result.error) throw result.error
-        setSuccessMessage('Appuntamento creato!')
-      } else if (category === 'bill') {
-        result = await supabase.from('bills').insert({ user_id: userId, title: title || 'Bolletta', amount: amount !== undefined ? amount : 0, due_date: dueDate || new Date().toISOString().split('T')[0], notes: text, paid: false })
-        if (result.error) throw result.error
-        setSuccessMessage('Bolletta registrata!')
-      } else if (category === 'task') {
-        result = await supabase.from('tasks').insert({ user_id: userId, title: title || 'Task', priority: priority || 'medium', description: text, completed: false })
-        if (result.error) throw result.error
-        setSuccessMessage('Task creato!')
-      } else if (category === 'contact') {
-        result = await supabase.from('contacts').insert({ user_id: userId, name: title || 'Nuovo contatto', phone: phone || null, email: email || null, notes: text })
-        if (result.error) throw result.error
-        setSuccessMessage('Contatto salvato!')
-      } else {
-        result = await supabase.from('notes').insert({ user_id: userId, title: 'Nota rapida', content: text })
-        if (result.error) throw result.error
-        setSuccessMessage('Nota salvata!')
-      }
-
-      await loadData()
-      setTimeout(() => setSuccessMessage(''), 3000)
-    } catch (error: any) {
-      console.error('Errore:', error)
-      alert(`Errore: ${error.message || 'Riprova'}`)
-    }
-  }
-
   const handleAddItem = async () => {
     try {
+      let result: any = null
       if (activeSection === 'appointments') {
-        await supabase.from('appointments').insert({ user_id: userId, title: newItem.title, date_time: newItem.date_time, description: newItem.description })
+        result = await supabase.from('appointments').insert({ user_id: userId, title: newItem.title, date_time: newItem.date_time, description: newItem.description })
       } else if (activeSection === 'tasks') {
-        await supabase.from('tasks').insert({ user_id: userId, title: newItem.title, due_date: newItem.due_date, priority: newItem.priority || 'medium' })
+        result = await supabase.from('tasks').insert({ user_id: userId, title: newItem.title, due_date: newItem.due_date, priority: newItem.priority || 'medium' })
       } else if (activeSection === 'bills') {
-        await supabase.from('bills').insert({ user_id: userId, title: newItem.title, amount: newItem.amount, due_date: newItem.due_date, category: newItem.category })
+        result = await supabase.from('bills').insert({ user_id: userId, title: newItem.title, amount: newItem.amount, due_date: newItem.due_date, category: newItem.category })
       } else if (activeSection === 'contacts') {
-        await supabase.from('contacts').insert({ user_id: userId, name: newItem.name, phone: newItem.phone, email: newItem.email })
+        result = await supabase.from('contacts').insert({ user_id: userId, name: newItem.name, phone: newItem.phone, email: newItem.email })
       } else if (activeSection === 'notes') {
-        await supabase.from('notes').insert({ user_id: userId, title: newItem.title, content: newItem.content })
+        result = await supabase.from('notes').insert({ user_id: userId, title: newItem.title, content: newItem.content })
       }
+      if (result?.error) throw result.error
       setShowAddForm(false)
       setNewItem({})
-      loadData()
-    } catch (error) { console.error(error) }
+      setSuccessMessage('Elemento creato con successo!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+      await loadData()
+    } catch (error: any) {
+      console.error(error)
+      alert(`Errore: ${error.message || 'Riprova'}`)
+    }
   }
 
   const toggleTask = async (id: string, completed: boolean) => {
@@ -194,7 +129,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   }
 
   const deleteItem = async (table: string, id: string) => {
-    if(confirm('Sei sicuro di voler eliminare questo elemento?')) {
+    if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
       await supabase.from(table).delete().eq('id', id)
       loadData()
     }
@@ -202,7 +137,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
 
   const getDaysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate()
   const getFirstDayOfMonth = (month: number, year: number) => new Date(year, month, 1).getDay()
-  
   const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
 
@@ -218,7 +152,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     const today = new Date()
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - today.getDay() + (weekOffset * 7))
-    
     const days = []
     for (let i = 0; i < 7; i++) {
       const day = new Date(startOfWeek)
@@ -245,24 +178,23 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const renderEventModal = () => {
     if (!selectedEvent) return null
     const { type, item } = selectedEvent
-    
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeEventModal}>
         <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                {type === 'appointment' ? <Calendar className="w-6 h-6 text-indigo-600" /> : 
-                 type === 'bill' ? <Receipt className="w-6 h-6 text-red-600" /> : 
-                 <CheckSquare className="w-6 h-6 text-orange-600" />}
+                {type === 'appointment' ? <Calendar className="w-6 h-6 text-indigo-600" /> :
+                  type === 'bill' ? <Receipt className="w-6 h-6 text-red-600" /> :
+                    <CheckSquare className="w-6 h-6 text-orange-600" />}
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">{item.title}</h3>
                 <span className={`text-xs px-2 py-1 rounded ${
                   type === 'appointment' ? 'bg-indigo-100 text-indigo-700' :
-                  type === 'bill' ? (item.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') :
-                  'bg-orange-100 text-orange-700'
-                }`}>
+                    type === 'bill' ? (item.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') :
+                      'bg-orange-100 text-orange-700'
+                  }`}>
                   {type === 'appointment' ? 'Appuntamento' : type === 'bill' ? 'Bolletta' : 'Task'}
                 </span>
               </div>
@@ -271,7 +203,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               <X className="w-6 h-6" />
             </button>
           </div>
-
           <div className="space-y-3 mb-6">
             {type === 'appointment' && (
               <>
@@ -306,12 +237,11 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                   <span className="font-medium">Scadenza: {item.due_date ? new Date(item.due_date).toLocaleDateString('it-IT') : 'Non impostata'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4" />
                   <span className={`text-xs px-2 py-1 rounded ${
                     item.priority === 'high' ? 'bg-red-100 text-red-600' :
-                    item.priority === 'medium' ? 'bg-orange-100 text-orange-600' :
-                    'bg-green-100 text-green-600'
-                  }`}>
+                      item.priority === 'medium' ? 'bg-orange-100 text-orange-600' :
+                        'bg-green-100 text-green-600'
+                    }`}>
                     Priorità: {item.priority === 'high' ? 'Alta' : item.priority === 'medium' ? 'Media' : 'Bassa'}
                   </span>
                 </div>
@@ -321,14 +251,13 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               </>
             )}
           </div>
-
           <div className="flex gap-2">
             {type === 'bill' && (
               <button
                 onClick={() => { toggleBillPaid(item.id, item.paid); closeEventModal() }}
                 className={`flex-1 py-2 rounded-lg font-medium ${
                   item.paid ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
+                  }`}
               >
                 {item.paid ? 'Segna come non pagata' : 'Segna come pagata'}
               </button>
@@ -338,16 +267,16 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 onClick={() => { toggleTask(item.id, item.completed); closeEventModal() }}
                 className={`flex-1 py-2 rounded-lg font-medium ${
                   item.completed ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
+                  }`}
               >
                 {item.completed ? 'Segna come non completato' : 'Segna come completato'}
               </button>
             )}
             <button
-              onClick={() => { 
+              onClick={() => {
                 const table = type === 'appointment' ? 'appointments' : type === 'bill' ? 'bills' : 'tasks'
                 deleteItem(table, item.id)
-                closeEventModal() 
+                closeEventModal()
               }}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium"
             >
@@ -365,7 +294,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const renderCalendar = () => {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
-    
+
     const prevMonth = () => {
       if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1) }
       else setCurrentMonth(currentMonth - 1)
@@ -374,7 +303,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1) }
       else setCurrentMonth(currentMonth + 1)
     }
-
     const prevWeek = () => setWeekOffset(weekOffset - 1)
     const nextWeek = () => setWeekOffset(weekOffset + 1)
 
@@ -383,7 +311,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       const firstDay = weekDays[0]
       const lastDay = weekDays[6]
       const weekTitle = `${firstDay.getDate()} ${monthNames[firstDay.getMonth()]} - ${lastDay.getDate()} ${monthNames[lastDay.getMonth()]} ${lastDay.getFullYear()}`
-      
       return (
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
@@ -441,16 +368,13 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
 
     const daysInMonth = getDaysInMonth(currentMonth, currentYear)
     const firstDay = getFirstDayOfMonth(currentMonth, currentYear)
-    
     const days = []
     for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} className="h-24 bg-gray-50"></div>)
-    
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = new Date(currentYear, currentMonth, day).toISOString().split('T')[0]
       const isToday = dateStr === todayStr
       const events = getEventsForDay(day)
       const hasEvents = events.appts.length > 0 || events.bills.length > 0 || events.tasks.length > 0
-      
       days.push(
         <div key={day} className={`h-24 border border-gray-200 p-1 overflow-hidden ${isToday ? 'bg-indigo-50 border-indigo-400' : 'bg-white'}`}>
           <div className={`text-xs font-semibold mb-1 ${isToday ? 'text-indigo-600' : 'text-gray-700'}`}>{day}</div>
@@ -477,7 +401,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
         </div>
       )
     }
-
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
@@ -502,6 +425,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     )
   }
 
+  // ✅ HOME PURA: solo riepilogo, nessun input
   const renderHome = () => (
     <div className="space-y-6">
       {upcomingAlerts.length > 0 && (
@@ -520,7 +444,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           </div>
         </div>
       )}
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
           <div className="text-xs text-gray-500 uppercase tracking-wide">Da Pagare Totale</div>
@@ -551,7 +474,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
           <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><Calendar className="w-4 h-4" /> Appuntamenti</div>
@@ -570,7 +492,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           <div className="text-3xl font-bold text-green-600 mt-2">{stats.notes}</div>
         </div>
       </div>
-
       <div className="grid md:grid-cols-2 gap-6">
         <div>
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><Calendar className="w-5 h-5" /> Prossimi Appuntamenti</h3>
@@ -611,8 +532,9 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input placeholder="Titolo (es. Dentista)" value={newItem.title || ''} onChange={e => setNewItem({...newItem, title: e.target.value})} className="w-full p-2 border rounded" />
-          <input type="datetime-local" value={newItem.date_time || ''} onChange={e => setNewItem({...newItem, date_time: e.target.value})} className="w-full p-2 border rounded" />
+          <input placeholder="Titolo (es. Dentista)" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="datetime-local" value={newItem.date_time || ''} onChange={e => setNewItem({ ...newItem, date_time: e.target.value })} className="w-full p-2 border rounded" />
+          <textarea placeholder="Note (opzionale)" value={newItem.description || ''} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="w-full p-2 border rounded h-20" />
           <div className="flex gap-2">
             <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
             <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
@@ -626,6 +548,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             <button onClick={(e) => { e.stopPropagation(); deleteItem('appointments', a.id) }} className="text-red-500 hover:text-red-700"><Trash2 className="w-5 h-5" /></button>
           </div>
         ))}
+        {appointments.length === 0 && <div className="text-center text-gray-400 py-8">Nessun appuntamento. Clicca "Nuovo Appuntamento" per crearne uno.</div>}
       </div>
     </div>
   )
@@ -637,10 +560,12 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input placeholder="Cosa devi fare?" value={newItem.title || ''} onChange={e => setNewItem({...newItem, title: e.target.value})} className="w-full p-2 border rounded" />
-          <input type="date" value={newItem.due_date || ''} onChange={e => setNewItem({...newItem, due_date: e.target.value})} className="w-full p-2 border rounded" />
-          <select value={newItem.priority || 'medium'} onChange={e => setNewItem({...newItem, priority: e.target.value})} className="w-full p-2 border rounded">
-            <option value="low">Bassa</option><option value="medium">Media</option><option value="high">Alta</option>
+          <input placeholder="Cosa devi fare?" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="date" value={newItem.due_date || ''} onChange={e => setNewItem({ ...newItem, due_date: e.target.value })} className="w-full p-2 border rounded" />
+          <select value={newItem.priority || 'medium'} onChange={e => setNewItem({ ...newItem, priority: e.target.value })} className="w-full p-2 border rounded">
+            <option value="low">Bassa</option>
+            <option value="medium">Media</option>
+            <option value="high">Alta</option>
           </select>
           <div className="flex gap-2">
             <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
@@ -664,6 +589,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             </div>
           </div>
         ))}
+        {tasks.length === 0 && <div className="text-center text-gray-400 py-8">Nessun task. Clicca "Nuovo Task" per crearne uno.</div>}
       </div>
     </div>
   )
@@ -684,15 +610,14 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           <div className="text-xl font-bold text-orange-700">€{financialStats.overdue.toFixed(2)}</div>
         </div>
       </div>
-
       <button onClick={() => setShowAddForm(!showAddForm)} className="w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2">
         <Plus className="w-5 h-5" /> Nuova Bolletta
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input placeholder="Titolo (es. Luce)" value={newItem.title || ''} onChange={e => setNewItem({...newItem, title: e.target.value})} className="w-full p-2 border rounded" />
-          <input type="number" placeholder="Importo €" value={newItem.amount || ''} onChange={e => setNewItem({...newItem, amount: e.target.value})} className="w-full p-2 border rounded" />
-          <input type="date" value={newItem.due_date || ''} onChange={e => setNewItem({...newItem, due_date: e.target.value})} className="w-full p-2 border rounded" />
+          <input placeholder="Titolo (es. Luce)" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="number" placeholder="Importo €" value={newItem.amount || ''} onChange={e => setNewItem({ ...newItem, amount: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="date" value={newItem.due_date || ''} onChange={e => setNewItem({ ...newItem, due_date: e.target.value })} className="w-full p-2 border rounded" />
           <div className="flex gap-2">
             <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
             <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
@@ -712,6 +637,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             </div>
           </div>
         ))}
+        {bills.length === 0 && <div className="text-center text-gray-400 py-8">Nessuna bolletta. Clicca "Nuova Bolletta" per crearne una.</div>}
       </div>
     </div>
   )
@@ -723,9 +649,9 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input placeholder="Nome" value={newItem.name || ''} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full p-2 border rounded" />
-          <input placeholder="Telefono" value={newItem.phone || ''} onChange={e => setNewItem({...newItem, phone: e.target.value})} className="w-full p-2 border rounded" />
-          <input placeholder="Email" value={newItem.email || ''} onChange={e => setNewItem({...newItem, email: e.target.value})} className="w-full p-2 border rounded" />
+          <input placeholder="Nome" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full p-2 border rounded" />
+          <input placeholder="Telefono" value={newItem.phone || ''} onChange={e => setNewItem({ ...newItem, phone: e.target.value })} className="w-full p-2 border rounded" />
+          <input placeholder="Email" value={newItem.email || ''} onChange={e => setNewItem({ ...newItem, email: e.target.value })} className="w-full p-2 border rounded" />
           <div className="flex gap-2">
             <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
             <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
@@ -741,6 +667,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             <button onClick={() => deleteItem('contacts', c.id)} className="text-red-500 text-xs mt-2 flex items-center gap-1"><Trash2 className="w-3 h-3" /> Elimina</button>
           </div>
         ))}
+        {contacts.length === 0 && <div className="text-center text-gray-400 py-8 col-span-2">Nessun contatto. Clicca "Nuovo Contatto" per crearne uno.</div>}
       </div>
     </div>
   )
@@ -752,8 +679,8 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input placeholder="Titolo" value={newItem.title || ''} onChange={e => setNewItem({...newItem, title: e.target.value})} className="w-full p-2 border rounded" />
-          <textarea placeholder="Contenuto..." value={newItem.content || ''} onChange={e => setNewItem({...newItem, content: e.target.value})} className="w-full p-2 border rounded h-24" />
+          <input placeholder="Titolo" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <textarea placeholder="Contenuto..." value={newItem.content || ''} onChange={e => setNewItem({ ...newItem, content: e.target.value })} className="w-full p-2 border rounded h-24" />
           <div className="flex gap-2">
             <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
             <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
@@ -768,6 +695,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             <button onClick={() => deleteItem('notes', n.id)} className="text-red-500 text-xs mt-2 flex items-center gap-1"><Trash2 className="w-3 h-3" /> Elimina</button>
           </div>
         ))}
+        {notes.length === 0 && <div className="text-center text-gray-400 py-8 col-span-2">Nessuna nota. Clicca "Nuova Nota" per crearne una.</div>}
       </div>
     </div>
   )
@@ -787,12 +715,11 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       <div className="lg:col-span-1">
         <nav className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-2 sticky top-4">
           {menuItems.map(item => (
-            <button 
+            <button
               key={item.id}
-              onClick={() => setActiveSection(item.id)} 
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
-                activeSection === item.id ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 text-gray-700'
-              }`}
+              onClick={() => setActiveSection(item.id)}
+              className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${activeSection === item.id ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 text-gray-700'
+                }`}
             >
               <item.Icon className="w-5 h-5" />
               <span className="font-medium">{item.label}</span>
@@ -800,7 +727,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           ))}
         </nav>
       </div>
-
       <div className="lg:col-span-3 space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -813,11 +739,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             {activeSection === 'calendar' && <><CalendarDays className="w-7 h-7" /> Calendario</>}
           </h2>
         </div>
-
-        <SmartInput onSubmit={handleSmartInput} />
-
         {successMessage && <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 font-medium">{successMessage}</div>}
-
         {activeSection === 'home' && renderHome()}
         {activeSection === 'appointments' && renderAppointments()}
         {activeSection === 'tasks' && renderTasks()}
@@ -826,7 +748,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
         {activeSection === 'notes' && renderNotes()}
         {activeSection === 'calendar' && renderCalendar()}
       </div>
-
       {renderEventModal()}
     </div>
   )

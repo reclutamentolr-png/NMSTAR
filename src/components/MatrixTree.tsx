@@ -152,8 +152,7 @@ const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
             <Users className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="text-sm text-gray-500">Totale affiliati</div>
-            <div className="text-2xl font-bold text-gray-900">{descendants.length}</div>
+            
           </div>
         </div>
       </div>
@@ -173,25 +172,7 @@ const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
         )}
       </div>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-          <span>Tu (Root)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-          <span>Livello 1</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          <span>Livello 2</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-          <span>Livello 3</span>
-        </div>
-      </div>
+         
     </div>
   )
 }

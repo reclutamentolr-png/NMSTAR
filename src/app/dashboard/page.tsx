@@ -122,13 +122,19 @@ export default async function DashboardPage() {
     country_code: profile?.country_code
   }
 
-  // 6. Statistiche rapide
-const totalDownline = downlineData?.length || 0
+    // 6. Statistiche rapide
+  const totalDownline = downlineData?.length || 0
 
-// ✅ FIX: Conta i figli diretti usando parent_id invece di level/depth
-// I figli diretti sono tutti i nodi che hanno parent_id = id del nodo dell'utente corrente
-const userNodeId = userNode?.id
-const level1Count = downlineData?.filter((d: any) => d.parent_id === userNodeId).length || 0
+  // ✅ FIX: Conta i figli diretti usando parent_id invece di level/depth
+  const userNodeId = userNode?.id
+  const level1Count = downlineData?.filter((d: any) => d.parent_id === userNodeId).length || 0
+  
+  // ✅ RECUPERA LO SPONSOR
+  const { data: sponsorData } = await supabase
+    .from('profiles')
+    .select('first_name, last_name, referral_code')
+    .eq('id', profile?.sponsor_id)
+    .single()
   
   // URL di condivisione
   const shareUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/ref/${profile?.referral_code}`
@@ -183,19 +189,59 @@ const level1Count = downlineData?.filter((d: any) => d.parent_id === userNodeId)
           </div>
         </div>
 
-        {/* SEZIONE 2: STATISTICHE RAPIDE + MARKETPLACE (4 CARD) */}
+                {/* SEZIONE 2: STATISTICHE RAPIDE + MARKETPLACE (4 CARD) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           
-          {/* CARD 1: Affiliati Diretti */}
+          {/* CARD 1 UNIFICATA: Affiliati Diretti + Sponsor */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500 mb-1">Affiliati Diretti (Livello 1)</p>
-            <p className="text-3xl font-bold text-gray-900">{level1Count} <span className="text-lg text-gray-400 font-normal">/ 5</span></p>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-              <div className="bg-indigo-600 h-2 rounded-full transition-all" style={{ width: `${(level1Count / 5) * 100}%` }}></div>
+            <div className="space-y-4">
+              {/* Sezione Affiliati Diretti */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Affiliati Diretti (Livello 1)</p>
+                <p className="text-3xl font-bold text-gray-900">{level1Count} <span className="text-lg text-gray-400 font-normal">/ 5</span></p>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div 
+                    className="bg-indigo-600 h-2 rounded-full transition-all"
+                    style={{ width: `${(level1Count / 5) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Divisore */}
+              <div className="border-t border-gray-200 pt-4">
+                {/* Sezione Sponsor */}
+                <p className="text-sm text-gray-500 mb-2">Il tuo Sponsor</p>
+                {sponsorData ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">
+                        {sponsorData.first_name?.[0]}{sponsorData.last_name?.[0] || ''}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">
+                        {sponsorData.first_name} {sponsorData.last_name}
+                      </p>
+                      {sponsorData.referral_code && (
+                        <p className="text-xs text-gray-500 font-mono truncate">
+                          {sponsorData.referral_code}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 text-gray-400">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-500 text-sm">-</span>
+                    </div>
+                    <p className="text-sm">Nessuno</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* CARD 2: Downline Totale */}
+          {/* CARD 2: Downline Totale (mantenuta ma spostata) */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <p className="text-sm text-gray-500 mb-1">Downline Totale (visibile)</p>
             <p className="text-3xl font-bold text-gray-900">{totalDownline}</p>
