@@ -28,6 +28,14 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
 
   const canPublish = currentPoints >= LISTING_COST
 
+  // ✅ FIX EMOJI: Unicode escape sequences invece di caratteri visibili
+  const categoryEmojis = {
+    servizi: '\u{1F4BC}',      // 💼
+    prodotti: '\u{1F6CD}',     // 🛍️
+    collaborazioni: '\u{1F91D}', // 🤝
+    eventi: '\u{1F389}'        // 🎉
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -53,7 +61,8 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
     if (result.success) {
       setSuccess(true)
     } else {
-      setError(result.message)
+      // ✅ FIX TS2345: Usa ?? per gestire il caso in cui result.message sia undefined
+      setError(result.message ?? 'Errore durante la pubblicazione. Riprova.')
     }
     setLoading(false)
   }
@@ -106,10 +115,10 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
           <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as ListingCategory })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="servizi">💼 Servizi</option>
-            <option value="prodotti">🛍️ Prodotti</option>
-            <option value="collaborazioni">🤝 Collaborazioni</option>
-            <option value="eventi">🎉 Eventi</option>
+            <option value="servizi">{categoryEmojis.servizi} Servizi</option>
+            <option value="prodotti">{categoryEmojis.prodotti} Prodotti</option>
+            <option value="collaborazioni">{categoryEmojis.collaborazioni} Collaborazioni</option>
+            <option value="eventi">{categoryEmojis.eventi} Eventi</option>
           </select>
         </div>
 
@@ -133,10 +142,12 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email contatto</label>
             <input type="email" value={formData.contactEmail} onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="tua@email.com" />
+            <p className="text-xs text-gray-500 mt-1">Non sarà visibile pubblicamente</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
             <input type="tel" value={formData.contactPhone} onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="+39..." />
+            <p className="text-xs text-gray-500 mt-1">Non sarà visibile pubblicamente</p>
           </div>
         </div>
 
