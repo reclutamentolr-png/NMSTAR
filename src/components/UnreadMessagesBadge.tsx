@@ -8,21 +8,14 @@ export default function UnreadMessagesBadge({ initialCount }: { initialCount: nu
   const [count, setCount] = useState(initialCount)
 
   useEffect(() => {
-    console.log('🔔 UnreadMessagesBadge montato con count iniziale:', initialCount)
-
     const handleRefresh = () => {
-      console.log('📩 Evento refreshUnreadCount ricevuto! Azzero il contatore.')
       setCount(0)
     }
 
     window.addEventListener('refreshUnreadCount', handleRefresh)
-    return () => {
-      console.log('🔕 UnreadMessagesBadge smontato, rimuovo listener.')
-      window.removeEventListener('refreshUnreadCount', handleRefresh)
-    }
-  }, [initialCount])
+    return () => window.removeEventListener('refreshUnreadCount', handleRefresh)
+  }, [])
 
-  // ✅ Caso 1: Ci sono messaggi non letti → Badge rosso lampeggiante
   if (count > 0) {
     return (
       <Link 
@@ -30,12 +23,12 @@ export default function UnreadMessagesBadge({ initialCount }: { initialCount: nu
         className="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-full border border-red-200 hover:bg-red-100 transition-colors animate-pulse"
       >
         <MessageCircle className="w-3 h-3" />
-        Hai {count} nuovi messaggi
+        {/* ✅ Grammatica corretta: singolare/plurale */}
+        {count === 1 ? 'Hai 1 nuovo messaggio' : `Hai ${count} nuovi messaggi`}
       </Link>
     )
   }
 
-  // ✅ Caso 2: Nessun messaggio non letto → Link neutro sempre visibile
   return (
     <Link 
       href="/marketplace/chat" 

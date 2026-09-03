@@ -13,6 +13,7 @@ type ConversationItemProps = {
   lastMessage: string
   unreadCount: number
   currentUserId: string
+  initiatedBy: string // ✅ Chi ha iniziato la conversazione
 }
 
 export default function ConversationItem({
@@ -23,32 +24,28 @@ export default function ConversationItem({
   otherUserName,
   lastMessage,
   unreadCount,
-  currentUserId
+  currentUserId,
+  initiatedBy
 }: ConversationItemProps) {
   const [unread, setUnread] = useState(unreadCount)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+  
+  // ✅ Solo chi ha iniziato la conversazione può eliminare
+  const canDelete = initiatedBy === currentUserId
 
   const handleClick = async () => {
     if (isDeleting) return
     
     if (unread > 0) {
-      console.log('🔄 Tentativo di segnare come letto:', { currentUserId, otherUserId, listingId })
-      
       const result = await markMessagesAsRead(currentUserId, otherUserId, listingId || undefined)
-      
       if (result.success) {
-        console.log('✅ Database aggiornato con successo!')
-        setUnread(0) // Azzera visivamente SOLO se il DB ha confermato
-        // Notifica la Dashboard di aggiornare il badge
+        setUnread(0)
         window.dispatchEvent(new CustomEvent('refreshUnreadCount'))
-      } else {
-        console.error('❌ ERRORE: Impossibile aggiornare il database. Controlla la colonna is_read in Supabase:', result.error)
-        alert('Errore nel segnare il messaggio come letto. Controlla la console (F12).')
       }
     }
     
     const listing = listingId ? { id: listingId, title: listingTitle, user_id: otherUserId } : null
-
     window.dispatchEvent(new CustomEvent('openChat', { 
       detail: { 
         listing: listing || { id: 'direct', title: 'Messaggio diretto', user_id: otherUserId }, 
@@ -59,14 +56,16 @@ export default function ConversationItem({
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('Sei sicuro di voler eliminare questa conversazione?')) return
+    if (!confirm('Sei sicuro di voler eliminare questa conversazione? L\'operazione è irreversibile.')) return
     
     setIsDeleting(true)
     await deleteConversationAction(currentUserId, otherUserId, listingId || undefined)
-    
+    setDeleted(true)
     window.dispatchEvent(new CustomEvent('refreshInbox'))
     setIsDeleting(false)
   }
+
+  if (deleted) return null
 
   return (
     <div className={`relative bg-white rounded-xl border p-4 hover:shadow-md transition-all flex items-start gap-4 ${
@@ -85,21 +84,25 @@ export default function ConversationItem({
               <h3 className={`font-semibold truncate ${unread > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
                 {listingTitle}
               </h3>
+              {/* ✅ Grammatica corretta */}
               {unread > 0 && (
                 <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
-                  {unread}
+                  {unread} {unread === 1 ? 'nuovo' : 'nuovi'}
                 </span>
               )}
             </div>
             
-            <button 
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors flex-shrink-0 ml-2"
-              title="Elimina conversazione"
-            >
-              <Trash2 className={`w-4 h-4 ${isDeleting ? 'animate-spin' : ''}`} />
-            </button>
+            {/* ✅ Cestino visibile SOLO a chi ha iniziato */}
+            {canDelete && (
+              <button 
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors flex-shrink-0 ml-2"
+                title="Elimina conversazione"
+              >
+                <Trash2 className={`w-4 h-4 ${isDeleting ? 'animate-spin' : ''}`} />
+              </button>
+            )}
           </div>
 
           <p className="text-sm text-gray-600 mb-1">{otherUserName}</p>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { hasPermission, Permission } from '@/lib/admin-permissions'
 import MatrixTree from '@/components/MatrixTree'
+import { adminUpdateProfile, impersonateUser } from '@/app/actions/admin'
 import {
   LayoutDashboard,
   Users,
@@ -18,16 +19,19 @@ import {
   ToggleRight,
   X,
   Save,
-  Eye
+  Eye,
+  Pencil,
+  UserCog
 } from 'lucide-react'
 
 type AdminDashboardProps = {
   userId: string
   permissions: Permission[]
   userName: string
+  locale: string // ✅ AGGIUNTO: necessario per costruire il redirect URL
 }
 
-export default function AdminDashboard({ userId, permissions, userName }: AdminDashboardProps) {
+export default function AdminDashboard({ userId, permissions, userName, locale }: AdminDashboardProps) {
   const [activeSection, setActiveSection] = useState('overview')
   const supabase = createClient()
 
@@ -53,6 +57,11 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
   const [marketplaceTools, setMarketplaceTools] = useState<any[]>([])
   const [marketplaceUsage, setMarketplaceUsage] = useState<any[]>([])
   const [savingTool, setSavingTool] = useState<string | null>(null)
+
+  const [profileEditUser, setProfileEditUser] = useState<any>(null)
+  const [profileForm, setProfileForm] = useState<any>({})
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null)
 
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({
     site_name: 'Network Marketing Program',
@@ -277,6 +286,68 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
     }
   }
 
+  const openProfileEdit = async (user: any) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    if (data) {
+      setProfileEditUser(data)
+      setProfileForm({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        username: data.username || '',
+        phone: data.phone || '',
+        country_code: data.country_code || '',
+        date_of_birth: data.date_of_birth === '2000-01-01' ? '' : (data.date_of_birth || ''),
+        occupation: data.occupation || '',
+        referral_code: data.referral_code || '',
+        daily_points: data.daily_points || 0,
+        subscription_status: data.subscription_status || 'free',
+        is_admin: data.is_admin || false
+      })
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    if (!profileEditUser) return
+    setSavingProfile(true)
+    const result = await adminUpdateProfile(profileEditUser.id, {
+      ...profileForm,
+      date_of_birth: profileForm.date_of_birth || '2000-01-01'
+    })
+    if (result.success) {
+      alert('✅ Profilo aggiornato con successo!')
+      setProfileEditUser(null)
+      await loadUsers()
+    } else {
+      alert('❌ Errore: ' + (result.error || 'Impossibile aggiornare'))
+    }
+    setSavingProfile(false)
+  }
+
+    // ✅ IMPERSONIFICAZIONE: stessa scheda + link di ripristino admin
+  const handleImpersonate = async (user: any) => {
+    if (!confirm(`Vuoi impersonare ${user.first_name} ${user.last_name}?\n\nVerrai loggato come questo utente.\nPotrai tornare al tuo account admin in qualsiasi momento con il pulsante "Torna Admin" del banner giallo.`)) return
+
+    setImpersonatingId(user.id)
+    try {
+      const result = await impersonateUser(user.id, userId)
+
+      if (result.success && result.targetUrl && result.adminRestoreUrl) {
+        // ✅ Salva il link di ripristino admin prima di cambiare sessione
+        localStorage.setItem('impersonation_restore', result.adminRestoreUrl)
+        localStorage.setItem('impersonatingAdmin', userId)
+
+        // ✅ Naviga al magic link dell'utente target (stessa scheda)
+        window.location.href = result.targetUrl
+      } else {
+        alert('Errore: ' + (result.error || 'Impossibile impersonificare'))
+        setImpersonatingId(null)
+      }
+    } catch (err: any) {
+      alert('Errore: ' + (err.message || 'Errore sconosciuto'))
+      setImpersonatingId(null)
+    }
+  }
+
   const menuItems = [
     { id: 'overview', label: 'Panoramica', Icon: LayoutDashboard, permission: 'stats.read' as Permission },
     { id: 'users', label: 'Utenti', Icon: Users, permission: 'users.read' as Permission },
@@ -389,6 +460,12 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right space-x-3">
+                      <button onClick={() => openProfileEdit(user)} className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1">
+                        <Pencil className="w-4 h-4" /> Modifica
+                      </button>
+                      <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} className="text-purple-600 hover:text-purple-800 text-sm font-medium inline-flex items-center gap-1 disabled:opacity-50">
+                        <UserCog className="w-4 h-4" /> {impersonatingId === user.id ? '...' : 'Impersonifica'}
+                      </button>
                       <button onClick={() => viewUserMatrix(user)} className="text-purple-600 hover:text-purple-800 text-sm font-medium inline-flex items-center gap-1">
                         <Eye className="w-4 h-4" /> Matrice
                       </button>
@@ -467,7 +544,6 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
     </div>
   )
 
-  // ✅ MODIFICATO: Filtriamo esplicitamente l'NFC Smart Hub dal pannello admin
   const renderMarketplace = () => {
     const filteredTools = marketplaceUsage.filter((tool: any) => tool.tool_name !== 'nfc-smart-hub')
 
@@ -651,6 +727,62 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
     )
   }
 
+  const renderProfileEditModal = () => {
+    if (!profileEditUser) return null
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setProfileEditUser(null)}>
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-5 flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-gray-900">Modifica Profilo</h3>
+              <p className="text-xs text-gray-500">{profileEditUser.email}</p>
+            </div>
+            <button onClick={() => setProfileEditUser(null)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+          </div>
+
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <input type="text" value={profileForm.first_name || ''} onChange={(e) => setProfileForm({...profileForm, first_name: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Cognome</label>
+              <input type="text" value={profileForm.last_name || ''} onChange={(e) => setProfileForm({...profileForm, last_name: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input type="text" value={profileForm.username || ''} onChange={(e) => setProfileForm({...profileForm, username: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Referral Code</label>
+              <input type="text" value={profileForm.referral_code || ''} onChange={(e) => setProfileForm({...profileForm, referral_code: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+              <input type="tel" value={profileForm.phone || ''} onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Paese</label>
+              <input type="text" value={profileForm.country_code || ''} onChange={(e) => setProfileForm({...profileForm, country_code: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Data di nascita</label>
+              <input type="date" value={profileForm.date_of_birth || ''} onChange={(e) => setProfileForm({...profileForm, date_of_birth: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Occupazione</label>
+              <input type="text" value={profileForm.occupation || ''} onChange={(e) => setProfileForm({...profileForm, occupation: e.target.value})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Punti giornalieri</label>
+              <input type="number" value={profileForm.daily_points || 0} onChange={(e) => setProfileForm({...profileForm, daily_points: parseInt(e.target.value) || 0})} className="w-full p-2 border rounded-lg" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Abbonamento</label>
+              <select value={profileForm.subscription_status || 'free'} onChange={(e) => setProfileForm({...profileForm, subscription_status: e.target.value})} className="w-full p-2 border rounded-lg">
+                <option value="free">Free</option>
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+              </select></div>
+            <div className="md:col-span-2 flex items-center gap-2">
+              <input type="checkbox" id="is_admin" checked={profileForm.is_admin || false} onChange={(e) => setProfileForm({...profileForm, is_admin: e.target.checked})} className="w-4 h-4" />
+              <label htmlFor="is_admin" className="text-sm font-medium text-gray-700">Amministratore</label>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end p-6 border-t border-gray-200">
+            <button onClick={() => setProfileEditUser(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium" disabled={savingProfile}>Annulla</button>
+            <button onClick={handleSaveProfile} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2" disabled={savingProfile}>
+              <Save className="w-4 h-4" />
+              {savingProfile ? 'Salvataggio...' : 'Salva Modifiche'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
       <div className="lg:col-span-1">
@@ -679,6 +811,7 @@ export default function AdminDashboard({ userId, permissions, userName }: AdminD
       </div>
 
       {renderManageModal()}
+      {renderProfileEditModal()}
     </div>
   )
 }

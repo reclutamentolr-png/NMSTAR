@@ -1,5 +1,6 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import MaintenanceGate from '@/components/MaintenanceGate'
 
 // ✅ DOPO (Corretto per Next.js 15+)
 export default async function LocaleLayout({
@@ -13,7 +14,11 @@ export default async function LocaleLayout({
   
   return (
     <html lang={locale}>
-      <body>{children}</body>
+      <body>
+        <MaintenanceGate>
+          {children}
+        </MaintenanceGate>
+      </body>
     </html>
   )
 }

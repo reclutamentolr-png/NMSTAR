@@ -48,18 +48,19 @@ export default async function ChatInboxPage({ params }: { params: Promise<{ loca
         ) : (
           <div className="space-y-4">
             {conversations.map((conv: any) => (
-              <ConversationItem 
-                key={conv.key}
-                convKey={conv.key}
-                listingId={conv.listingId}
-                listingTitle={conv.listingTitle}
-                otherUserId={conv.otherUserId}
-                otherUserName={conv.otherUserName}
-                lastMessage={conv.lastMessage}
-                unreadCount={conv.unreadCount}
-                currentUserId={user.id} 
-              />
-            ))}
+  <ConversationItem 
+    key={conv.key}
+    convKey={conv.key}
+    listingId={conv.listingId}
+    listingTitle={conv.listingTitle}
+    otherUserId={conv.otherUserId}
+    otherUserName={conv.otherUserName}
+    lastMessage={conv.lastMessage}
+    unreadCount={conv.unreadCount}
+    currentUserId={user.id}
+    initiatedBy={conv.initiatedBy}
+  />
+))}
           </div>
         )}
       </main>

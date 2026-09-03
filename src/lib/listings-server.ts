@@ -54,24 +54,25 @@ export async function getUserConversations(userId: string) {
     .from('messages')
     .select(`
       id, sender_id, receiver_id, listing_id, content, created_at, is_read,
-      sender:sender_id (first_name, last_name),
-      listing:listing_id (title)
+      sender:sender_id (id, first_name, last_name),
+      receiver:receiver_id (id, first_name, last_name),
+      listing:listing_id (id, title)
     `)
     .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true }) // ✅ Ascending per calcolare il primo messaggio
   
-  // Raggruppa i messaggi per conversazione (per annuncio o per utente)
   const conversationsMap = new Map()
   
   data?.forEach((msg: any) => {
     const isUserSender = msg.sender_id === userId
     const otherUserId = isUserSender ? msg.receiver_id : msg.sender_id
-    const otherUserName = isUserSender 
-      ? 'Destinatario' 
-      : `${msg.sender?.first_name || ''} ${msg.sender?.last_name || ''}`.trim() || 'Utente'
+    const otherUser = isUserSender ? msg.receiver : msg.sender
+    const otherUserName = otherUser 
+      ? `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 'Utente'
+      : 'Utente'
     
-    // La chiave è l'ID dell'annuncio (se esiste) o l'ID dell'altro utente
-    const key = msg.listing_id || `user_${otherUserId}`
+    const listingId = msg.listing_id || 'direct'
+    const key = `${listingId}_${otherUserId}`
     
     if (!conversationsMap.has(key)) {
       conversationsMap.set(key, {
@@ -82,9 +83,27 @@ export async function getUserConversations(userId: string) {
         otherUserName,
         lastMessage: msg.content,
         createdAt: msg.created_at,
-        unreadCount: (!isUserSender && !msg.is_read) ? 1 : 0
+        // ✅ Chi ha inviato il PRIMO messaggio è colui che ha iniziato la conversazione
+        initiatedBy: msg.sender_id,
+        unreadCount: 0,
+        lastMessageAt: msg.created_at
       })
     } else {
+      const conv = conversationsMap.get(key)
+      // Aggiorna l'ultimo messaggio e la data
+      conv.lastMessage = msg.content
+      conv.lastMessageAt = msg.created_at
+    }
+  })
+  
+  // Secondo passaggio: calcoliamo i non letti (ora che abbiamo tutte le conversazioni)
+  data?.forEach((msg: any) => {
+    const isUserSender = msg.sender_id === userId
+    const otherUserId = isUserSender ? msg.receiver_id : msg.sender_id
+    const listingId = msg.listing_id || 'direct'
+    const key = `${listingId}_${otherUserId}`
+    
+    if (conversationsMap.has(key)) {
       const conv = conversationsMap.get(key)
       if (!isUserSender && !msg.is_read) {
         conv.unreadCount += 1
@@ -92,8 +111,8 @@ export async function getUserConversations(userId: string) {
     }
   })
   
-  // Ordina per data dell'ultimo messaggio
+  // Ordina per data dell'ultimo messaggio (più recenti in cima)
   return Array.from(conversationsMap.values()).sort((a: any, b: any) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
   )
 }

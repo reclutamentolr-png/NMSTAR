@@ -12,7 +12,8 @@ import ActivityTracker from '@/components/ActivityTracker'
 import ChatModalWrapper from '@/components/ChatModalWrapper'
 import ContactListingButton from '@/components/ContactListingButton'
 import { getActiveListings, getUnreadMessagesCount } from '@/lib/listings-server'
-import UnreadMessagesBadge from '@/components/UnreadMessagesBadge' // ✅ Importato e ora usato
+import UnreadMessagesBadge from '@/components/UnreadMessagesBadge'
+import ImpersonationBanner from '@/components/ImpersonationBanner'
 import { 
   Rocket, 
   Wrench, 
@@ -139,14 +140,17 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   // 10. URL di condivisione
   const shareUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/${locale}/ref/${profile?.referral_code}`
 
-     // 11. CARICA GLI ANNUNCI PER L'ANTEPRIMA (mostriamo TUTTI gli annunci, anche i propri)
+  // 11. CARICA GLI ANNUNCI PER L'ANTEPRIMA
   const recentListings = await getActiveListings({ limit: 3 })
   
   // 12. CARICA CONTATORE MESSAGGI NON LETTI
   const unreadMessagesCount = await getUnreadMessagesCount(user.id)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
+    {/* ✅ BANNER IMPERSONIFICAZIONE */}
+    <ImpersonationBanner />
+          
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -278,10 +282,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                 : '✅ Hai abbastanza punti per pubblicare un annuncio!'}
             </p>
             
-            {/* ✅ FIX: Usiamo il componente Badge invece del codice inline duplicato */}
             <UnreadMessagesBadge initialCount={unreadMessagesCount || 0} />
             
-            {/* ✅ FIX: Unico link pulito, senza duplicati */}
             <Link href="/marketplace/listings" className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-yellow-700 hover:text-yellow-800 transition-colors">
               Gestisci Annunci e Messaggi
               <ArrowRight className="w-4 h-4" />
@@ -369,16 +371,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                   </div>
                   <h3 className="font-bold text-gray-900 mb-1 line-clamp-1">{listing.title}</h3>
                   <p className="text-xs text-gray-600 line-clamp-2 mb-2 flex-1">{listing.description}</p>
-                                    <p className="text-xs text-gray-500 mb-3">di {listing.profiles?.first_name} {listing.profiles?.last_name}</p>
+                  <p className="text-xs text-gray-500 mb-3">di {listing.profiles?.first_name} {listing.profiles?.last_name}</p>
                   
                   {listing.user_id === user.id ? (
-                    /* ✅ Se è un nostro annuncio, mostriamo un badge invece del pulsante Contatta */
                     <div className="w-full py-2 bg-green-50 border border-green-200 text-green-700 text-sm font-semibold rounded-lg flex items-center justify-center gap-1.5">
                       <Tag className="w-4 h-4" />
                       Il tuo annuncio
                     </div>
                   ) : (
-                    /* ✅ Se è di un altro utente, mostriamo il pulsante Contatta */
                     <ContactListingButton 
                       listingId={listing.id}
                       listingTitle={listing.title}
@@ -453,7 +453,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         </div>
       </main>
       
-      {/* ✅ CHAT MODAL WRAPPER (Componente Client separato) */}
+      {/* ✅ CHAT MODAL WRAPPER */}
       <ChatModalWrapper userId={user.id} />
     </div>
   )

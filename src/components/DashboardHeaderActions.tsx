@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link' // ✅ Usa il Link standard di Next.js per l'admin
+import Link from '@/components/LocalizedLink' // ✅ CAMBIATO: usa LocalizedLink invece di next/link
 import { logout } from '@/app/actions/logout'
 import { 
   Hand, 
