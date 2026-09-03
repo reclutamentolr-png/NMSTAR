@@ -28,16 +28,14 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
     .eq('user_id', user.id)
     .single()
 
-  // Se NON è admin in nessuno dei due modi → redirect alla dashboard (SENZA logout)
   const isAdmin = profile?.is_admin || adminRecord
   
   if (!isAdmin) {
-    console.log('⚠️ Utente non admin:', user.id)
     redirect(`/${locale}/dashboard`)
   }
   
-  // Estrai i permessi (se esistono)
-  const permissions: Permission[] = adminRecord?.admin_roles?.permissions || []
+  // ✅ FIX TS2339: admin_roles è un ARRAY, va letto con [0]
+  const permissions: Permission[] = adminRecord?.admin_roles?.[0]?.permissions || []
   const userName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
 
   return (
