@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Home, Calendar, CheckSquare, Receipt, Users, FileText, CalendarDays,
   Bell, AlertTriangle, Banknote, Target, Trash2, Phone, Mail,
-  Hand, Clock, Save, X, Plus, AlertCircle, Pencil, Sparkles
+  Hand, Clock, Save, X, Plus, AlertCircle
 } from 'lucide-react'
 
 type MemoLifeDashboardProps = {
@@ -27,7 +27,6 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItem, setNewItem] = useState<any>({})
-  const [editingId, setEditingId] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [financialStats, setFinancialStats] = useState({
     totalUnpaid: 0, totalPaid: 0, dueThisMonth: 0, overdue: 0
@@ -36,39 +35,8 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
 
   const supabase = createClient()
 
-  // ✅ FIX 1: Conversione corretta per il database (UTC)
-  const formatLocalDateForDB = (dateString: string) => {
-    if (!dateString) return null
-    // new Date("YYYY-MM-DDTHH:mm") crea un oggetto Date nell'orario locale del browser.
-    // toISOString() lo converte correttamente in UTC per il database, senza sfasamenti manuali.
-    return new Date(dateString).toISOString()
-  }
-
-  // ✅ FIX 2: Ottiene l'orario locale attuale nel formato esatto richiesto dall'input
-  const getMinDateTime = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    const hours = String(now.getHours()).padStart(2, '0')
-    const minutes = String(now.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  }
-
-  const getMinDate = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
   useEffect(() => { loadData() }, [userId, activeSection])
-  useEffect(() => { 
-    setShowAddForm(false)
-    setNewItem({})
-    setEditingId(null)
-  }, [activeSection])
+  useEffect(() => { setShowAddForm(false); setNewItem({}) }, [activeSection])
   useEffect(() => { if (activeSection === 'calendar') setWeekOffset(0) }, [activeSection])
 
   const loadData = async () => {
@@ -119,126 +87,35 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
 
     setUpcomingAlerts([
       ...overdueBills.map(b => ({ type: 'overdue_bill', item: b, message: `Bolletta scaduta: ${b.title} (€${b.amount})` })),
-      // ✅ FIX 3: Formattazione dinamica in base al browser dell'utente
-      ...upcomingBills.map(b => ({ type: 'upcoming_bill', item: b, message: `Bolletta in scadenza: ${b.title} - €${b.amount} il ${new Date(b.due_date + 'T00:00:00').toLocaleDateString()}` })),
-      ...upcomingTasks.map(t => ({ type: 'upcoming_task', item: t, message: `Task in scadenza: ${t.title} il ${new Date(t.due_date + 'T00:00:00').toLocaleDateString()}` }))
+      ...upcomingBills.map(b => ({ type: 'upcoming_bill', item: b, message: `Bolletta in scadenza: ${b.title} - €${b.amount} il ${new Date(b.due_date).toLocaleDateString('it-IT')}` })),
+      ...upcomingTasks.map(t => ({ type: 'upcoming_task', item: t, message: `Task in scadenza: ${t.title} il ${new Date(t.due_date).toLocaleDateString('it-IT')}` }))
     ])
   }
 
-  const validateAppointmentData = () => {
-    if (!newItem.title || newItem.title.trim() === '') {
-      return 'Inserisci un titolo per l\'appuntamento'
-    }
-    if (!newItem.date_time) {
-      return 'Seleziona data e ora dell\'appuntamento'
-    }
-    
-    const selectedDate = new Date(newItem.date_time)
-    const now = new Date()
-    
-    if (selectedDate < now) {
-      return 'Non puoi creare un appuntamento nel passato. Seleziona una data e ora future.'
-    }
-    
-    return null
-  }
-
-  const handleSaveItem = async () => {
-    if (activeSection === 'appointments') {
-      const validationError = validateAppointmentData()
-      if (validationError) {
-        alert(validationError)
-        return
-      }
-    }
-    
-    if (activeSection === 'tasks' || activeSection === 'bills') {
-      if (!newItem.title || newItem.title.trim() === '') {
-        alert('Inserisci un titolo')
-        return
-      }
-      if (!newItem.due_date) {
-        alert(activeSection === 'tasks' ? 'Seleziona una data di scadenza' : 'Seleziona una data di scadenza')
-        return
-      }
-      
-      const selectedDate = new Date(newItem.due_date + 'T00:00:00')
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      
-      if (selectedDate < today) {
-        alert('Non puoi selezionare una data passata')
-        return
-      }
-    }
-    
+  const handleAddItem = async () => {
     try {
       let result: any = null
-      const table = activeSection === 'appointments' ? 'appointments' :
-                    activeSection === 'tasks' ? 'tasks' :
-                    activeSection === 'bills' ? 'bills' :
-                    activeSection === 'contacts' ? 'contacts' : 'notes'
-
-      let dataToSave = { ...newItem }
-      if (table === 'appointments' && dataToSave.date_time) {
-        dataToSave.date_time = formatLocalDateForDB(dataToSave.date_time)
+      if (activeSection === 'appointments') {
+        result = await supabase.from('appointments').insert({ user_id: userId, title: newItem.title, date_time: newItem.date_time, description: newItem.description })
+      } else if (activeSection === 'tasks') {
+        result = await supabase.from('tasks').insert({ user_id: userId, title: newItem.title, due_date: newItem.due_date, priority: newItem.priority || 'medium' })
+      } else if (activeSection === 'bills') {
+        result = await supabase.from('bills').insert({ user_id: userId, title: newItem.title, amount: newItem.amount, due_date: newItem.due_date, category: newItem.category })
+      } else if (activeSection === 'contacts') {
+        result = await supabase.from('contacts').insert({ user_id: userId, name: newItem.name, phone: newItem.phone, email: newItem.email })
+      } else if (activeSection === 'notes') {
+        result = await supabase.from('notes').insert({ user_id: userId, title: newItem.title, content: newItem.content })
       }
-
-      if (editingId) {
-        result = await supabase.from(table).update(dataToSave).eq('id', editingId)
-      } else {
-        dataToSave.user_id = userId
-        result = await supabase.from(table).insert(dataToSave)
-      }
-
-      if (result?.error) {
-        console.error('Errore DB:', result.error)
-        throw result.error
-      }
-      
+      if (result?.error) throw result.error
       setShowAddForm(false)
       setNewItem({})
-      setEditingId(null)
-      setSuccessMessage(editingId ? 'Elemento aggiornato con successo!' : 'Elemento creato con successo!')
+      setSuccessMessage('Elemento creato con successo!')
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadData()
     } catch (error: any) {
       console.error(error)
-      if (error.message?.includes('null value in column')) {
-        alert('Errore: Alcuni campi obbligatori non sono stati compilati correttamente. Controlla data e ora.')
-      } else if (error.message?.includes('violates not-null constraint')) {
-        alert('Errore: Assicurati di aver compilato tutti i campi obbligatori, specialmente data e ora.')
-      } else {
-        alert(`Errore durante il salvataggio: ${error.message || 'Riprova'}`)
-      }
+      alert(`Errore: ${error.message || 'Riprova'}`)
     }
-  }
-
-  // ✅ FIX 4: Conversione corretta da UTC (DB) a formato input locale
-  const handleEditClick = (item: any, section: string) => {
-    setActiveSection(section)
-    let editData = { ...item }
-    
-    if (section === 'appointments' && item.date_time) {
-      const d = new Date(item.date_time)
-      const year = d.getFullYear()
-      const month = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      const hours = String(d.getHours()).padStart(2, '0')
-      const minutes = String(d.getMinutes()).padStart(2, '0')
-      editData.date_time = `${year}-${month}-${day}T${hours}:${minutes}`
-    } else if ((section === 'tasks' || section === 'bills') && item.due_date) {
-      // Aggiungiamo 'T00:00:00' per forzare il parsing come orario locale e non UTC
-      const d = new Date(item.due_date + 'T00:00:00')
-      const year = d.getFullYear()
-      const month = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      editData.due_date = `${year}-${month}-${day}`
-    }
-    
-    setNewItem(editData)
-    setEditingId(item.id)
-    setShowAddForm(true)
   }
 
   const toggleTask = async (id: string, completed: boolean) => {
@@ -331,8 +208,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               <>
                 <div className="flex items-center gap-2 text-gray-700">
                   <Clock className="w-4 h-4" />
-                  {/* ✅ FIX 5: Visualizzazione adattiva alla lingua del browser */}
-                  <span className="font-medium">{new Date(item.date_time).toLocaleString()}</span>
+                  <span className="font-medium">{new Date(item.date_time).toLocaleString('it-IT')}</span>
                 </div>
                 {item.description && (
                   <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{item.description}</div>
@@ -343,7 +219,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               <>
                 <div className="flex items-center gap-2 text-gray-700">
                   <Calendar className="w-4 h-4" />
-                  <span className="font-medium">Scadenza: {new Date(item.due_date + 'T00:00:00').toLocaleDateString()}</span>
+                  <span className="font-medium">Scadenza: {new Date(item.due_date).toLocaleDateString('it-IT')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">
                   <Banknote className="w-4 h-4" />
@@ -358,7 +234,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               <>
                 <div className="flex items-center gap-2 text-gray-700">
                   <Target className="w-4 h-4" />
-                  <span className="font-medium">Scadenza: {item.due_date ? new Date(item.due_date + 'T00:00:00').toLocaleDateString() : 'Non impostata'}</span>
+                  <span className="font-medium">Scadenza: {item.due_date ? new Date(item.due_date).toLocaleDateString('it-IT') : 'Non impostata'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-1 rounded ${
@@ -375,14 +251,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               </>
             )}
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => { handleEditClick(item, type === 'appointment' ? 'appointments' : type === 'bill' ? 'bills' : 'tasks'); closeEventModal(); }}
-              className="flex-1 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-1"
-            >
-              <Pencil className="w-4 h-4" /> Modifica
-            </button>
-            
+          <div className="flex gap-2">
             {type === 'bill' && (
               <button
                 onClick={() => { toggleBillPaid(item.id, item.paid); closeEventModal() }}
@@ -390,7 +259,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                   item.paid ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
                   }`}
               >
-                {item.paid ? 'Segna non pagata' : 'Segna pagata'}
+                {item.paid ? 'Segna come non pagata' : 'Segna come pagata'}
               </button>
             )}
             {type === 'task' && (
@@ -400,7 +269,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                   item.completed ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
                   }`}
               >
-                {item.completed ? 'Segna incompleto' : 'Segna completato'}
+                {item.completed ? 'Segna come non completato' : 'Segna come completato'}
               </button>
             )}
             <button
@@ -556,6 +425,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     )
   }
 
+  // ✅ HOME PURA: solo riepilogo, nessun input
   const renderHome = () => (
     <div className="space-y-6">
       {upcomingAlerts.length > 0 && (
@@ -628,7 +498,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           <div className="space-y-2">
             {appointments.slice(0, 3).map(a => (
               <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="bg-white p-3 rounded-lg border border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-                <div><div className="font-medium text-sm">{a.title}</div><div className="text-xs text-gray-500">{new Date(a.date_time).toLocaleString()}</div></div>
+                <div><div className="font-medium text-sm">{a.title}</div><div className="text-xs text-gray-500">{new Date(a.date_time).toLocaleString('it-IT')}</div></div>
               </div>
             ))}
             {appointments.length === 0 && <div className="text-sm text-gray-400 text-center py-4">Nessun appuntamento</div>}
@@ -657,131 +527,49 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
 
   const renderAppointments = () => (
     <div className="space-y-4">
-      <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuovo Appuntamento'}
+      <button onClick={() => setShowAddForm(!showAddForm)} className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2">
+        <Plus className="w-5 h-5" /> Nuovo Appuntamento
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input 
-            placeholder="Titolo (es. Dentista)" 
-            value={newItem.title || ''} 
-            onChange={e => setNewItem({ ...newItem, title: e.target.value })} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <input 
-            type="datetime-local" 
-            min={getMinDateTime()} 
-            value={newItem.date_time || ''} 
-            onChange={e => {
-              const val = e.target.value
-              if (val) {
-                const selected = new Date(val)
-                const now = new Date()
-                if (selected < now) {
-                  alert('⚠️ Hai selezionato una data/ora nel passato. Per favore seleziona un momento futuro.')
-                  setNewItem({ ...newItem, date_time: '' })
-                  return
-                }
-              }
-              setNewItem({ ...newItem, date_time: val })
-            }} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <textarea 
-            placeholder="Note (opzionale)" 
-            value={newItem.description || ''} 
-            onChange={e => setNewItem({ ...newItem, description: e.target.value })} 
-            className="w-full p-2 border rounded h-20" 
-          />
+          <input placeholder="Titolo (es. Dentista)" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="datetime-local" value={newItem.date_time || ''} onChange={e => setNewItem({ ...newItem, date_time: e.target.value })} className="w-full p-2 border rounded" />
+          <textarea placeholder="Note (opzionale)" value={newItem.description || ''} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="w-full p-2 border rounded h-20" />
           <div className="flex gap-2">
-            <button 
-              onClick={handleSaveItem} 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-            >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
-            </button>
-            <button 
-              onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            >
-              Annulla
-            </button>
+            <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
+            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
           </div>
         </div>
       )}
       <div className="space-y-3">
         {appointments.map(a => (
           <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="bg-white p-4 rounded-xl border border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-            <div><div className="font-semibold">{a.title}</div><div className="text-sm text-gray-500">{new Date(a.date_time).toLocaleString()}</div></div>
-            <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-              <button onClick={() => handleEditClick(a, 'appointments')} className="text-blue-500 hover:text-blue-700 p-1"><Pencil className="w-5 h-5" /></button>
-              <button onClick={() => deleteItem('appointments', a.id)} className="text-red-500 hover:text-red-700 p-1"><Trash2 className="w-5 h-5" /></button>
-            </div>
+            <div><div className="font-semibold">{a.title}</div><div className="text-sm text-gray-500">{new Date(a.date_time).toLocaleString('it-IT')}</div></div>
+            <button onClick={(e) => { e.stopPropagation(); deleteItem('appointments', a.id) }} className="text-red-500 hover:text-red-700"><Trash2 className="w-5 h-5" /></button>
           </div>
         ))}
-        {appointments.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">Nessun appuntamento.</div>}
+        {appointments.length === 0 && <div className="text-center text-gray-400 py-8">Nessun appuntamento. Clicca "Nuovo Appuntamento" per crearne uno.</div>}
       </div>
     </div>
   )
 
   const renderTasks = () => (
     <div className="space-y-4">
-      <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuovo Task'}
+      <button onClick={() => setShowAddForm(!showAddForm)} className="w-full py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium flex items-center justify-center gap-2">
+        <Plus className="w-5 h-5" /> Nuovo Task
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input 
-            placeholder="Cosa devi fare?" 
-            value={newItem.title || ''} 
-            onChange={e => setNewItem({ ...newItem, title: e.target.value })} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <input 
-            type="date" 
-            min={getMinDate()} 
-            value={newItem.due_date || ''} 
-            onChange={e => {
-              const val = e.target.value
-              if (val) {
-                const selected = new Date(val + 'T00:00:00')
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
-                if (selected < today) {
-                  alert('⚠️ Non puoi selezionare una data passata')
-                  setNewItem({ ...newItem, due_date: '' })
-                  return
-                }
-              }
-              setNewItem({ ...newItem, due_date: val })
-            }} 
-            className="w-full p-2 border rounded" 
-          />
-          <select 
-            value={newItem.priority || 'medium'} 
-            onChange={e => setNewItem({ ...newItem, priority: e.target.value })} 
-            className="w-full p-2 border rounded"
-          >
+          <input placeholder="Cosa devi fare?" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="date" value={newItem.due_date || ''} onChange={e => setNewItem({ ...newItem, due_date: e.target.value })} className="w-full p-2 border rounded" />
+          <select value={newItem.priority || 'medium'} onChange={e => setNewItem({ ...newItem, priority: e.target.value })} className="w-full p-2 border rounded">
             <option value="low">Bassa</option>
             <option value="medium">Media</option>
             <option value="high">Alta</option>
           </select>
           <div className="flex gap-2">
-            <button 
-              onClick={handleSaveItem} 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-            >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
-            </button>
-            <button 
-              onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            >
-              Annulla
-            </button>
+            <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
+            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
           </div>
         </div>
       )}
@@ -789,40 +577,19 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
         {tasks.map(t => (
           <div key={t.id} className={`bg-white p-4 rounded-xl border flex items-center justify-between ${t.completed ? 'opacity-50' : ''}`}>
             <div className="flex items-center gap-3">
-              <input 
-                type="checkbox" 
-                checked={t.completed} 
-                onChange={() => toggleTask(t.id, t.completed)} 
-                className="w-5 h-5 text-indigo-600 rounded" 
-              />
-              <div 
-                onClick={() => handleEventClick(t, 'task')} 
-                className="cursor-pointer hover:bg-gray-50 p-2 rounded flex-1"
-              >
+              <input type="checkbox" checked={t.completed} onChange={() => toggleTask(t.id, t.completed)} className="w-5 h-5 text-indigo-600 rounded" />
+              <div onClick={() => handleEventClick(t, 'task')} className="cursor-pointer hover:bg-gray-50 p-2 rounded">
                 <div className={`font-medium ${t.completed ? 'line-through' : ''}`}>{t.title}</div>
-                {t.due_date && <div className="text-xs text-gray-500">Scadenza: {new Date(t.due_date + 'T00:00:00').toLocaleDateString()}</div>}
+                {t.due_date && <div className="text-xs text-gray-500">Scadenza: {new Date(t.due_date).toLocaleDateString('it-IT')}</div>}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-1 rounded ${t.priority === 'high' ? 'bg-red-100 text-red-600' : t.priority === 'medium' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-                {t.priority === 'high' ? 'Alta' : t.priority === 'medium' ? 'Media' : 'Bassa'}
-              </span>
-              <button 
-                onClick={() => handleEditClick(t, 'tasks')} 
-                className="text-blue-500 hover:text-blue-700 p-1"
-              >
-                <Pencil className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={() => deleteItem('tasks', t.id)} 
-                className="text-red-500 hover:text-red-700 p-1"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
+              <span className={`text-xs px-2 py-1 rounded ${t.priority === 'high' ? 'bg-red-100 text-red-600' : t.priority === 'medium' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>{t.priority}</span>
+              <button onClick={() => deleteItem('tasks', t.id)} className="text-red-500"><Trash2 className="w-5 h-5" /></button>
             </div>
           </div>
         ))}
-        {tasks.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">Nessun task.</div>}
+        {tasks.length === 0 && <div className="text-center text-gray-400 py-8">Nessun task. Clicca "Nuovo Task" per crearne uno.</div>}
       </div>
     </div>
   )
@@ -843,235 +610,92 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           <div className="text-xl font-bold text-orange-700">€{financialStats.overdue.toFixed(2)}</div>
         </div>
       </div>
-      <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuova Bolletta'}
+      <button onClick={() => setShowAddForm(!showAddForm)} className="w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2">
+        <Plus className="w-5 h-5" /> Nuova Bolletta
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input 
-            placeholder="Titolo (es. Luce)" 
-            value={newItem.title || ''} 
-            onChange={e => setNewItem({ ...newItem, title: e.target.value })} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <input 
-            type="number" 
-            step="0.01" 
-            placeholder="Importo €" 
-            value={newItem.amount || ''} 
-            onChange={e => setNewItem({ ...newItem, amount: e.target.value })} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <input 
-            type="date" 
-            min={getMinDate()} 
-            value={newItem.due_date || ''} 
-            onChange={e => {
-              const val = e.target.value
-              if (val) {
-                const selected = new Date(val + 'T00:00:00')
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
-                if (selected < today) {
-                  alert('⚠️ Non puoi selezionare una data passata')
-                  setNewItem({ ...newItem, due_date: '' })
-                  return
-                }
-              }
-              setNewItem({ ...newItem, due_date: val })
-            }} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
+          <input placeholder="Titolo (es. Luce)" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="number" placeholder="Importo €" value={newItem.amount || ''} onChange={e => setNewItem({ ...newItem, amount: e.target.value })} className="w-full p-2 border rounded" />
+          <input type="date" value={newItem.due_date || ''} onChange={e => setNewItem({ ...newItem, due_date: e.target.value })} className="w-full p-2 border rounded" />
           <div className="flex gap-2">
-            <button 
-              onClick={handleSaveItem} 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-            >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
-            </button>
-            <button 
-              onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            >
-              Annulla
-            </button>
+            <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
+            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
           </div>
         </div>
       )}
       <div className="space-y-3">
         {bills.map(b => (
-          <div 
-            key={b.id} 
-            onClick={() => handleEventClick(b, 'bill')} 
-            className={`bg-white p-4 rounded-xl border flex justify-between items-center cursor-pointer hover:bg-gray-50 ${b.paid ? 'bg-green-50 border-green-200' : ''}`}
-          >
+          <div key={b.id} onClick={() => handleEventClick(b, 'bill')} className={`bg-white p-4 rounded-xl border flex justify-between items-center cursor-pointer hover:bg-gray-50 ${b.paid ? 'bg-green-50 border-green-200' : ''}`}>
             <div className="flex items-center gap-3">
-              <input 
-                type="checkbox" 
-                checked={b.paid} 
-                onChange={(e) => { e.stopPropagation(); toggleBillPaid(b.id, b.paid) }} 
-                className="w-5 h-5 text-green-600 rounded" 
-              />
-              <div>
-                <div className={`font-semibold ${b.paid ? 'line-through text-gray-500' : ''}`}>{b.title}</div>
-                <div className="text-xs text-gray-500">Scadenza: {new Date(b.due_date + 'T00:00:00').toLocaleDateString()}</div>
-              </div>
+              <input type="checkbox" checked={b.paid} onChange={(e) => { e.stopPropagation(); toggleBillPaid(b.id, b.paid) }} className="w-5 h-5 text-green-600 rounded" />
+              <div><div className={`font-semibold ${b.paid ? 'line-through text-gray-500' : ''}`}>{b.title}</div><div className="text-xs text-gray-500">Scadenza: {new Date(b.due_date).toLocaleDateString('it-IT')}</div></div>
             </div>
             <div className="flex items-center gap-3">
               <span className={`text-lg font-bold ${b.paid ? 'text-green-600' : 'text-red-600'}`}>€{b.amount}</span>
-              <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                <button 
-                  onClick={() => handleEditClick(b, 'bills')} 
-                  className="text-blue-500 hover:text-blue-700 p-1"
-                >
-                  <Pencil className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => deleteItem('bills', b.id)} 
-                  className="text-red-500 hover:text-red-700 p-1"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
+              <button onClick={(e) => { e.stopPropagation(); deleteItem('bills', b.id) }} className="text-red-500"><Trash2 className="w-5 h-5" /></button>
             </div>
           </div>
         ))}
-        {bills.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">Nessuna bolletta.</div>}
+        {bills.length === 0 && <div className="text-center text-gray-400 py-8">Nessuna bolletta. Clicca "Nuova Bolletta" per crearne una.</div>}
       </div>
     </div>
   )
 
   const renderContacts = () => (
     <div className="space-y-4">
-      <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuovo Contatto'}
+      <button onClick={() => setShowAddForm(!showAddForm)} className="w-full py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium flex items-center justify-center gap-2">
+        <Plus className="w-5 h-5" /> Nuovo Contatto
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input 
-            placeholder="Nome" 
-            value={newItem.name || ''} 
-            onChange={e => setNewItem({ ...newItem, name: e.target.value })} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <input 
-            placeholder="Telefono" 
-            value={newItem.phone || ''} 
-            onChange={e => setNewItem({ ...newItem, phone: e.target.value })} 
-            className="w-full p-2 border rounded" 
-          />
-          <input 
-            placeholder="Email" 
-            value={newItem.email || ''} 
-            onChange={e => setNewItem({ ...newItem, email: e.target.value })} 
-            className="w-full p-2 border rounded" 
-          />
+          <input placeholder="Nome" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full p-2 border rounded" />
+          <input placeholder="Telefono" value={newItem.phone || ''} onChange={e => setNewItem({ ...newItem, phone: e.target.value })} className="w-full p-2 border rounded" />
+          <input placeholder="Email" value={newItem.email || ''} onChange={e => setNewItem({ ...newItem, email: e.target.value })} className="w-full p-2 border rounded" />
           <div className="flex gap-2">
-            <button 
-              onClick={handleSaveItem} 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-            >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
-            </button>
-            <button 
-              onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            >
-              Annulla
-            </button>
+            <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
+            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
           </div>
         </div>
       )}
       <div className="grid md:grid-cols-2 gap-3">
         {contacts.map(c => (
-          <div key={c.id} className="bg-white p-4 rounded-xl border border-gray-200 relative group">
+          <div key={c.id} className="bg-white p-4 rounded-xl border border-gray-200">
             <div className="font-semibold text-gray-900">{c.name}</div>
             {c.phone && <div className="text-sm text-gray-600 flex items-center gap-1"><Phone className="w-3 h-3" /> {c.phone}</div>}
             {c.email && <div className="text-sm text-gray-600 flex items-center gap-1"><Mail className="w-3 h-3" /> {c.email}</div>}
-            <div className="flex gap-2 mt-3 pt-2 border-t border-gray-100">
-              <button 
-                onClick={() => handleEditClick(c, 'contacts')} 
-                className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1"
-              >
-                <Pencil className="w-3 h-3" /> Modifica
-              </button>
-              <button 
-                onClick={() => deleteItem('contacts', c.id)} 
-                className="text-red-500 hover:text-red-700 text-xs flex items-center gap-1"
-              >
-                <Trash2 className="w-3 h-3" /> Elimina
-              </button>
-            </div>
+            <button onClick={() => deleteItem('contacts', c.id)} className="text-red-500 text-xs mt-2 flex items-center gap-1"><Trash2 className="w-3 h-3" /> Elimina</button>
           </div>
         ))}
-        {contacts.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8 col-span-2">Nessun contatto.</div>}
+        {contacts.length === 0 && <div className="text-center text-gray-400 py-8 col-span-2">Nessun contatto. Clicca "Nuovo Contatto" per crearne uno.</div>}
       </div>
     </div>
   )
 
   const renderNotes = () => (
     <div className="space-y-4">
-      <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuova Nota'}
+      <button onClick={() => setShowAddForm(!showAddForm)} className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2">
+        <Plus className="w-5 h-5" /> Nuova Nota
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
-          <input 
-            placeholder="Titolo" 
-            value={newItem.title || ''} 
-            onChange={e => setNewItem({ ...newItem, title: e.target.value })} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <textarea 
-            placeholder="Contenuto..." 
-            value={newItem.content || ''} 
-            onChange={e => setNewItem({ ...newItem, content: e.target.value })} 
-            className="w-full p-2 border rounded h-24" 
-            required 
-          />
+          <input placeholder="Titolo" value={newItem.title || ''} onChange={e => setNewItem({ ...newItem, title: e.target.value })} className="w-full p-2 border rounded" />
+          <textarea placeholder="Contenuto..." value={newItem.content || ''} onChange={e => setNewItem({ ...newItem, content: e.target.value })} className="w-full p-2 border rounded h-24" />
           <div className="flex gap-2">
-            <button 
-              onClick={handleSaveItem} 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-            >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
-            </button>
-            <button 
-              onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            >
-              Annulla
-            </button>
+            <button onClick={handleAddItem} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"><Save className="w-4 h-4" /> Salva</button>
+            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Annulla</button>
           </div>
         </div>
       )}
       <div className="grid md:grid-cols-2 gap-3">
         {notes.map(n => (
-          <div key={n.id} className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 relative">
+          <div key={n.id} className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
             <div className="font-semibold text-gray-900 mb-1">{n.title}</div>
             <div className="text-sm text-gray-700 whitespace-pre-wrap">{n.content}</div>
-            <div className="flex gap-2 mt-3 pt-2 border-t border-yellow-200">
-              <button 
-                onClick={() => handleEditClick(n, 'notes')} 
-                className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1"
-              >
-                <Pencil className="w-3 h-3" /> Modifica
-              </button>
-              <button 
-                onClick={() => deleteItem('notes', n.id)} 
-                className="text-red-500 hover:text-red-700 text-xs flex items-center gap-1"
-              >
-                <Trash2 className="w-3 h-3" /> Elimina
-              </button>
-            </div>
+            <button onClick={() => deleteItem('notes', n.id)} className="text-red-500 text-xs mt-2 flex items-center gap-1"><Trash2 className="w-3 h-3" /> Elimina</button>
           </div>
         ))}
-        {notes.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8 col-span-2">Nessuna nota.</div>}
+        {notes.length === 0 && <div className="text-center text-gray-400 py-8 col-span-2">Nessuna nota. Clicca "Nuova Nota" per crearne una.</div>}
       </div>
     </div>
   )

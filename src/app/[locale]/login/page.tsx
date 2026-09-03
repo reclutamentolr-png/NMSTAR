@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useLocale } from 'next-intl' // ✅ Aggiunto per ottenere la lingua corrente
+import { useLocale } from 'next-intl'
 import Link from '@/components/LocalizedLink'
 import { Mail, Lock, AlertCircle, Loader2, Rocket, Home } from 'lucide-react'
+// ✅ Importiamo la Server Action sicura per i punti
+import { awardDailyPoint } from '@/app/actions/award-daily-point'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,7 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   
   const router = useRouter()
-  const locale = useLocale() // ✅ Ottiene 'it', 'en', 'fr', ecc.
+  const locale = useLocale()
   const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -50,9 +52,13 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
+
+      // ✅ CHIAMATA SICURA ALLA SERVER ACTION: Assegna il punto giornaliero
+      // Viene eseguita sul server, quindi l'utente non può manipolarla
+      await awardDailyPoint(authData.user.id)
     }
 
-    // ✅ REINDIRIZZAMENTO CORRETTO: aggiunge la lingua davanti a /dashboard
+    // ✅ REINDIRIZZAMENTO CORRETTO
     router.push(`/${locale}/dashboard`)
     router.refresh()
   }

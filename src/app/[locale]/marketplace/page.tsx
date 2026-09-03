@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation' // ✅ CORRETTO (con l'apice chiuso!)
 import Link from '@/components/LocalizedLink' // ✅ Sostituisci 'next/link'
 import MarketplaceCard from '@/components/MarketplaceCard'
+import { Tag, ArrowRight, Sparkles } from 'lucide-react'
 
 export default async function MarketplacePage() {
   const supabase = await createClient()
@@ -93,6 +94,34 @@ export default async function MarketplacePage() {
               color={tool.color}
             />
           ))}
+          {/* CARD: BACHECA ANNUNCI - Separata dagli altri tools */}
+<Link 
+  href="/marketplace/listings"
+  className="group bg-white p-6 rounded-xl border-2 border-yellow-200 shadow-sm hover:shadow-xl hover:border-yellow-400 transition-all duration-300 hover:scale-105 relative overflow-hidden"
+>
+  <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-100 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-yellow-200 transition-colors"></div>
+  <div className="absolute bottom-0 left-0 w-16 h-16 bg-orange-100 rounded-full translate-y-1/2 -translate-x-1/2 group-hover:bg-orange-200 transition-colors"></div>
+  
+  <div className="relative z-10">
+    <div className="flex items-center justify-between mb-3">
+      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-md">
+        <Tag className="w-6 h-6 text-white" />
+      </div>
+      <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-full border border-yellow-200 flex items-center gap-1">
+        <Sparkles className="w-3 h-3" /> 10 Punti
+      </span>
+    </div>
+    <h3 className="text-lg font-bold text-gray-900 mb-1">Bacheca Annunci</h3>
+    <p className="text-gray-600 text-sm mb-4">
+      Pubblica i tuoi servizi, prodotti o cerca collaborazioni nella community. Accumula punti con gli accessi giornalieri!
+    </p>
+    <div className="flex items-center text-yellow-700 font-semibold text-sm group-hover:translate-x-1 transition-transform">
+      Vai alla Bacheca
+      <ArrowRight className="w-4 h-4 ml-1" />
+    </div>
+  </div>
+</Link>
+
         </div>
       </main>
     </div>

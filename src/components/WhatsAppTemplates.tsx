@@ -17,12 +17,21 @@ type WhatsAppTemplatesProps = {
 export default function WhatsAppTemplates({ referralUrl }: WhatsAppTemplatesProps) {
   const [copiedId, setCopiedId] = useState<number | null>(null)
 
+  // ✅ FIX EMOJI: Usiamo Unicode escape sequences invece di emoji visibili
+  // Questo rende il codice IMMUNE da problemi di encoding del file
+  const emojis = {
+    wave: '\u{1F44B}',      // 👋
+    smile: '\u{1F60A}',     // 😊
+    rocket: '\u{1F680}',    // 🚀
+    coffee: '\u{2615}'      // ☕
+  }
+
   const templates: Template[] = [
     {
       id: 1,
       title: 'Invito amichevole',
       tone: 'Informale',
-      message: `Ciao! 👋 Ho scoperto un'opportunità interessante e ho pensato a te. Dai un'occhiata al mio progetto: ${referralUrl} Fammi sapere cosa ne pensi! 😊`
+      message: `Ciao! ${emojis.wave} Ho scoperto un'opportunità interessante e ho pensato a te. Dai un'occhiata al mio progetto: ${referralUrl} Fammi sapere cosa ne pensi! ${emojis.smile}`
     },
     {
       id: 2,
@@ -34,13 +43,13 @@ export default function WhatsAppTemplates({ referralUrl }: WhatsAppTemplatesProp
       id: 3,
       title: 'Storytelling personale',
       tone: 'Emozionale',
-      message: `Ehi! Volevo condividere con te un'esperienza che ha cambiato il mio modo di vedere il lavoro. Ho iniziato questo percorso e i risultati mi stanno sorprendendo. Se ti va di saperne di più: ${referralUrl} 🚀`
+      message: `Ehi! Volevo condividere con te un'esperienza che ha cambiato il mio modo di vedere il lavoro. Ho iniziato questo percorso e i risultati mi stanno sorprendendo. Se ti va di saperne di più: ${referralUrl} ${emojis.rocket}`
     },
     {
       id: 4,
       title: 'Follow-up dopo incontro',
       tone: 'Caldo',
-      message: `Ciao! È stato un piacere conoscerti oggi. Come promesso, ecco il link al mio progetto: ${referralUrl} Quando hai un momento, diamoci un feedback! ☕`
+      message: `Ciao! È stato un piacere conoscerti oggi. Come promesso, ecco il link al mio progetto: ${referralUrl} Quando hai un momento, diamoci un feedback! ${emojis.coffee}`
     }
   ]
 

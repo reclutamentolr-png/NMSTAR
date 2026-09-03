@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation' // ✅ Importato per il refresh
 import { 
   User, 
   Mail, 
@@ -20,6 +21,8 @@ type ProfileCompleterProps = {
 }
 
 export default function ProfileCompleter({ initialData }: ProfileCompleterProps) {
+  const router = useRouter() // ✅ Inizializzato il router
+  
   const [formData, setFormData] = useState({
     first_name: initialData?.first_name || '',
     last_name: initialData?.last_name || '',
@@ -32,7 +35,8 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dismissed, setDismissed] = useState(false)
-  const [saved, setSaved] = useState(false) // ✅ NUOVO: per chiudere il banner dopo il salvataggio
+  const [saved, setSaved] = useState(false) 
+  
   const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,7 +56,12 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
       if (error) throw error
 
       setSuccess(true)
-      setSaved(true) // ✅ Chiude il banner dopo il successo
+      setSaved(true) 
+      
+      // ✅ FIX CRUCIALE: Forza la Dashboard (Server Component) a ricaricare i dati
+      // In questo modo rileggerà il profilo aggiornato e il banner sparirà definitivamente
+      router.refresh()
+      
     } catch (err: any) {
       setError(err.message || 'Errore durante il salvataggio')
     } finally {
@@ -60,7 +69,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
     }
   }
 
-  // ✅ Il banner si chiude se l'utente lo ha dismissato OPPURE se il salvataggio è riuscito
+  // Il banner si chiude se l'utente lo ha dismissato OPPURE se il salvataggio è riuscito
   if (dismissed || saved) return null
 
   return (

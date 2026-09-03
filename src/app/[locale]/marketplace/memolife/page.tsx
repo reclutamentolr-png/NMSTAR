@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation' // ✅ Corretto
-import Link from '@/components/LocalizedLink' // ✅ Corretto
+import { redirect } from 'next/navigation'
+import Link from '@/components/LocalizedLink'
 import MemoLifeDashboard from '@/components/MemoLifeDashboard'
 import { 
   Brain, 
@@ -12,7 +12,10 @@ import {
   Users
 } from 'lucide-react'
 
-export default async function MemoLifePage() {
+// ✅ Aggiunto params per coerenza con le altre pagine del marketplace
+export default async function MemoLifePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params // Anche se non usato direttamente qui, è buona pratica averlo
+  
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
