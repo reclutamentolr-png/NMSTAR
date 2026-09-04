@@ -349,12 +349,12 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   }
 
   const menuItems = [
-    { id: 'overview', label: 'Panoramica', Icon: LayoutDashboard, permission: 'stats.read' as Permission },
-    { id: 'users', label: 'Utenti', Icon: Users, permission: 'users.read' as Permission },
-    { id: 'matrix', label: 'Matrice', Icon: GitBranch, permission: 'matrix.read' as Permission },
-    { id: 'marketplace', label: 'Marketplace', Icon: ShoppingBag, permission: 'marketplace.read' as Permission },
-    { id: 'settings', label: 'Impostazioni', Icon: Settings, permission: 'settings.read' as Permission },
-  ]
+  { id: 'overview', label: 'Panoramica', Icon: LayoutDashboard, permission: 'stats.read' as Permission },
+  { id: 'users', label: 'Utenti', Icon: Users, permission: 'users.read' as Permission },
+  { id: 'matrix', label: 'Matrice', Icon: GitBranch, permission: 'matrix.read' as Permission },
+  { id: 'marketplace', label: 'Marketplace', Icon: ShoppingBag, permission: 'marketplace.read' as Permission },
+  { id: 'settings', label: 'Impostazioni', Icon: Settings, permission: 'settings.read' as Permission },
+]
 
   const availableMenuItems = menuItems.filter(item => hasPermission(permissions, item.permission))
 

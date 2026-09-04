@@ -8,6 +8,15 @@ import { Permission } from '@/lib/admin-permissions'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+// ✅ Tutti i permessi gestiti dal pannello
+const ALL_PERMISSIONS: Permission[] = [
+  'stats.read',
+  'users.read',
+  'matrix.read',
+  'marketplace.read',
+  'settings.read'
+]
+
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const supabase = await createClient()
@@ -15,16 +24,16 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
   
-  // ✅ CONTROLLO DOPPIO: sia profiles.is_admin sia admin_users
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_admin, first_name, last_name')
     .eq('id', user.id)
     .single()
   
+  // ✅ Join semplice (senza !inner, più sicuro)
   const { data: adminRecord } = await supabase
     .from('admin_users')
-    .select('role_id, admin_roles!inner(permissions)')
+    .select('role_id, admin_roles(permissions)')
     .eq('user_id', user.id)
     .single()
 
@@ -34,8 +43,21 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
     redirect(`/${locale}/dashboard`)
   }
   
-  // ✅ FIX TS2339: admin_roles è un ARRAY, va letto con [0]
-  const permissions: Permission[] = adminRecord?.admin_roles?.[0]?.permissions || []
+  // ✅ ROBUSTO: admin_roles può essere un OGGETTO o un ARRAY
+  const roles: any = (adminRecord as any)?.admin_roles
+  const rawPermissions: any[] = Array.isArray(roles)
+    ? (roles?.[0]?.permissions || [])
+    : (roles?.permissions || [])
+
+  console.log('🔐 [ADMIN PAGE] Permessi grezzi:', rawPermissions)
+
+  // ✅ WILDCARD: se il ruolo ha ["*"], espandi in tutti i permessi
+  const permissions: Permission[] = rawPermissions.includes('*')
+    ? ALL_PERMISSIONS
+    : (rawPermissions as Permission[])
+
+  console.log('🔐 [ADMIN PAGE] Permessi finali:', permissions)
+  
   const userName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
 
   return (

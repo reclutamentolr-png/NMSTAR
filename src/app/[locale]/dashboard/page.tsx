@@ -14,6 +14,7 @@ import ContactListingButton from '@/components/ContactListingButton'
 import { getActiveListings, getUnreadMessagesCount } from '@/lib/listings-server'
 import UnreadMessagesBadge from '@/components/UnreadMessagesBadge'
 import ImpersonationBanner from '@/components/ImpersonationBanner'
+import InstallAppPrompt from '@/components/InstallAppPrompt'
 import { 
   Rocket, 
   Wrench, 
@@ -151,10 +152,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
     {/* ✅ BANNER IMPERSONIFICAZIONE */}
     <ImpersonationBanner />
           
+       <InstallAppPrompt />   {/* ✅ NUOVO */}
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900 hidden sm:block">Network Marketing Program</h1>
+          <h1 className="text-2xl font-bold text-gray-900 hidden sm:block">Referral Marketing Program</h1>
           <h1 className="text-xl font-bold text-gray-900 sm:hidden">NMP</h1>
           
           <DashboardHeaderActions 
