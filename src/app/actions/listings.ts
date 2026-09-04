@@ -6,7 +6,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { LISTING_COST, type CreateListingData } from '@/lib/listings'
 
-// ✅ Service client per bypassare RLS (come admin)
+// ✅ Service client per bypassare RLS
 const getServiceClient = () =>
   createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,6 +17,7 @@ const getServiceClient = () =>
 export async function createListingAction(data: CreateListingData) {
   const supabase = await createClient()
   
+  // 1. Verifica punti utente
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('daily_points')
@@ -31,6 +32,7 @@ export async function createListingAction(data: CreateListingData) {
     return { success: false, message: `Ti servono almeno ${LISTING_COST} punti per pubblicare un annuncio` }
   }
   
+  // 2. Scala 10 punti
   const newPoints = (profile.daily_points || 0) - LISTING_COST
   const { error: pointsError } = await supabase
     .from('profiles')
@@ -41,6 +43,7 @@ export async function createListingAction(data: CreateListingData) {
     return { success: false, message: 'Errore nell\'aggiornamento punti' }
   }
   
+  // 3. Crea l'annuncio
   const { data: listing, error } = await supabase
     .from('listings')
     .insert({
@@ -58,6 +61,7 @@ export async function createListingAction(data: CreateListingData) {
     .single()
   
   if (error) {
+    // Rollback punti se fallisce
     await supabase.from('profiles').update({ daily_points: profile.daily_points }).eq('id', data.userId)
     return { success: false, message: 'Errore nella creazione dell\'annuncio' }
   }
@@ -97,31 +101,31 @@ export async function markMessagesAsRead(userId: string, otherUserId: string, li
   return { success: true, data }
 }
 
-// ✅ CANCELLAZIONE CONVERSAZIONE - Usa service client per bypassare RLS
+// ✅ CANCELLAZIONE CONVERSAZIONE - FIX TS: filtri applicati PRIMA di eseguire la query
 export async function deleteConversationAction(
   currentUserId: string, 
   otherUserId: string, 
   listingId?: string
 ) {
   console.log('🗑️ [DELETE] === INIZIO CANCELLAZIONE CONVERSAZIONE ===')
-  console.log('🗑️ [DELETE] Parametri:', { currentUserId, otherUserId, listingId })
 
   const supabase = await createClient()
 
-  // STEP 1: Verifica che chi cancella sia l'autore della conversazione
-  let firstMessageQuery = supabase
+  // STEP 1: Verifica chi ha iniziato la conversazione
+  // ✅ Costruisco la query SENZA .single(), applico il filtro opzionale, poi eseguo
+  let firstMessageQuery: any = supabase
     .from('messages')
     .select('sender_id')
     .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`)
     .order('created_at', { ascending: true })
     .limit(1)
-    .single()
 
   if (listingId) {
     firstMessageQuery = firstMessageQuery.eq('listing_id', listingId)
   }
 
-  const { data: firstMessage, error: firstMsgError } = await firstMessageQuery
+  const { data: firstMessages, error: firstMsgError } = await firstMessageQuery
+  const firstMessage = firstMessages?.[0]
 
   if (firstMsgError || !firstMessage) {
     console.error('❌ [DELETE] Nessun messaggio trovato:', firstMsgError?.message)
@@ -138,14 +142,14 @@ export async function deleteConversationAction(
 
   console.log('✅ [DELETE] Utente autorizzato, procedo con cancellazione HARD')
 
-  // ✅ STEP 2: CANCELLAZIONE con SERVICE CLIENT (bypass RLS)
+  // STEP 2: Cancellazione con SERVICE CLIENT (bypass RLS)
   const supabaseAdmin = getServiceClient()
 
-  let deleteQuery = supabaseAdmin
+  let deleteQuery: any = supabaseAdmin
     .from('messages')
     .delete()
     .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`)
-    .select('id')  // ✅ Seleziona gli id per contare quanti messaggi sono stati cancellati
+    .select('id')
 
   if (listingId) {
     deleteQuery = deleteQuery.eq('listing_id', listingId)
@@ -161,14 +165,9 @@ export async function deleteConversationAction(
   const deletedCount = deletedMessages?.length || 0
   console.log(`✅ [DELETE] Cancellati ${deletedCount} messaggi dal DB`)
 
-  if (deletedCount === 0) {
-    console.warn('⚠️ [DELETE] Nessun messaggio cancellato - verifica RLS')
-  }
-
   // STEP 3: Invalida la cache di Next.js
   revalidatePath('/marketplace/chat')
   revalidatePath('/marketplace')
-  revalidatePath('/')
 
   console.log('🗑️ [DELETE] === FINE CANCELLAZIONE ===')
   return { success: true, deletedCount }
