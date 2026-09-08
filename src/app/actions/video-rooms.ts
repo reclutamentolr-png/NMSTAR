@@ -18,9 +18,9 @@ async function createDailyRoom(name: string): Promise<{ ok: boolean; error?: str
     body: JSON.stringify({
       name,
       properties: {
-        enable_knocking: false,        // niente lobby: chi ha il link entra
+        enable_knocking: false,
         enable_waiting_room: false,
-        enable_prejoin_ui: true,       // schermata scelta nome/mic/camera
+        enable_prejoin_ui: true,
         enable_screenshare: true,
         enable_chat: true,
         enable_emoji_reactions: true,
@@ -35,19 +35,19 @@ async function createDailyRoom(name: string): Promise<{ ok: boolean; error?: str
   if (res.ok) return { ok: true }
 
   const body = await res.json().catch(() => null)
-  // Se la stanza esiste già su Daily, va bene così
   if (res.status === 400 && body && JSON.stringify(body).toLowerCase().includes('already exists')) {
     return { ok: true }
   }
+  console.error('❌ Daily create room error:', res.status, JSON.stringify(body))
   return { ok: false, error: body?.error || `Errore Daily ${res.status}` }
 }
 
-// ✅ Token OWNER: dà i poteri da moderatore al creatore nella UI Daily
+// ✅ Token OWNER con AUTO-CREAZIONE della stanza se manca (fix stanze pre-migrazione)
 export async function getDailyOwnerToken(roomSlug: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false as const, error: 'Non autorizzato' }
-  if (!DAILY_API_KEY) return { success: false as const, error: 'DAILY_API_KEY non configurata' }
+  if (!DAILY_API_KEY) return { success: false as const, error: 'DAILY_API_KEY non configurata sul server' }
 
   const { data: room } = await supabase
     .from('video_rooms')
@@ -59,25 +59,48 @@ export async function getDailyOwnerToken(roomSlug: string) {
     return { success: false as const, error: 'Non sei il creatore di questa stanza' }
   }
 
-  const res = await fetch('https://api.daily.co/v1/meeting-tokens', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${DAILY_API_KEY}`
-    },
-    body: JSON.stringify({
-      properties: {
-        room_name: roomSlug,
-        is_owner: true,
-        enable_screenshare: true,
-        enable_chat: true,
-        start_video_off: false,
-        start_audio_off: false
-      }
-    })
-  })
+  const tokenPayload = {
+    properties: {
+      room_name: roomSlug,
+      is_owner: true,
+      enable_screenshare: true,
+      enable_chat: true,
+      start_video_off: false,
+      start_audio_off: false
+    }
+  }
 
-  if (!res.ok) return { success: false as const, error: 'Errore generazione token Daily' }
+  const requestToken = () =>
+    fetch('https://api.daily.co/v1/meeting-tokens', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`
+      },
+      body: JSON.stringify(tokenPayload)
+    })
+
+  let res = await requestToken()
+
+  // ✅ FIX: se la stanza non esiste su Daily (stanza creata nell'era Jitsi),
+  // la creiamo al volo e riproviamo una volta
+  if (!res.ok) {
+    console.log('🔄 Token fallito, provo a creare la stanza Daily e riprovo...')
+    const created = await createDailyRoom(roomSlug)
+    if (created.ok) {
+      res = await requestToken()
+    }
+  }
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => null)
+    console.error('❌ Daily token error:', res.status, JSON.stringify(errBody))
+    return {
+      success: false as const,
+      error: `Errore Daily ${res.status}: ${errBody?.error || 'verifica API key e dominio'}`
+    }
+  }
+
   const data = await res.json()
   return { success: true as const, token: data.token as string }
 }
@@ -90,14 +113,11 @@ export async function createVideoRoom(title: string) {
 
   const slug = `nmp-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`
 
-  // 1) Crea prima la stanza su Daily
   const daily = await createDailyRoom(slug)
   if (!daily.ok) {
-    console.error('❌ Errore creazione stanza Daily:', daily.error)
     return { success: false, error: daily.error || 'Errore servizio video' }
   }
 
-  // 2) Poi salva il record nel nostro database
   const { data, error } = await supabase
     .from('video_rooms')
     .insert({
@@ -157,7 +177,6 @@ export async function deleteVideoRoom(roomId: string) {
 
   if (error) return { success: false, error: error.message }
 
-  // Best-effort: elimina anche la stanza su Daily (non bloccante)
   if (DAILY_API_KEY) {
     fetch(`https://api.daily.co/v1/rooms/${room.room_slug}`, {
       method: 'DELETE',
