@@ -14,7 +14,7 @@ type VideoJoinClientProps = {
 export default function VideoJoinClient({ roomName, title, isModerator = false, displayName }: VideoJoinClientProps) {
   const [joined, setJoined] = useState(false)
 
-  // ✅ L'organizzatore entra direttamente (niente pre-join)
+  // ✅ Schermata di ingresso per gli ospiti
   if (!joined && !isModerator) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 flex items-center justify-center p-6">
@@ -56,31 +56,16 @@ export default function VideoJoinClient({ roomName, title, isModerator = false, 
           prejoinPageEnabled: !isModerator,
           disableDeepLinking: true,
           subject: title,
-          // ✅ Disabilita la lobby: chi entra con questo config entra subito
           lobby: { enabled: false },
-          // Nasconde il pulsante registrazione per evitare confusione
-          disableProfile: false,
-          // Permetti al moderatore di mutare gli altri
           enableModeratorIndicator: true
         }}
         interfaceConfigOverwrite={{
           SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false,
-          TOOLBAR_BUTTONS: isModerator
-            ? [
-                'microphone', 'camera', 'desktop', 'fullscreen',
-                'fodeviceselection', 'hangup', 'chat', 'recording',
-                'livestreaming', 'etherpad', 'sharedvideo', 'shareaudio',
-                'settings', 'raisehand', 'videoquality', 'filmstrip',
-                'participants-pane', 'toggle-camera', 'invite',
-                'feedback', 'stats', 'shortcuts', 'tileview',
-                'select-background', 'download', 'help',
-                'mute-everyone', 'mute-video-everyone', 'security'
-              ]
-            : undefined
+          SHOW_WATERMARK_FOR_GUESTS: false
         }}
         userInfo={{
-          displayName: displayName || (isModerator ? 'Organizzatore' : 'Ospite')
+          displayName: displayName || (isModerator ? 'Organizzatore' : 'Ospite'),
+          email: ''   // ✅ FIX TS2741: il tipo dell'SDK richiede obbligatoriamente anche email
         }}
         getIFrameRef={(iframeRef) => {
           iframeRef.style.height = '100vh'
