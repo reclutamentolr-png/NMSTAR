@@ -29,19 +29,12 @@ export default function VideoJoinClient({
   useEffect(() => {
     if (!joined || !containerRef.current) return
 
+    // ✅ createFrame senza theme: usa lo stile prebuilt di Daily (evita errori TS)
     const call = DailyIframe.createFrame(containerRef.current, {
       iframeStyle: {
         width: '100%',
         height: '100%',
         border: 'none'
-      },
-      theme: {
-        colors: {
-          mainPrimary: '#6366f1',
-          mainLight: '#818cf8',
-          background: '#0f172a',
-          baseText: '#e2e8f0'
-        }
       }
     })
 
