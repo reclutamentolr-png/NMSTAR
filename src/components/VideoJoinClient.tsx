@@ -2,17 +2,20 @@
 
 import { useState } from 'react'
 import { JitsiMeeting } from '@jitsi/react-sdk'
-import { Video } from 'lucide-react'
+import { Video, Shield } from 'lucide-react'
 
 type VideoJoinClientProps = {
   roomName: string
   title: string
+  isModerator?: boolean
+  displayName?: string
 }
 
-export default function VideoJoinClient({ roomName, title }: VideoJoinClientProps) {
+export default function VideoJoinClient({ roomName, title, isModerator = false, displayName }: VideoJoinClientProps) {
   const [joined, setJoined] = useState(false)
 
-  if (!joined) {
+  // ✅ L'organizzatore entra direttamente (niente pre-join)
+  if (!joined && !isModerator) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl shadow-2xl p-10 text-center max-w-md w-full">
@@ -35,18 +38,49 @@ export default function VideoJoinClient({ roomName, title }: VideoJoinClientProp
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900 relative">
+      {/* Badge organizzatore */}
+      {isModerator && (
+        <div className="absolute top-4 left-4 z-10 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-full flex items-center gap-2 shadow-lg">
+          <Shield className="w-4 h-4" />
+          <span className="text-sm font-bold">Sei l'organizzatore</span>
+        </div>
+      )}
+
       <JitsiMeeting
         roomName={roomName}
         configOverwrite={{
-          startWithAudioMuted: true,
-          prejoinPageEnabled: true,
+          startWithAudioMuted: false,
+          startWithVideoMuted: false,
+          // ✅ L'organizzatore entra subito, niente pre-join
+          prejoinPageEnabled: !isModerator,
           disableDeepLinking: true,
-          subject: title
+          subject: title,
+          // ✅ Disabilita la lobby: chi entra con questo config entra subito
+          lobby: { enabled: false },
+          // Nasconde il pulsante registrazione per evitare confusione
+          disableProfile: false,
+          // Permetti al moderatore di mutare gli altri
+          enableModeratorIndicator: true
         }}
         interfaceConfigOverwrite={{
           SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false
+          SHOW_WATERMARK_FOR_GUESTS: false,
+          TOOLBAR_BUTTONS: isModerator
+            ? [
+                'microphone', 'camera', 'desktop', 'fullscreen',
+                'fodeviceselection', 'hangup', 'chat', 'recording',
+                'livestreaming', 'etherpad', 'sharedvideo', 'shareaudio',
+                'settings', 'raisehand', 'videoquality', 'filmstrip',
+                'participants-pane', 'toggle-camera', 'invite',
+                'feedback', 'stats', 'shortcuts', 'tileview',
+                'select-background', 'download', 'help',
+                'mute-everyone', 'mute-video-everyone', 'security'
+              ]
+            : undefined
+        }}
+        userInfo={{
+          displayName: displayName || (isModerator ? 'Organizzatore' : 'Ospite')
         }}
         getIFrameRef={(iframeRef) => {
           iframeRef.style.height = '100vh'

@@ -6,12 +6,18 @@ import { VideoOff } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export default async function VideoRoomPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ locale: string; room: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { locale, room } = await params
+  const sp = await searchParams
+  const isModerator = sp?.moderator === '1'
+
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: roomData } = await supabase
     .from('video_rooms')
@@ -39,5 +45,16 @@ export default async function VideoRoomPage({
     )
   }
 
-  return <VideoJoinClient roomName={roomData.room_slug} title={roomData.title} />
+  // ✅ Se è il creatore + parametro ?moderator=1, è l'organizzatore
+  const isOwner = user?.id === roomData.creator_id
+  const finalIsModerator = isModerator && isOwner
+
+  return (
+    <VideoJoinClient
+      roomName={roomData.room_slug}
+      title={roomData.title}
+      isModerator={finalIsModerator}
+      displayName={isOwner ? 'Organizzatore' : undefined}
+    />
+  )
 }

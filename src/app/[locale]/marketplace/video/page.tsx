@@ -14,7 +14,8 @@ import {
   ToggleLeft,
   ToggleRight,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Shield
 } from 'lucide-react'
 
 export default function VideoRoomsPage() {
@@ -90,6 +91,11 @@ export default function VideoRoomsPage() {
     setRooms(rooms.filter(r => r.id !== id))
   }
 
+  // ✅ Entra come organizzatore con permessi moderatore
+  const enterAsModerator = (slug: string) => {
+    window.open(`/${locale}/marketplace/video/${slug}?moderator=1`, '_blank')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -133,6 +139,22 @@ export default function VideoRoomsPage() {
           </p>
         </div>
 
+        {/* ✅ Istruzioni per l'organizzatore */}
+        {rooms.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+            <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Come funziona il tuo ruolo di organizzatore
+            </h3>
+            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+              <li>Clicca <strong>"Entra come organizzatore"</strong> per aprire la stanza con tutti i permessi</li>
+              <li>Una volta dentro, condividi il link con gli invitati</li>
+              <li>Gli ospiti entreranno automaticamente senza dover aspettare</li>
+              <li>Puoi mutare partecipanti, attivare/disattivare chat e chiudere la stanza in qualsiasi momento</li>
+            </ol>
+          </div>
+        )}
+
         <div>
           <h2 className="text-lg font-bold text-gray-900 mb-4">I miei eventi</h2>
           {loading ? (
@@ -159,6 +181,17 @@ export default function VideoRoomsPage() {
                         : <ToggleLeft className="w-10 h-6 text-gray-400" />}
                     </button>
                   </div>
+
+                  {/* ✅ Pulsante ENTRA COME ORGANIZZATORE */}
+                  {room.is_active && (
+                    <button
+                      onClick={() => enterAsModerator(room.room_slug)}
+                      className="w-full mb-3 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all shadow-sm"
+                    >
+                      <Shield className="w-4 h-4" />
+                      Entra come organizzatore
+                    </button>
+                  )}
 
                   <div className="flex flex-wrap gap-2">
                     <button
