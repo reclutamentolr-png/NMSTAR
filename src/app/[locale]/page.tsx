@@ -1,4 +1,5 @@
 import Link from '@/components/LocalizedLink'
+import { useLocale } from 'next-intl'
 import { Suspense } from 'react'
 import {
   Rocket,
@@ -20,6 +21,8 @@ import {
 import LatestUsersRotating from '@/components/LatestUsersRotating'
 
 export default function LandingPage() {
+  const locale = useLocale()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 overflow-x-hidden">
       {/* Header */}
@@ -82,7 +85,6 @@ export default function LandingPage() {
                   Accedi
                 </Link>
               </div>
-              {/* Stats */}
               <div className="grid grid-cols-3 gap-3 sm:gap-6">
                 <div>
                   <div className="text-2xl sm:text-3xl font-bold text-white">10K+</div>
@@ -98,7 +100,6 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            {/* Carosello Ultimi Iscritti */}
             <div className="lg:pl-8 mt-8 lg:mt-0">
               <Suspense 
                 fallback={
@@ -136,7 +137,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {/* 1° Premio - Auto */}
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity"></div>
               <div className="relative bg-gradient-to-br from-yellow-400/10 to-orange-500/10 backdrop-blur-lg rounded-2xl border border-yellow-400/40 h-full overflow-hidden">
@@ -158,7 +158,6 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            {/* 2° Premio - Scooter */}
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition-opacity"></div>
               <div className="relative bg-gradient-to-br from-slate-300/10 to-slate-500/10 backdrop-blur-lg rounded-2xl border border-slate-300/40 h-full overflow-hidden">
@@ -180,7 +179,6 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            {/* 3° Premio - E-Bike */}
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-600 to-amber-800 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition-opacity"></div>
               <div className="relative bg-gradient-to-br from-amber-600/10 to-amber-800/10 backdrop-blur-lg rounded-2xl border border-amber-600/40 h-full overflow-hidden">
@@ -202,7 +200,6 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            {/* Altri premi */}
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity"></div>
               <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-600/10 backdrop-blur-lg rounded-2xl border border-indigo-400/40 h-full overflow-hidden">
