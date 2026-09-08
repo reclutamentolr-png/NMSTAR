@@ -18,16 +18,15 @@ async function createDailyRoom(name: string): Promise<{ ok: boolean; error?: str
     body: JSON.stringify({
       name,
       properties: {
-        enable_knocking: false,
-        enable_waiting_room: false,
-        enable_prejoin_ui: true,
-        enable_screenshare: true,
-        enable_chat: true,
-        enable_emoji_reactions: true,
-        enable_hand_raising: true,
-        start_video_off: false,
-        start_audio_off: true,
-        max_participants: 100
+        // ✅ Solo proprietà valide secondo l'API Daily.co
+        enable_knocking: false,         // niente "bussare" per entrare
+        enable_prejoin_ui: true,        // schermata pre-join (nome/mic/camera)
+        enable_screenshare: true,       // condivisione schermo abilitata
+        enable_emoji_reactions: true,   // reazioni emoji
+        enable_hand_raising: true,      // alzare la mano
+        start_video_off: false,         // camera accesa di default
+        start_audio_off: true,          // microfono spento di default (privacy)
+        max_participants: 100           // limite partecipanti
       }
     })
   })
@@ -42,7 +41,7 @@ async function createDailyRoom(name: string): Promise<{ ok: boolean; error?: str
   return { ok: false, error: body?.error || `Errore Daily ${res.status}` }
 }
 
-// ✅ Token OWNER con AUTO-CREAZIONE della stanza se manca (fix stanze pre-migrazione)
+// ✅ Token OWNER con AUTO-CREAZIONE della stanza se manca
 export async function getDailyOwnerToken(roomSlug: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -59,12 +58,12 @@ export async function getDailyOwnerToken(roomSlug: string) {
     return { success: false as const, error: 'Non sei il creatore di questa stanza' }
   }
 
+  // ✅ Token payload con SOLO proprietà valide per meeting tokens
   const tokenPayload = {
     properties: {
       room_name: roomSlug,
       is_owner: true,
       enable_screenshare: true,
-      enable_chat: true,
       start_video_off: false,
       start_audio_off: false
     }
@@ -82,8 +81,7 @@ export async function getDailyOwnerToken(roomSlug: string) {
 
   let res = await requestToken()
 
-  // ✅ FIX: se la stanza non esiste su Daily (stanza creata nell'era Jitsi),
-  // la creiamo al volo e riproviamo una volta
+  // ✅ Se la stanza non esiste su Daily (stanze pre-migrazione), creala e riprova
   if (!res.ok) {
     console.log('🔄 Token fallito, provo a creare la stanza Daily e riprovo...')
     const created = await createDailyRoom(roomSlug)
