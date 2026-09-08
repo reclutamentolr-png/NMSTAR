@@ -60,7 +60,15 @@ export default function VideoRoomsPage() {
       setTitle('')
       await reload()
     } else {
-      alert('Errore: ' + result.error)
+      // ✅ Messaggio errore chiaro per problemi di configurazione
+      if (result.error?.includes('DAILY_API_KEY')) {
+        alert(
+          '⚠️ Configurazione mancante: la variabile DAILY_API_KEY non è impostata.\n\n' +
+          'Contatta l\'amministratore o verifica le variabili d\'ambiente su Vercel.'
+        )
+      } else {
+        alert('Errore: ' + result.error)
+      }
     }
     setCreating(false)
   }
@@ -91,7 +99,7 @@ export default function VideoRoomsPage() {
     setRooms(rooms.filter(r => r.id !== id))
   }
 
-  // ✅ Entra come organizzatore con permessi moderatore
+  // ✅ Entra come organizzatore: apre in nuova scheda con permessi moderatore
   const enterAsModerator = (slug: string) => {
     window.open(`/${locale}/marketplace/video/${slug}?moderator=1`, '_blank')
   }
@@ -135,22 +143,31 @@ export default function VideoRoomsPage() {
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-3">
-            Riceverai un link di invito da condividere: chiunque lo possieda potrà entrare (anche senza account).
+            Riceverai un link di invito da condividere: <strong>chiunque lo possieda potrà entrare</strong> (anche senza account sulla piattaforma).
           </p>
         </div>
 
-        {/* ✅ Istruzioni per l'organizzatore */}
+        {/* ✅ Istruzioni aggiornate per Daily.co */}
         {rooms.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-            <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+            <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
               <Shield className="w-5 h-5" />
               Come funziona il tuo ruolo di organizzatore
             </h3>
-            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-              <li>Clicca <strong>"Entra come organizzatore"</strong> per aprire la stanza con tutti i permessi</li>
-              <li>Una volta dentro, condividi il link con gli invitati</li>
-              <li>Gli ospiti entreranno automaticamente senza dover aspettare</li>
-              <li>Puoi mutare partecipanti, attivare/disattivare chat e chiudere la stanza in qualsiasi momento</li>
+            <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+              <li>
+                Clicca <strong>"Entra come organizzatore"</strong>: entri direttamente nella stanza con il nome "Organizzatore"
+                <span className="block text-xs text-blue-600 ml-5 mt-0.5">✨ <strong>Nessun login esterno</strong> (Google/GitHub) richiesto!</span>
+              </li>
+              <li>
+                Hai tutti i <strong>poteri da moderatore</strong>: puoi mutare gli altri, gestire i partecipanti, condividere schermo
+              </li>
+              <li>
+                Condividi il link (copia o WhatsApp): gli invitati <strong>entrano automaticamente</strong> senza dover essere accettati
+              </li>
+              <li>
+                <strong>Nessun limite di tempo</strong>: le stanze restano attive finché non le chiudi tu
+              </li>
             </ol>
           </div>
         )}
@@ -182,7 +199,7 @@ export default function VideoRoomsPage() {
                     </button>
                   </div>
 
-                  {/* ✅ Pulsante ENTRA COME ORGANIZZATORE */}
+                  {/* ✅ Pulsante ENTRA COME ORGANIZZATORE (Daily: niente sign-in!) */}
                   {room.is_active && (
                     <button
                       onClick={() => enterAsModerator(room.room_slug)}
