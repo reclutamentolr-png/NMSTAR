@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from '@/components/LocalizedLink'
 import MarketplaceCard from '@/components/MarketplaceCard'
-import { Tag, ArrowRight, Sparkles, Video } from 'lucide-react'
+import { Tag, ArrowRight, Sparkles } from 'lucide-react'
 
 export default async function MarketplacePage() {
   const supabase = await createClient()
@@ -123,16 +123,7 @@ export default async function MarketplacePage() {
             </div>
           </Link>
 
-          {/* CARD: VIDEO EVENTI */}
-          <Link 
-            href="/marketplace/video"
-            className="group bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
-          >
-            <Video className="w-10 h-10 text-white mb-3" />
-            <p className="text-white font-bold text-lg mb-1">Video Eventi</p>
-            <p className="text-indigo-100 text-sm">Crea stanze video di gruppo e invita chi vuoi con un link</p>
-          </Link>
-        </div>
+          </div>
       </main>
     </div>
   )
