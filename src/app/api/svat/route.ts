@@ -1,0 +1,1081 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { fetchWhoisText, parseWhois } from '@/lib/whois'
+
+interface SVATCheck {
+  id: string
+  name: string
+  status: 'ok' | 'warning' | 'risk' | 'check'
+  points: number
+  details: string
+  detailsKey?: string
+  source?: string
+  sourceUrl?: string
+  detailsInterp?: Record<string, string>
+}
+
+interface SVATResult {
+  input: string
+  domain?: string
+  score: number
+  badge: 'green' | 'yellow' | 'red'
+  checks: SVATCheck[]
+  summary: {
+    totalChecks: number
+    okCount: number
+    warningCount: number
+    riskCount: number
+    checkCount: number
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await request.json()
+  const { input } = body
+  if (!input || typeof input !== 'string') {
+    return NextResponse.json({ error: 'Input required' }, { status: 400 })
+  }
+
+  const isURL = input.startsWith('http') || input.startsWith('www.') || input.includes('.')
+  const domain = isURL
+    ? input.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+    : input
+
+  const checks: SVATCheck[] = []
+
+  if (isURL) {
+    // Shared lookups: WHOIS (checkWHOIS + checkDomainAge) and the homepage
+    // HTML (checkContentScraping + checkLegalPages + checkReviews +
+    // checkBusinessModel) are each fetched ONCE and reused, instead of
+    // every check re-fetching the same data independently. This halves the
+    // number of requests hitting the target site, lowering the odds that a
+    // WAF/rate-limiter blocks some of them (which used to cost legitimate,
+    // well-protected sites points for no fraud-related reason).
+    const whoisTextPromise = fetchWhoisText(domain)
+    const pagePromise = fetchPageHtml(input)
+
+    // Run all checks in parallel
+    const results = await Promise.allSettled([
+      checkWHOIS(domain, whoisTextPromise),
+      checkDomainAge(domain, whoisTextPromise),
+      checkSPF(domain),
+      checkDMARC(domain),
+      checkMX(domain),
+      checkPTR(domain),
+      checkHTTPHeaders(input, domain),
+      checkSSL(input, domain),
+      checkAbuseIPDB(domain, input),
+      checkContentScraping(pagePromise),
+      checkLegalPages(pagePromise),
+      checkReviews(pagePromise),
+      checkBusinessModel(pagePromise),
+      checkVIES(input),
+    ])
+
+    results.forEach((r) => {
+      if (r.status === 'fulfilled' && r.value) {
+        checks.push(r.value)
+      }
+    })
+  }
+
+  // Calculate score (start at 50 neutral)
+  let score = 50
+
+  for (const r of checks) {
+    if (r.status === 'ok') {
+      score += r.points > 0 ? r.points : 5
+    } else if (r.status === 'warning') {
+      score -= Math.abs(r.points)
+    } else if (r.status === 'risk') {
+      score -= Math.abs(r.points)
+    }
+  }
+
+  score = Math.max(0, Math.min(100, score))
+
+  let badge: 'green' | 'yellow' | 'red' = 'green'
+  if (score < 40) badge = 'red'
+  else if (score < 80) badge = 'yellow'
+
+  return NextResponse.json({
+    input,
+    domain,
+    score,
+    badge,
+    checks,
+    summary: {
+      totalChecks: checks.length,
+      okCount: checks.filter((r) => r.status === 'ok').length,
+      warningCount: checks.filter((r) => r.status === 'warning').length,
+      riskCount: checks.filter((r) => r.status === 'risk').length,
+      checkCount: checks.filter((r) => r.status === 'check').length,
+    },
+  })
+}
+
+// 1. WHOIS lookup — dati di registrazione dominio, titolare, registrar.
+// Queries the registry's authoritative WHOIS server directly (see src/lib/whois.ts)
+// instead of a third-party HTTP proxy, so it works even when such proxies go down.
+async function checkWHOIS(domain: string, whoisTextPromise: Promise<string | null>): Promise<SVATCheck | null> {
+  try {
+    const data = await whoisTextPromise
+    if (!data) return null
+
+    const { hasPrivacy, registrantOrg, registrar, creationDate, expiryDate } = parseWhois(data)
+
+    if (hasPrivacy) {
+      return {
+        id: 'whois',
+        name: 'checkWHOIS',
+        status: 'warning',
+        points: -10,
+        details: 'whoisPrivacy',
+        detailsKey: 'whoisPrivacy',
+        source: 'WHOIS',
+        sourceUrl: `https://who.is/whois/${domain}`,
+      }
+    }
+
+    let details = 'whoisNoPrivacy'
+    if (registrantOrg) details += ` | Org: ${registrantOrg}`
+    if (registrar) details += ` | Registrar: ${registrar}`
+    if (creationDate) details += ` | Created: ${creationDate}`
+
+    if (!expiryDate) {
+      return {
+        id: 'whois',
+        name: 'checkWHOIS',
+        status: 'warning',
+        points: -5,
+        details: details + ' | Expiration date not found in WHOIS',
+        detailsKey: 'whoisIncomplete',
+        source: 'WHOIS',
+        sourceUrl: `https://who.is/whois/${domain}`,
+      }
+    }
+
+    return {
+      id: 'whois',
+      name: 'checkWHOIS',
+      status: 'ok',
+      points: 8,
+      details,
+      detailsKey: 'whoisNoPrivacy',
+      source: 'WHOIS',
+      sourceUrl: `https://who.is/whois/${domain}`,
+    }
+  } catch {
+    return null
+  }
+}
+
+// 2. Età del dominio — data di creazione dal WHOIS (stessa lookup di checkWHOIS, condivisa)
+async function checkDomainAge(domain: string, whoisTextPromise: Promise<string | null>): Promise<SVATCheck | null> {
+  try {
+    const data = await whoisTextPromise
+    if (!data) return null
+
+    const { creationDate } = parseWhois(data)
+    if (!creationDate) return null
+
+    const created = new Date(creationDate)
+    if (isNaN(created.getTime())) return null
+
+    const diffDays = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays < 30) {
+      return {
+        id: 'domainAge',
+        name: 'checkDomainAge',
+        status: 'risk',
+        points: -25,
+        details: `Domain registered ${diffDays} days ago`,
+        detailsKey: 'newDomain',
+        source: 'WHOIS',
+      }
+    }
+
+    const years = Math.floor(diffDays / 365)
+    const days = diffDays % 365
+
+    return {
+      id: 'domainAge',
+      name: 'checkDomainAge',
+      status: 'ok',
+      points: 12,
+      details: `Domain registered ${years} year(s), ${days} day(s) ago`,
+      detailsKey: years > 0 ? 'domainAgeYears' : 'domainAgeDays',
+      detailsInterp: years > 0
+        ? { years: String(years), days: String(days) }
+        : { days: String(diffDays) },
+      source: 'WHOIS',
+      sourceUrl: `https://who.is/whois/${domain}`,
+    }
+  } catch {
+    return null
+  }
+}
+
+// 3. DNS – record SPF — verifica autorizzazione server email
+async function checkSPF(domain: string): Promise<SVATCheck | null> {
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=${domain}&type=TXT`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return null
+
+    const data = await res.json()
+    const txtRecords: string[] = (data.Answer || []).map((a: any) => a.data || a.Data || '')
+
+    const spfRecord = txtRecords.find((r) => r.toLowerCase().includes('v=spf1'))
+    const hasSPF = !!spfRecord
+
+    if (!hasSPF) {
+      return {
+        id: 'spf',
+        name: 'checkSPF',
+        status: 'warning',
+        points: -8,
+        details: 'SPF record not found — email spoofing risk',
+        detailsKey: 'dnsRecordsMissing',
+        source: 'Google DNS',
+        sourceUrl: `https://dns.google/resolve?name=${domain}&type=TXT`,
+      }
+    }
+
+    return {
+      id: 'spf',
+      name: 'checkSPF',
+      status: 'ok',
+      points: 10,
+      details: `SPF configured: ${spfRecord}`,
+      detailsKey: 'dnsRecordsFound',
+      detailsInterp: { records: 'SPF' },
+      source: 'Google DNS',
+      sourceUrl: `https://dns.google/resolve?name=${domain}&type=TXT`,
+    }
+  } catch {
+    return null
+  }
+}
+
+// 4. DNS – record DMARC
+async function checkDMARC(domain: string): Promise<SVATCheck | null> {
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=_dmarc.${domain}&type=TXT`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return null
+
+    const data = await res.json()
+    const txtRecords: string[] = (data.Answer || []).map((a: any) => a.data || a.Data || '')
+
+    const dmarcRecord = txtRecords.find((r) => r.toLowerCase().includes('dmarc'))
+    const hasDMARC = !!dmarcRecord
+
+    if (!hasDMARC) {
+      return {
+        id: 'dmarc',
+        name: 'checkDMARC',
+        status: 'warning',
+        points: -8,
+        details: 'DMARC record not found — phishing protection missing',
+        detailsKey: 'dnsRecordsMissing',
+        source: 'Google DNS',
+        sourceUrl: `https://dns.google/resolve?name=_dmarc.${domain}&type=TXT`,
+      }
+    }
+
+    // Check policy (none, quarantine, reject)
+    const hasReject = /p=reject/i.test(dmarcRecord)
+    const hasQuarantine = /p=quarantine/i.test(dmarcRecord)
+
+    const points = hasReject ? 12 : hasQuarantine ? 8 : 5
+    const policy = hasReject ? 'reject' : hasQuarantine ? 'quarantine' : dmarcRecord.match(/p=(\w+)/i)?.[1] || 'unknown'
+
+    return {
+      id: 'dmarc',
+      name: 'checkDMARC',
+      status: 'ok',
+      points,
+      details: `DMARC configured: policy=${policy}`,
+      detailsKey: 'dnsRecordsFound',
+      detailsInterp: { records: `DMARC (${policy})` },
+      source: 'Google DNS',
+      sourceUrl: `https://dns.google/resolve?name=_dmarc.${domain}&type=TXT`,
+    }
+  } catch {
+    return null
+  }
+}
+
+// 5. DNS – record MX
+async function checkMX(domain: string): Promise<SVATCheck | null> {
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return null
+
+    const data = await res.json()
+    const mxRecords: any[] = data.Answer || []
+
+    if (mxRecords.length === 0) {
+      return {
+        id: 'mx',
+        name: 'checkMX',
+        status: 'warning',
+        points: -5,
+        details: 'No MX records found — email not properly routed',
+        detailsKey: 'noMX',
+        source: 'Google DNS',
+        sourceUrl: `https://dns.google/resolve?name=${domain}&type=MX`,
+      }
+    }
+
+    const mxHosts = mxRecords.map((r) => r.data || r.Data || '').join(', ')
+
+    return {
+      id: 'mx',
+      name: 'checkMX',
+      status: 'ok',
+      points: 5,
+      details: `MX records: ${mxHosts}`,
+      detailsKey: 'mxFound',
+      source: 'Google DNS',
+      sourceUrl: `https://dns.google/resolve?name=${domain}&type=MX`,
+    }
+  } catch {
+    return null
+  }
+}
+
+// 6. Header HTTP/SSL — risposta del server, tipo di hosting
+async function checkHTTPHeaders(url: string, domain: string): Promise<SVATCheck | null> {
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      headers: {
+        'User-Agent': 'SVAT-Checker/1.0 (anti-fraud verification)',
+      },
+      redirect: 'follow',
+      next: { revalidate: 3600 },
+    })
+
+    const headers: Record<string, string> = {}
+    res.headers.forEach((value, key) => {
+      headers[key.toLowerCase()] = value
+    })
+
+    const server = headers['server'] || ''
+    const poweredBy = headers['x-powered-by'] || ''
+    const contentType = headers['content-type'] || ''
+    let hosting = ''
+
+    if (server) hosting += `Server: ${server}`
+    if (poweredBy) hosting += ` | Powered-by: ${poweredBy}`
+    if (contentType) hosting += ` | Content-Type: ${contentType}`
+
+    // HSTS is treated separately from the "advisory" headers below: it's
+    // the one that actually relates to trust (it forces encrypted
+    // connections). CSP/X-Frame-Options/X-Content-Type-Options are hardening
+    // best-practices most small/medium legitimate business sites never set —
+    // they signal engineering maturity, not fraud risk, so they no longer
+    // carry a real penalty on their own.
+    const hasHSTS = !!headers['strict-transport-security']
+    const hasXFrame = !!headers['x-frame-options']
+    const hasXCT = !!headers['x-content-type-options']
+    const hasCSP = !!headers['content-security-policy']
+
+    const missingAdvisory: string[] = []
+    if (!hasXFrame) missingAdvisory.push('X-Frame-Options')
+    if (!hasXCT) missingAdvisory.push('X-Content-Type-Options')
+    if (!hasCSP) missingAdvisory.push('CSP')
+
+    if (!hasHSTS) {
+      return {
+        id: 'httpHeaders',
+        name: 'checkHTTPHeaders',
+        status: 'warning',
+        points: -5,
+        details: `HSTS missing — connections aren't forced to stay encrypted. ${hosting}`,
+        detailsKey: 'missingHeaders',
+        source: 'HTTP response analysis',
+        sourceUrl: url,
+      }
+    }
+
+    if (missingAdvisory.length > 0) {
+      return {
+        id: 'httpHeaders',
+        name: 'checkHTTPHeaders',
+        status: 'ok',
+        points: 4,
+        details: `HSTS ✓ | Advanced headers not set (best practice, not a fraud signal): ${missingAdvisory.join(', ')}. ${hosting}`,
+        detailsKey: 'headersOK',
+        source: 'HTTP response analysis',
+        sourceUrl: url,
+      }
+    }
+
+    return {
+      id: 'httpHeaders',
+      name: 'checkHTTPHeaders',
+      status: 'ok',
+      points: 8,
+      details: `${hosting} | Security headers: HSTS ✓ CSP ✓ X-Frame-Options ✓ X-Content-Type-Options ✓`,
+      detailsKey: 'headersOK',
+      source: 'HTTP response analysis',
+      sourceUrl: url,
+    }
+  } catch {
+    return null
+  }
+}
+
+// SSL certificate check (via HTTP)
+async function checkSSL(url: string, domain: string): Promise<SVATCheck | null> {
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'SVAT-SSL-Checker/1.0',
+      },
+      redirect: 'follow',
+      next: { revalidate: 3600 },
+    })
+
+    if (!res.ok && res.status !== 301 && res.status !== 302) {
+      return {
+        id: 'ssl',
+        name: 'checkSSL',
+        status: 'warning',
+        points: -5,
+        details: `HTTP error: ${res.status}`,
+        detailsKey: 'sslInvalid',
+        source: 'TLS connection check',
+      }
+    }
+
+    // Check if HTTPS was used
+    const isHTTPS = url.startsWith('https://') || res.url?.startsWith('https://')
+
+    if (!isHTTPS) {
+      return {
+        id: 'ssl',
+        name: 'checkSSL',
+        status: 'risk',
+        points: -20,
+        details: 'Site does not use HTTPS — connection not encrypted',
+        detailsKey: 'sslInvalid',
+        source: 'TLS connection check',
+        sourceUrl: `https://www.ssllabs.com/ssltest/analyze.html?d=${domain}`,
+      }
+    }
+
+    // Try to get certificate info from SSL Labs
+    const certRes = await fetch(`https://api.ssllabs.com/api/v3/analyze?host=${domain}&publish=off&all=done`, {
+      next: { revalidate: 3600 },
+    })
+
+    if (certRes.ok) {
+      const certData = await certRes.json()
+      if (certData.status === 'READY' && certData.endpoints && certData.endpoints.length > 0) {
+        const endpoint = certData.endpoints[0]
+        const grade = endpoint.grade
+        const issues = endpoint.issues || []
+
+        // Check for expiring certificate (within 30 days)
+        const certIssues = issues as Array<any>
+        const hasExpiringCert = certIssues.some(
+          (i) => i.message && (i.message.includes('expiring') || i.message.includes('EXPiring'))
+        )
+
+        // Extract certificate issuer and validity
+        let certDetails = `SSL Labs grade: ${grade}`
+        if (certData.endpoints[0].details?.certChains?.[0]?.certs?.[0]) {
+          const cert = certData.endpoints[0].details.certChains[0].certs[0]
+          const issuer = cert.issuerLabel || cert.issuer?.commonName || ''
+          const notAfter = cert.notAfter || cert.validTo || ''
+          if (issuer) certDetails += ` | Issuer: ${issuer}`
+          if (notAfter) certDetails += ` | Expires: ${new Date(notAfter).toLocaleDateString()}`
+        }
+
+        if (grade && ['A', 'A+', 'A-', 'B', 'C'].includes(grade)) {
+          if (hasExpiringCert) {
+            return {
+              id: 'ssl',
+              name: 'checkSSL',
+              status: 'warning',
+              points: -3,
+              details: `${certDetails} | Certificate expiring soon`,
+              detailsKey: 'sslExpiring',
+              source: 'SSL Labs API',
+              sourceUrl: `https://www.ssllabs.com/ssltest/analyze.html?d=${domain}`,
+            }
+          }
+          return {
+            id: 'ssl',
+            name: 'checkSSL',
+            status: 'ok',
+            points: 15,
+            details: certDetails,
+            detailsKey: 'sslValid',
+            detailsInterp: { issuer: certDetails.split(' | ')[1]?.replace('Issuer: ', '') || 'unknown' },
+            source: 'SSL Labs API',
+            sourceUrl: `https://www.ssllabs.com/ssltest/analyze.html?d=${domain}`,
+          }
+        } else if (grade) {
+          return {
+            id: 'ssl',
+            name: 'checkSSL',
+            status: 'warning',
+            points: -8,
+            details: certDetails,
+            detailsKey: 'sslInvalid',
+            source: 'SSL Labs API',
+            sourceUrl: `https://www.ssllabs.com/ssltest/analyze.html?d=${domain}`,
+          }
+        }
+      }
+
+      // SSL Labs still in progress — check certificate directly
+      if (certData.status === 'IN_PROGRESS' || certData.status === 'DNS') {
+        return {
+          id: 'ssl',
+          name: 'checkSSL',
+          status: 'check',
+          points: 0,
+          details: 'SSL test in progress',
+          source: 'SSL Labs API',
+        }
+      }
+    }
+
+    // Fallback: use another SSL API to get certificate details
+    try {
+      const sslInfoRes = await fetch(`https://ssl-checker-api.vercel.app/api/check?domain=${domain}`, {
+        next: { revalidate: 3600 },
+      })
+      if (sslInfoRes.ok) {
+        const sslInfo = await sslInfoRes.json()
+        const issuer = sslInfo.issuer || ''
+        const validTo = sslInfo.validTo || sslInfo.notAfter || ''
+
+        let details = 'HTTPS connection verified'
+        if (issuer) details += ` | Issuer: ${issuer}`
+        if (validTo) {
+          details += ` | Expires: ${new Date(validTo).toLocaleDateString()}`
+          // Check if expiring within 30 days
+          const expiryDate = new Date(validTo)
+          const daysLeft = Math.floor((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          if (daysLeft < 30) {
+            return {
+              id: 'ssl',
+              name: 'checkSSL',
+              status: 'warning',
+              points: -5,
+              details: `${details} | Certificate expires in ${daysLeft} days`,
+              detailsKey: 'sslExpiring',
+              source: 'SSL API',
+              sourceUrl: `https://www.ssllabs.com/ssltest/analyze.html?d=${domain}`,
+            }
+          }
+        }
+
+        return {
+          id: 'ssl',
+          name: 'checkSSL',
+          status: 'ok',
+          points: 10,
+          details,
+          detailsKey: 'sslValid',
+          detailsInterp: { issuer: issuer || 'unknown' },
+          source: 'SSL API',
+          sourceUrl: `https://www.ssllabs.com/ssltest/analyze.html?d=${domain}`,
+        }
+      }
+    } catch (sslInfoError) {
+      // SSL checker API failed, fall back to minimal check
+    }
+
+    // Ultimate fallback: HTTPS is used
+    return {
+      id: 'ssl',
+      name: 'checkSSL',
+      status: 'ok',
+      points: 8,
+      details: 'HTTPS connection verified',
+      detailsKey: 'sslValid',
+      source: 'TLS connection check',
+      sourceUrl: `https://www.ssllabs.com/ssltest/analyze.html?d=${domain}`,
+    }
+  } catch {
+    return null
+  }
+}
+
+// Shared homepage fetch used by checkContentScraping, checkLegalPages,
+// checkReviews and checkBusinessModel. These used to each independently
+// re-fetch the exact same page (4 parallel GET requests), which wasted
+// bandwidth and made it more likely that a target site's WAF/rate-limiter
+// would block one of the near-simultaneous requests — costing legitimate,
+// well-protected sites points for reasons unrelated to fraud risk.
+interface FetchedPage {
+  html: string
+  status: number
+}
+
+async function fetchPageHtml(url: string): Promise<FetchedPage | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 SVAT-Checker/1.0',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      },
+      next: { revalidate: 3600 },
+    })
+    const html = await res.text()
+    return { html, status: res.status }
+  } catch {
+    return null
+  }
+}
+
+// 7. Scraping contenuto pagina
+async function checkContentScraping(pagePromise: Promise<FetchedPage | null>): Promise<SVATCheck | null> {
+  const page = await pagePromise
+  if (!page) return null
+
+  if (page.status < 200 || page.status >= 300) {
+    return {
+      id: 'contentScraping',
+      name: 'checkContentScraping',
+      status: 'warning',
+      points: -5,
+      details: `Could not fetch page content (HTTP ${page.status})`,
+      detailsKey: 'contentFetchError',
+      source: 'Page scrape',
+    }
+  }
+
+  const html = page.html
+
+  // Strip HTML tags for text content analysis
+  const text = html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  const textLength = text.length
+  const hasH1 = /<h1[^>]*>([^<]+)<\/h1>/i.test(html)
+  const hasH2 = /<h2[^>]*>([^<]+)<\/h2>/i.test(html)
+
+  if (textLength < 200) {
+    return {
+      id: 'contentScraping',
+      name: 'checkContentScraping',
+      status: 'risk',
+      points: -15,
+      details: `Page content too short (${textLength} characters) — possible placeholder/scam page`,
+      detailsKey: 'contentTooShort',
+      source: 'Page scrape',
+    }
+  }
+
+  let contentDetails = `Content length: ${textLength} chars`
+  if (hasH1) contentDetails += ' | H1 present ✓'
+  else contentDetails += ' | H1 missing ✗'
+  if (hasH2) contentDetails += ' | H2 headings present ✓'
+
+  return {
+    id: 'contentScraping',
+    name: 'checkContentScraping',
+    status: 'ok',
+    points: 10,
+    details: contentDetails,
+    detailsKey: 'contentOK',
+    source: 'Page scrape',
+  }
+}
+
+// 8. Analisi struttura link/footer — pagine legali
+async function checkLegalPages(pagePromise: Promise<FetchedPage | null>): Promise<SVATCheck | null> {
+  const page = await pagePromise
+  if (!page || page.status < 200 || page.status >= 300) return null
+
+  const html = page.html.toLowerCase()
+
+  const checks = {
+    privacy: html.includes('privacy') || html.includes('informativa'),
+    terms: html.includes('termini') || html.includes('terms'),
+    contacts: html.includes('contatt') || html.includes('contact'),
+    address: /\b(via|strada|corso|piazza|piazzale)\s+[a-z]/i.test(html) ||
+      /c\.f\.|codice\s*fiscale/i.test(html) ||
+      /\b[a-z]{2}\s*\d{5}\b/i.test(html),
+    vat: /partita\s*iva/i.test(html) || /p\.iva/i.test(html),
+    social: html.includes('facebook') || html.includes('instagram') || html.includes('linkedin') || html.includes('twitter'),
+  }
+
+  const found = Object.entries(checks).filter(([_, v]) => v).map(([k]) => k)
+  const missing = Object.entries(checks).filter(([_, v]) => !v).map(([k]) => k)
+
+  if (missing.length >= 4) {
+    return {
+      id: 'legalPages',
+      name: 'checkLegalPages',
+      status: 'risk',
+      points: -20,
+      details: `Missing legal pages: ${missing.join(', ')}. Found: ${found.join(', ') || 'none'}`,
+      detailsKey: 'contentMissingPrivacy',
+      source: 'Footer/page analysis',
+    }
+  }
+
+  if (missing.length > 0) {
+    return {
+      id: 'legalPages',
+      name: 'checkLegalPages',
+      status: 'warning',
+      points: -8,
+      details: `Missing: ${missing.join(', ')}. Found: ${found.join(', ')}`,
+      detailsKey: missing.includes('privacy') ? 'contentMissingPrivacy' : 'contentMissingAddress',
+      source: 'Footer/page analysis',
+    }
+  }
+
+  return {
+    id: 'legalPages',
+    name: 'checkLegalPages',
+    status: 'ok',
+    points: 12,
+    details: `All legal pages present: ${found.join(', ')}`,
+    detailsKey: 'legalPagesOK',
+    source: 'Footer/page analysis',
+  }
+}
+
+// 9. Valutazione recensioni/testimonianze
+async function checkReviews(pagePromise: Promise<FetchedPage | null>): Promise<SVATCheck | null> {
+  const page = await pagePromise
+  if (!page || page.status < 200 || page.status >= 300) return null
+
+  const html = page.html.toLowerCase()
+
+  // Detect review-related content
+  const hasTestimonial = html.includes('testimonial') || html.includes('testimonianza')
+  const hasReview = html.includes('recensione') || html.includes('review')
+  const hasRating = /rating|valutazione|stella|star/i.test(html)
+  const hasReviewSchema = html.includes('schema.org/review') || html.includes('"review"')
+  const reviewCount = (html.match(/recensione/gi) || []).length + (html.match(/testimonial/gi) || []).length
+
+  if (!hasTestimonial && !hasReview && !hasRating) {
+    return {
+      id: 'reviews',
+      name: 'checkReviews',
+      status: 'warning',
+      points: -5,
+      details: 'No review/testimonial section found on page',
+      detailsKey: 'noReviews',
+      source: 'Content analysis',
+    }
+  }
+
+  // Any review/testimonial signal at all, however weak, is now treated as a
+  // (smaller or larger) positive instead of a penalty: a single testimonials
+  // section is common on legitimate small-business sites and isn't itself a
+  // red flag — only a complete absence of any such signal is.
+  const strongSignal = reviewCount >= 2 || hasReviewSchema
+
+  return {
+    id: 'reviews',
+    name: 'checkReviews',
+    status: 'ok',
+    points: strongSignal ? 5 : 3,
+    details: `Found ${reviewCount + (hasReview ? 1 : 0)} review references, schema: ${hasReviewSchema ? 'yes' : 'no'}`,
+    detailsKey: 'reviewsOK',
+    source: 'Content analysis',
+  }
+}
+
+// 10. Valutazione del modello di business
+async function checkBusinessModel(pagePromise: Promise<FetchedPage | null>): Promise<SVATCheck | null> {
+  const page = await pagePromise
+  if (!page || page.status < 200 || page.status >= 300) return null
+
+  const html = page.html.toLowerCase()
+
+  // Detect business model indicators
+  const hasMLM = /network\s*marketing|mlm|referral|affiliate|compensa.*team/i.test(html)
+  const hasEcommerce = /shop|cart|checkout|buy now|acquista|negozio/i.test(html)
+  const hasConsulting = /consulen|coach|servizio|soluzione/i.test(html)
+  const hasSubscription = /abbonamento|subscription|membership|recurring/i.test(html)
+
+  let model = 'unknown'
+  let riskLevel: 'ok' | 'warning' = 'ok'
+  let details = ''
+
+  if (hasEcommerce) {
+    model = 'e-commerce'
+    details = 'E-commerce business model detected'
+  } else if (hasMLM) {
+    model = 'mlm'
+    riskLevel = 'warning'
+    details = 'Network marketing / MLM model detected — higher risk due to recruitment-based structure'
+    model = 'e-commerce'
+  } else if (hasConsulting) {
+    model = 'consulting'
+    details = 'Consulting/services business model detected'
+  } else if (hasSubscription) {
+    model = 'subscription'
+    details = 'Subscription/recurring model detected'
+  } else {
+    model = 'unknown'
+    riskLevel = 'warning'
+    details = 'Business model unclear — no clear revenue model indicators found'
+  }
+
+  return {
+    id: 'businessModel',
+    name: 'checkBusinessModel',
+    status: riskLevel,
+    points: riskLevel === 'warning' ? -8 : 10,
+    details,
+    detailsKey: model === 'mlm' ? 'businessModelMLM' : model === 'unknown' ? 'businessModelUnknown' : 'businessModelOK',
+    detailsInterp: { model },
+    source: 'Content analysis',
+  }
+}
+
+// 5b. DNS – PTR record (reverse DNS) — verifica PTR record per l'IP del dominio
+async function checkPTR(domain: string): Promise<SVATCheck | null> {
+  try {
+    // Get A record first
+    const res = await fetch(`https://dns.google/resolve?name=${domain}&type=A`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return null
+
+    const data = await res.json()
+    const answers = data.Answer || []
+    const ipRecords = answers.filter((a: any) => a.Type === 1 || a.type === 1)
+
+    if (ipRecords.length === 0) {
+      return {
+        id: 'ptr',
+        name: 'checkPTR',
+        status: 'warning',
+        points: -3,
+        details: 'No A record found — cannot check PTR',
+        detailsKey: 'noPTR',
+        source: 'DNS analysis',
+      }
+    }
+
+    const ip = ipRecords[0].data || ipRecords[0].Data
+    if (!ip) return null
+
+    // Query PTR record for the IP
+    const reversedIp = ip.split('.').reverse().join('.')
+    const ptrRes = await fetch(`https://dns.google/resolve?name=${reversedIp}.in-addr.arpa&type=PTR`, {
+      next: { revalidate: 3600 },
+    })
+
+    if (!ptrRes.ok) {
+      return {
+        id: 'ptr',
+        name: 'checkPTR',
+        status: 'warning',
+        points: -3,
+        details: `PTR query failed for IP ${ip}`,
+        detailsKey: 'ptrFailed',
+        source: 'DNS analysis',
+      }
+    }
+
+    const ptrData = await ptrRes.json()
+    const ptrAnswer = ptrData.Answer?.[0]?.data || ptrData.Answer?.[0]?.Data
+
+    if (ptrAnswer && ptrAnswer.toLowerCase().includes(domain.replace(/\.$/, ''))) {
+      return {
+        id: 'ptr',
+        name: 'checkPTR',
+        status: 'ok',
+        points: 8,
+        details: `PTR record (${ip}) resolves to ${ptrAnswer}`,
+        detailsKey: 'ptrOK',
+        source: 'DNS analysis',
+        sourceUrl: `https://dns.google/resolve?name=${reversedIp}.in-addr.arpa&type=PTR`,
+      }
+    }
+
+    if (ptrAnswer) {
+      return {
+        id: 'ptr',
+        name: 'checkPTR',
+        status: 'warning',
+        points: -5,
+        details: `PTR record (${ip}) resolves to ${ptrAnswer} — does not match domain ${domain}`,
+        detailsKey: 'ptrMismatch',
+        source: 'DNS analysis',
+        sourceUrl: `https://dns.google/resolve?name=${reversedIp}.in-addr.arpa&type=PTR`,
+      }
+    }
+
+    return {
+      id: 'ptr',
+      name: 'checkPTR',
+      status: 'warning',
+      points: -5,
+      details: `No PTR record found for IP ${ip}`,
+      detailsKey: 'noPTR',
+      source: 'DNS analysis',
+    }
+  } catch {
+    return null
+  }
+}
+
+// 5c. AbuseIPDB — ricerca segnalazioni di abusi per l'IP del dominio
+async function checkAbuseIPDB(domain: string, url: string): Promise<SVATCheck | null> {
+  try {
+    const apiKey = process.env.ABUSEIPDB_API_KEY
+    if (!apiKey) return null
+
+    // Get A record first
+    const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=A`, {
+      next: { revalidate: 3600 },
+    })
+    if (!dnsRes.ok) return null
+
+    const dnsData = await dnsRes.json().catch(() => null)
+    const ip = dnsData?.Answer?.[0]?.data || dnsData?.Answer?.[0]?.Data
+    if (!ip) return null
+
+    const res = await fetch(`https://api.abuseipdb.com/api/v2/check?ipAddress=${ip}&maxAgeInDays=90`, {
+      headers: {
+        'Key': apiKey,
+        'Accept': 'application/json',
+      },
+      next: { revalidate: 3600 },
+    })
+
+    if (!res.ok) return null
+
+    const data = await res.json()
+    const abuseCount = data.data?.totalReports || 0
+    const fraudScore = data.data?.abuseConfidenceScore || 0
+
+    if (abuseCount > 5 || fraudScore > 50) {
+      return {
+        id: 'abuseIPDB',
+        name: 'checkAbuseIPDB',
+        status: 'risk',
+        points: -20,
+        details: `IP ${ip}: ${abuseCount} reports, fraud score: ${fraudScore}/100`,
+        detailsKey: 'blacklisted',
+        source: 'AbuseIPDB',
+        sourceUrl: `https://www.abuseipdb.com/check/${ip}`,
+      }
+    }
+
+    if (abuseCount > 0 || fraudScore > 10) {
+      return {
+        id: 'abuseIPDB',
+        name: 'checkAbuseIPDB',
+        status: 'warning',
+        points: -8,
+        details: `IP ${ip}: ${abuseCount} reports, fraud score: ${fraudScore}/100`,
+        detailsKey: 'abuseIPDBWarning',
+        source: 'AbuseIPDB',
+        sourceUrl: `https://www.abuseipdb.com/check/${ip}`,
+      }
+    }
+
+    return {
+      id: 'abuseIPDB',
+      name: 'checkAbuseIPDB',
+      status: 'ok',
+      points: 5,
+      details: `IP ${ip}: no abuse reports, fraud score: ${fraudScore}/100`,
+      detailsKey: 'notBlacklisted',
+      source: 'AbuseIPDB',
+      sourceUrl: `https://www.abuseipdb.com/check/${ip}`,
+    }
+  } catch {
+    return null
+  }
+}
+
+// VAT validation via VIES
+async function checkVIES(input: string): Promise<SVATCheck | null> {
+  const vatRegex = /^IT\d{11}$/i
+  if (!vatRegex.test(input.replace(/\s/g, ''))) return null
+
+  try {
+    const vatNumber = input.replace(/\s/g, '')
+
+    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <checkVat xmlns="urn:ec.europa.eu:Taxation_Customs:WS:DimB:checkVat:1.0">
+      <wsdl:countryCode>${vatNumber.substring(0, 2)}</wsdl:countryCode>
+      <wsdl:vatNumber>${vatNumber.substring(2)}</wsdl:vatNumber>
+    </checkVat>
+  </soap:Body>
+</soap:Envelope>`
+
+    const res = await fetch('https://ec.europa.eu/taxation_customs/vies/services/checkVatService', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': 'urn:ec.europa.eu:Taxation_Customs:WS:DimB:checkVat:1.0/checkVat',
+      },
+      body: xmlBody,
+    })
+
+    if (!res.ok) return null
+
+    const xml = await res.text()
+    const isValid = /<valid>true<\/valid>/i.test(xml)
+
+    if (isValid) {
+      return {
+        id: 'vies',
+        name: 'checkVIES',
+        status: 'ok',
+        points: 15,
+        details: 'Valid VAT number confirmed by EU VIES',
+        detailsKey: 'viesValid',
+        source: 'VIES - European Commission',
+        sourceUrl: 'https://ec.europa.eu/taxation_customs/vies/',
+      }
+    }
+
+    return {
+      id: 'vies',
+      name: 'checkVIES',
+      status: 'risk',
+      points: -25,
+      details: 'Invalid or inactive VAT number',
+      detailsKey: 'viesInvalid',
+      source: 'VIES - European Commission',
+      sourceUrl: 'https://ec.europa.eu/taxation_customs/vies/',
+    }
+  } catch {
+    return null
+  }
+}
