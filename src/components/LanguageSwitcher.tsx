@@ -2,6 +2,7 @@
 
 import { Languages } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
+import { defaultLocale } from '../../i18n'
 
 const locales = [
   { code: 'it', label: 'Italiano' },
@@ -16,11 +17,16 @@ const locales = [
 export default function LanguageSwitcher({ dark = false }: { dark?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
-  const locale = pathname.match(/^\/(it|en|fr|es|pt|de|ru)(?=\/|$)/)?.[1] ?? 'it'
+  const locale = pathname.match(/^\/(it|en|fr|es|pt|de|ru)(?=\/|$)/)?.[1] ?? defaultLocale
 
   const changeLocale = (nextLocale: string) => {
     const pathWithoutLocale = pathname.replace(/^\/(it|en|fr|es|pt|de|ru)(?=\/|$)/, '') || '/'
-    router.push(`/${nextLocale}${pathWithoutLocale}`)
+    // The default locale is never prefixed (localePrefix: 'as-needed'), so
+    // pushing `/it/...` would bounce through a middleware redirect back to
+    // the unprefixed path — that extra round trip is what left the <select>
+    // showing the previous locale. Build the final URL directly instead.
+    const target = nextLocale === defaultLocale ? pathWithoutLocale : `/${nextLocale}${pathWithoutLocale}`
+    router.push(target)
     router.refresh()
   }
 
