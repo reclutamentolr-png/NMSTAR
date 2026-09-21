@@ -1,0 +1,96 @@
+'use client'
+
+import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
+import Link from '@/components/LocalizedLink'
+import { MousePointerClick, Trash2, Pencil, ExternalLink } from 'lucide-react'
+import { deleteOfferCampaign } from '@/app/actions/offermaker'
+
+type Campaign = {
+  id: string
+  code: string
+  campaign_title: string
+  status: 'draft' | 'published' | 'archived'
+  click_count: number
+  created_at: string
+}
+
+export default function OfferMakerCampaignCard({ campaign }: { campaign: Campaign }) {
+  const t = useTranslations('offermaker')
+  const router = useRouter()
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!confirm(t('deleteConfirm'))) return
+    setDeleting(true)
+    const result = await deleteOfferCampaign(campaign.id)
+    setDeleting(false)
+    if (result.success) {
+      router.refresh()
+    } else {
+      alert(t(result.message))
+    }
+  }
+
+  const statusLabel =
+    campaign.status === 'published'
+      ? t('statusPublished')
+      : campaign.status === 'archived'
+        ? t('statusArchived')
+        : t('statusDraft')
+
+  const statusColor =
+    campaign.status === 'published'
+      ? 'bg-green-100 text-green-800'
+      : campaign.status === 'archived'
+        ? 'bg-gray-100 text-gray-600'
+        : 'bg-yellow-100 text-yellow-800'
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-semibold text-gray-900 truncate">{campaign.campaign_title}</h3>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor}`}>
+            {statusLabel}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500">
+          {t('createdOn')} {new Date(campaign.created_at).toLocaleDateString()}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-1 text-sm text-gray-600 shrink-0">
+        <MousePointerClick className="w-4 h-4" />
+        {campaign.click_count} {t('clicks')}
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        <Link
+          href={`/marketplace/offermaker/campaigns/${campaign.id}`}
+          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-violet-50 text-violet-700 hover:bg-violet-100 transition-all"
+        >
+          <Pencil className="w-4 h-4" />
+          {t('editCampaign')}
+        </Link>
+        <a
+          href={`/offerte/${campaign.code}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+        >
+          <ExternalLink className="w-4 h-4" />
+          {t('viewLanding')}
+        </a>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-all disabled:opacity-50"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
