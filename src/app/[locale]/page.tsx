@@ -16,6 +16,9 @@ import {
   BadgePercent,
   Wallet,
   Gem,
+  Share2,
+  GitBranch,
+  Trophy,
   Smartphone,
   QrCode,
   Link2,
@@ -48,6 +51,12 @@ export default function LandingPage() {
     { icon: FileCheck2, title: t('toolDigitalReceiptTitle'), desc: t('toolDigitalReceiptDescription'), color: 'from-teal-500 to-emerald-600' },
     { icon: Waves, title: t('toolNeurobalanceTitle'), desc: t('toolNeurobalanceDescription'), color: 'from-sky-500 to-indigo-600' },
     { icon: Tag, title: t('toolListingsTitle'), desc: t('toolListingsDescription'), color: 'from-yellow-400 to-orange-500' }
+  ]
+
+  const communityCards = [
+    { icon: Share2, title: t('communityCard1Title'), desc: t('communityCard1Description'), color: 'from-indigo-500 to-purple-600' },
+    { icon: GitBranch, title: t('communityCard2Title'), desc: t('communityCard2Description'), color: 'from-purple-500 to-pink-500' },
+    { icon: Trophy, title: t('communityCard3Title'), desc: t('communityCard3Description'), color: 'from-yellow-500 to-orange-500' }
   ]
 
   const steps = [
@@ -169,6 +178,47 @@ export default function LandingPage() {
                 <LatestUsersRotating />
               </Suspense>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 🌐 SEZIONE: LA TUA COMMUNITY */}
+      <section className="py-12 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-flex items-center gap-2 bg-purple-500/20 border border-purple-500/30 px-4 py-1.5 rounded-full text-sm font-medium text-purple-300 mb-4">
+              <Share2 className="w-4 h-4" />
+              {t('communityEyebrow')}
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4 break-words">
+              {t('communityTitle')} <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{t('communityAccent')}</span>
+            </h2>
+            <p className="text-base sm:text-xl text-gray-300 max-w-3xl mx-auto">
+              {t('communityDescription')}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-10">
+            {communityCards.map((card, index) => (
+              <div key={index} className="relative group">
+                <div className={`absolute inset-0 bg-gradient-to-br ${card.color} rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity`}></div>
+                <div className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/15 h-full">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4`}>
+                    <card.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{card.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{card.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Box trasparenza: i badge di community non sono compensi */}
+          <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Shield className="w-8 h-8 text-green-400 flex-shrink-0" />
+            <p className="text-green-100 text-sm sm:text-base leading-relaxed">
+              <strong className="text-green-300">{t('communityTransparencyLead')}</strong> {t('communityTransparencyRest')}
+            </p>
           </div>
         </div>
       </section>
