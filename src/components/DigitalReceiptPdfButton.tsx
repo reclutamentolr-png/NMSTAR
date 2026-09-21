@@ -1,0 +1,183 @@
+'use client'
+
+import { useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
+import { jsPDF } from 'jspdf'
+import QRCode from 'qrcode'
+import { Download, LoaderCircle } from 'lucide-react'
+import type { ReceiptTemplate } from '@/lib/digitalReceipt'
+
+type ReceiptData = {
+  code: string
+  template: ReceiptTemplate
+  object_name: string
+  serial_number: string | null
+  recipient_name: string
+  delivery_date: string
+  reason: string | null
+  notes: string | null
+  quantity: number | null
+  declared_value: number | null
+  expected_return_date: string | null
+  confirmed_at: string | null
+  returned_at: string | null
+  created_at: string
+}
+
+type Props = {
+  receipt: ReceiptData
+  receiptUrl: string
+  photoUrl: string | null
+  issuedByName: string
+}
+
+async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return await new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
+export default function DigitalReceiptPdfButton({ receipt, receiptUrl, photoUrl, issuedByName }: Props) {
+  const t = useTranslations('digitalReceipt')
+  const locale = useLocale()
+  const [generating, setGenerating] = useState(false)
+
+  const statusLabel = receipt.returned_at
+    ? t('statusReturned')
+    : receipt.confirmed_at
+      ? t('statusConfirmed')
+      : t('statusPending')
+
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString(locale)
+
+  const handleDownload = async () => {
+    setGenerating(true)
+    try {
+      const [qrDataUrl, photoDataUrl] = await Promise.all([
+        QRCode.toDataURL(receiptUrl, { width: 240, margin: 1, errorCorrectionLevel: 'H' }),
+        photoUrl ? loadImageAsDataUrl(photoUrl) : Promise.resolve(null),
+      ])
+
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const margin = 48
+      let y = 56
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(20)
+      doc.setTextColor(15, 118, 110)
+      doc.text(t('pdfDocumentTitle'), margin, y)
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(11)
+      doc.setTextColor(90, 90, 90)
+      y += 20
+      doc.text(`${t('templateLabel')}: ${t(`template_${receipt.template}`)}`, margin, y)
+      y += 16
+      doc.text(`${t('pdfCodeLabel')}: ${receipt.code}`, margin, y)
+      y += 16
+      doc.text(`${t('pdfIssuedByLabel')}: ${issuedByName}`, margin, y)
+      y += 16
+      doc.text(`${t('pdfIssuedOnLabel')}: ${formatDate(receipt.created_at)}`, margin, y)
+
+      doc.setDrawColor(210, 210, 210)
+      y += 14
+      doc.line(margin, y, pageWidth - margin, y)
+      y += 26
+
+      const field = (label: string, value: string | null) => {
+        if (!value) return
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(10)
+        doc.setTextColor(60, 60, 60)
+        doc.text(label, margin, y)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(20, 20, 20)
+        const lines = doc.splitTextToSize(value, pageWidth - margin * 2 - 160)
+        doc.text(lines, margin + 160, y)
+        y += Math.max(16, lines.length * 14)
+      }
+
+      field(t('objectField'), receipt.object_name)
+      field(t('serialField'), receipt.serial_number)
+      field(t('recipientField'), receipt.recipient_name)
+      field(t('dateField'), formatDate(receipt.delivery_date))
+      field(t('reasonField'), receipt.reason)
+      field(t('quantityField'), receipt.quantity != null ? String(receipt.quantity) : null)
+      field(t('valueField'), receipt.declared_value != null ? String(receipt.declared_value) : null)
+      if (receipt.template === 'loan') {
+        field(t('expectedReturnField'), receipt.expected_return_date ? formatDate(receipt.expected_return_date) : null)
+      }
+      field(t('notesField'), receipt.notes)
+
+      y += 6
+      field(t('pdfStatusLabel'), statusLabel)
+
+      if (receipt.confirmed_at) {
+        doc.text(t('confirmedOn', { date: formatDate(receipt.confirmed_at) }), margin, y)
+        y += 16
+      }
+      if (receipt.returned_at) {
+        doc.text(t('returnedOn', { date: formatDate(receipt.returned_at) }), margin, y)
+        y += 16
+      }
+
+      y += 10
+      if (photoDataUrl) {
+        try {
+          const imgProps = doc.getImageProperties(photoDataUrl)
+          const maxW = 220
+          const w = maxW
+          const h = (imgProps.height / imgProps.width) * w
+          doc.addImage(photoDataUrl, margin, y, w, h)
+          y += h + 20
+        } catch {
+          // Skip embedding if the format isn't supported by jsPDF
+        }
+      }
+
+      const qrSize = 110
+      const qrX = pageWidth - margin - qrSize
+      const qrY = doc.internal.pageSize.getHeight() - 190
+      doc.addImage(qrDataUrl, qrX, qrY, qrSize, qrSize)
+      doc.setFontSize(8)
+      doc.setTextColor(90, 90, 90)
+      doc.text(t('pdfVerifyLabel'), qrX, qrY + qrSize + 14, { maxWidth: qrSize })
+      doc.setFontSize(7)
+      doc.text(receiptUrl, margin, doc.internal.pageSize.getHeight() - 60, { maxWidth: pageWidth - margin * 2 - qrSize - 20 })
+
+      doc.setFontSize(7)
+      doc.setTextColor(140, 140, 140)
+      const disclaimerLines = doc.splitTextToSize(t('disclaimer'), pageWidth - margin * 2 - qrSize - 20)
+      doc.text(disclaimerLines, margin, doc.internal.pageSize.getHeight() - 40)
+
+      doc.save(`receipt-${receipt.code}.pdf`)
+    } catch (err) {
+      console.error(err)
+      alert(t('pdfError'))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={generating}
+      className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all disabled:opacity-50"
+    >
+      {generating ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+      {generating ? t('generatingPdf') : t('downloadPdf')}
+    </button>
+  )
+}
