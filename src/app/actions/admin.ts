@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import type { Permission } from '@/lib/admin-permissions'
 
 const getServiceClient = () =>
   createServiceClient(
@@ -10,7 +11,11 @@ const getServiceClient = () =>
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-async function verifyAdmin() {
+// Verifies the CURRENT SESSION is an admin and, when `requiredPermission` is
+// given, that their role actually grants it — the admin panel UI only hides
+// menu items for permissions a role lacks, it doesn't stop the underlying
+// server action from being invoked directly, so this is the real gate.
+async function verifyAdmin(requiredPermission?: Permission) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -21,21 +26,30 @@ async function verifyAdmin() {
     .eq('id', user.id)
     .single()
 
+  // Full admins (profiles.is_admin) bypass the granular role/permission system.
   if (profile?.is_admin) return user
 
   const { data: adminRecord } = await supabase
     .from('admin_users')
-    .select('user_id')
+    .select('role_id, admin_roles(permissions)')
     .eq('user_id', user.id)
     .single()
 
-  if (adminRecord) return user
+  if (!adminRecord) return null
+  if (!requiredPermission) return user
+
+  const roles = adminRecord.admin_roles as { permissions?: string[] } | { permissions?: string[] }[] | null
+  const rawPermissions: string[] = Array.isArray(roles)
+    ? (roles[0]?.permissions ?? [])
+    : (roles?.permissions ?? [])
+
+  if (rawPermissions.includes('*') || rawPermissions.includes(requiredPermission)) return user
 
   return null
 }
 
-export async function adminUpdateProfile(userId: string, profileData: any) {
-  const admin = await verifyAdmin()
+export async function adminUpdateProfile(userId: string, profileData: Record<string, unknown>) {
+  const admin = await verifyAdmin('users.write')
   if (!admin) return { success: false, error: 'Non autorizzato' }
 
   const supabaseAdmin = getServiceClient()
@@ -52,8 +66,8 @@ export async function adminUpdateProfile(userId: string, profileData: any) {
 }
 
 // ✅ GENERA DUE LINK: uno per l'utente target, uno di ripristino per l'admin
-export async function impersonateUser(userId: string, adminId: string) {
-  const admin = await verifyAdmin()
+export async function impersonateUser(userId: string) {
+  const admin = await verifyAdmin('users.write')
   if (!admin) return { success: false, error: 'Non autorizzato' }
 
   const supabaseAdmin = getServiceClient()
@@ -65,10 +79,8 @@ export async function impersonateUser(userId: string, adminId: string) {
     return { success: false, error: 'Utente non trovato' }
   }
 
-  // Recupera email admin
-  const { data: adminData, error: adminError } = await supabaseAdmin.auth.admin.getUserById(adminId)
-  if (adminError || !adminData.user?.email) {
-    return { success: false, error: 'Admin non trovato' }
+  if (!admin.email) {
+    return { success: false, error: 'Email admin non trovata' }
   }
 
   // Link 1: login come utente target → passa dalla pagina callback
@@ -76,15 +88,17 @@ export async function impersonateUser(userId: string, adminId: string) {
     type: 'magiclink',
     email: userData.user.email,
     options: {
-      redirectTo: `${base}/it/auth/impersonate-callback?impersonating=${adminId}`
+      redirectTo: `${base}/it/auth/impersonate-callback?impersonating=${admin.id}`
     }
   })
   if (e1) return { success: false, error: e1.message }
 
-  // Link 2: ripristino sessione admin → passa dalla pagina callback
+  // Link 2: ripristino sessione admin — sempre per l'admin della sessione
+  // verificata (admin.id), MAI per un id passato dal client, altrimenti un
+  // admin malevolo potrebbe farsi generare il link di accesso di un altro admin.
   const { data: adminLink, error: e2 } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
-    email: adminData.user.email,
+    email: admin.email!,
     options: {
       redirectTo: `${base}/it/auth/impersonate-callback?restore=1`
     }
@@ -99,7 +113,7 @@ export async function impersonateUser(userId: string, adminId: string) {
 }
 
 export async function getAllUsers() {
-  const admin = await verifyAdmin()
+  const admin = await verifyAdmin('users.read')
   if (!admin) return { users: [], error: 'Non autorizzato' }
 
   const supabaseAdmin = getServiceClient()

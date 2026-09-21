@@ -329,7 +329,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 
     setImpersonatingId(user.id)
     try {
-      const result = await impersonateUser(user.id, userId)
+      const result = await impersonateUser(user.id)
 
       if (result.success && result.targetUrl && result.adminRestoreUrl) {
         // ✅ Salva il link di ripristino admin prima di cambiare sessione
