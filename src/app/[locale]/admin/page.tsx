@@ -14,6 +14,7 @@ const ALL_PERMISSIONS: Permission[] = [
   'users.read',
   'matrix.read',
   'marketplace.read',
+  'coupons.read',
   'settings.read'
 ]
 
@@ -22,7 +23,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(`/${locale}/login`)
   
   const { data: profile } = await supabase
     .from('profiles')
