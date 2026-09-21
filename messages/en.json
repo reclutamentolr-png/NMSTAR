@@ -8,7 +8,8 @@
     "error": "Error",
     "success": "Success",
     "you": "You",
-    "by": "by"
+    "by": "by",
+    "points": "Points"
   },
   "landingHome": {
     "login": "Log in",
@@ -409,8 +410,8 @@
   },
   "memolife": {
     "greeting": "Hello, {name}!",
-    "appointments": "Your Appointments",
-    "tasks": "Your Tasks",
+    "appointments": "Appointments",
+    "tasks": "Tasks",
     "bills": "Bills & Deadlines",
     "contacts": "Your Contacts",
     "notes": "Your Notes",
@@ -468,10 +469,8 @@
     "today": "Today",
     "monthView": "Month view",
     "weekView": "Week view",
-    "appointments": "Appointments",
     "billsToPay": "Bills to pay",
     "billsPaid": "Bills paid",
-    "tasks": "Tasks",
     "others": "other",
     "billExpired": "Overdue bill",
     "billDue": "Bill due",
@@ -542,13 +541,6 @@
     "newBillBtn": "New Bill",
     "newContactBtn": "New Contact",
     "newNoteBtn": "New Note",
-    "cancelEdit": "Cancel Edit",
-    "update": "Update",
-    "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "close": "Close",
-    "notesOptional": "Notes (optional)",
     "apptTitlePlaceholder": "Title (e.g. Dentist)",
     "apptNotesPlaceholder": "Notes (optional)",
     "billTitlePlaceholder": "Title (e.g. Electricity)",
@@ -560,13 +552,8 @@
     "noteTitlePlaceholder": "Title",
     "noteContentPlaceholder": "Content...",
     "prevWeek": "Prev.",
-    "nextWeek": "Next",
-    "today": "Today",
-    "monthView": "Month view",
-    "weekView": "Week view",
     "prevMonth": "Prev. month",
-    "nextMonth": "Next month",
-    "other": "other"
+    "memolife": "MemoLife"
   },
   "marketplace": {
     "title": "Digital Services Marketplace",
@@ -689,11 +676,13 @@
     "loadingEditor": "Loading editor...",
     "copied": "Copied!",
     "copy": "Copy",
-    "backToMarketplace": "Back to Marketplace",
     "link": "Link",
     "website": "Website",
     "email": "Email",
-    "phone": "Phone"
+    "phone": "Phone",
+    "cost": "Cost",
+    "remaining": "Remaining",
+    "saving": "Saving..."
   },
   "neurobalance": {
     "backToMarketplace": "Back to Marketplace",
@@ -912,7 +901,8 @@
       "disclaimer": "SVAT does not guarantee a URL is safe. These checks are for informational purposes only.",
       "notAvailable": "Data not available",
       "openAnyway": "Open Anyway"
-    }
+    },
+    "securitySection": "Security & Protection"
   },
   "offermaker": {
     "title": "OfferMaker AI",

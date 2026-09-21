@@ -27,6 +27,11 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+~$*
+
+# Work-in-progress audio localization (scripts/drafts, not public assets —
+# move finished files into public/audio/ deliberately when ready)
+public/audio/traduzioni/
 
 # IDE
 .vscode/
