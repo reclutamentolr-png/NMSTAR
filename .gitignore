@@ -7,6 +7,10 @@ node_modules/
 .next/
 out/
 dist/
+tsconfig.tsbuildinfo
+
+# Supabase CLI local cache
+supabase/.temp/
 
 # Environment variables (IMPORTANTE: non caricare mai le chiavi API!)
 .env
