@@ -40,10 +40,20 @@ export async function POST(req: NextRequest) {
     const userId = session.metadata?.userId
     console.log('👤 userId estratto:', userId)
 
+    // Calculate subscription expiry: 1 year from activation (annual plan,
+    // 49€/anno). This is an immediate estimate shown right after checkout;
+    // it self-corrects to Stripe's real current_period_end once the
+    // customer.subscription.updated event arrives below.
+    const now = new Date()
+    const expiresAt = new Date(now.setFullYear(now.getFullYear() + 1))
+
     if (userId) {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .update({ subscription_status: 'active' })
+        .update({
+          subscription_status: 'active',
+          subscription_expires_at: expiresAt.toISOString(),
+        })
         .eq('id', userId)
         .select()
       
@@ -55,6 +65,33 @@ export async function POST(req: NextRequest) {
         } else {
           console.error('⚠️ NESSUNA RIGA AGGIORNATA! UserId non trovato.')
         }
+      }
+    }
+  }
+
+  // Handle subscription deletion/cancellation
+  if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object as any
+    console.log('🔄 Subscription event:', event.type, 'status:', subscription.status)
+
+    const userId = subscription.metadata?.userId
+    if (userId) {
+      const newStatus = subscription.status === 'active' ? 'active' : 'inactive'
+
+      const updateData: Record<string, any> = { subscription_status: newStatus }
+
+      // Calculate next billing date
+      if (subscription.current_period_end) {
+        updateData.subscription_expires_at = new Date(subscription.current_period_end * 1000).toISOString()
+      }
+
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update(updateData)
+        .eq('id', userId)
+
+      if (error) {
+        console.error('❌ Errore aggiornamento subscription:', error.message)
       }
     }
   }

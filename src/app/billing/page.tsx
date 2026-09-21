@@ -28,19 +28,19 @@ export default async function BillingPage() {
         </h1>
         
         <p className="text-gray-600 mb-8">
-          {isActive 
+          {isActive
             ? `Grazie! Il tuo piano Base è attivo. Hai accesso a tutti i servizi del Marketplace.`
-            : `Attiva il tuo piano a soli 1€/mese per sbloccare QR Code illimitati, statistiche avanzate e molto altro.`
+            : `Attiva il tuo piano a soli 49€/anno per sbloccare QR Code illimitati, statistiche avanzate e molto altro.`
           }
         </p>
 
         {!isActive && (
           <form action="/api/checkout" method="POST">
-            <button 
+            <button
               type="submit"
               className="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg"
             >
-              Abbonati ora per 1€/mese
+              Abbonati ora per 49€/anno
             </button>
           </form>
         )}
