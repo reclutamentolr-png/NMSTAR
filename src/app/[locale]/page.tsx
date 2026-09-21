@@ -1,10 +1,8 @@
 import Link from '@/components/LocalizedLink'
-import { useLocale } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
 import {
   Rocket,
-  Users,
-  TrendingUp,
   Gift,
   Globe,
   Shield,
@@ -12,16 +10,69 @@ import {
   ArrowRight,
   CheckCircle2,
   Star,
-  Trophy,
-  Award,
   Target,
-  Crown,
-  Sparkles
+  Sparkles,
+  Ticket,
+  BadgePercent,
+  Wallet,
+  Gem,
+  Smartphone,
+  QrCode,
+  Link2,
+  MessageCircle,
+  Brain,
+  Tag,
+  Wand2,
+  ShieldCheck,
+  CalendarClock,
+  PackageSearch,
+  FileCheck2,
+  Waves
 } from 'lucide-react'
 import LatestUsersRotating from '@/components/LatestUsersRotating'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default function LandingPage() {
-  const locale = useLocale()
+  const t = useTranslations('landingHome')
+
+  const tools = [
+    { icon: Smartphone, title: t('toolQrTitle'), desc: t('toolQrDescription'), color: 'from-indigo-500 to-purple-600' },
+    { icon: Link2, title: t('toolLinkBioTitle'), desc: t('toolLinkBioDescription'), color: 'from-pink-500 to-rose-500' },
+    { icon: MessageCircle, title: t('toolWhatsappTitle'), desc: t('toolWhatsappDescription'), color: 'from-green-400 to-emerald-600' },
+    { icon: Wand2, title: t('toolOffermakerTitle'), desc: t('toolOffermakerDescription'), color: 'from-violet-500 to-fuchsia-600' },
+    { icon: QrCode, title: t('toolQrProTitle'), desc: t('toolQrProDescription'), color: 'from-slate-500 to-slate-700' },
+    { icon: ShieldCheck, title: t('toolSvatTitle'), desc: t('toolSvatDescription'), color: 'from-red-500 to-rose-600' },
+    { icon: Brain, title: t('toolMemolifeTitle'), desc: t('toolMemolifeDescription'), color: 'from-purple-500 to-pink-500' },
+    { icon: CalendarClock, title: t('toolLifeCalendarTitle'), desc: t('toolLifeCalendarDescription'), color: 'from-cyan-500 to-blue-600' },
+    { icon: PackageSearch, title: t('toolFindoTitle'), desc: t('toolFindoDescription'), color: 'from-amber-500 to-orange-600' },
+    { icon: FileCheck2, title: t('toolDigitalReceiptTitle'), desc: t('toolDigitalReceiptDescription'), color: 'from-teal-500 to-emerald-600' },
+    { icon: Waves, title: t('toolNeurobalanceTitle'), desc: t('toolNeurobalanceDescription'), color: 'from-sky-500 to-indigo-600' },
+    { icon: Tag, title: t('toolListingsTitle'), desc: t('toolListingsDescription'), color: 'from-yellow-400 to-orange-500' }
+  ]
+
+  const steps = [
+    { step: '1', icon: Zap, title: t('step1Title'), desc: t('step1Description') },
+    { step: '2', icon: Target, title: t('step2Title'), desc: t('step2Description') },
+    { step: '3', icon: Ticket, title: t('step3Title'), desc: t('step3Description') }
+  ]
+
+  const perks = [
+    { icon: BadgePercent, title: t('perk1Title'), desc: t('perk1Description'), color: 'from-yellow-400 to-orange-500' },
+    { icon: Wallet, title: t('perk2Title'), desc: t('perk2Description'), color: 'from-green-400 to-emerald-600' },
+    { icon: Gift, title: t('perk3Title'), desc: t('perk3Description'), color: 'from-pink-500 to-rose-500' },
+    { icon: Gem, title: t('perk4Title'), desc: t('perk4Description'), color: 'from-indigo-500 to-purple-600' }
+  ]
+
+  const features = [
+    { icon: Target, title: t('featureOneTitle'), description: t('featureOneDescription'), color: 'from-blue-500 to-cyan-500' },
+    { icon: Gift, title: t('featureTwoTitle'), description: t('featureTwoDescription'), color: 'from-pink-500 to-rose-500' },
+    { icon: Ticket, title: t('featureThreeTitle'), description: t('featureThreeDescription'), color: 'from-yellow-500 to-orange-500' },
+    { icon: Globe, title: t('featureFourTitle'), description: t('featureFourDescription'), color: 'from-purple-500 to-indigo-500' },
+    { icon: Shield, title: t('featureFiveTitle'), description: t('featureFiveDescription'), color: 'from-green-500 to-emerald-500' },
+    { icon: Zap, title: t('featureSixTitle'), description: t('featureSixDescription'), color: 'from-orange-500 to-red-500' }
+  ]
+
+  const benefits = [1, 2, 3, 4, 5, 6, 7].map((n) => t(`benefit${n}`))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 overflow-x-hidden">
@@ -36,17 +87,18 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <Link 
+            <LanguageSwitcher dark />
+            <Link
               href="/login"
               className="text-white/80 hover:text-white font-medium transition-colors text-sm sm:text-base"
             >
-              Accedi
+              {t('login')}
             </Link>
-            <Link 
+            <Link
               href="/register"
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl text-sm sm:text-base"
             >
-              Inizia Ora
+              {t('startNow')}
             </Link>
           </div>
         </div>
@@ -55,58 +107,60 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20"></div>
-        <div className="absolute inset-0 bg-[url('/hero-network.jpg')] bg-cover bg-center opacity-20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium text-white mb-4 sm:mb-6 border border-white/20">
-                <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
-                La Piattaforma Italiana della Competizione Digitale
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
+                {t('heroBadge')}
               </div>
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight break-words">
-                Competi, Cresci e 
-                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> Vinci Premi Straordinari</span>
+                {t('heroTitle')}
+                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> {t('heroAccent')}</span>
               </h1>
               <p className="text-base sm:text-xl text-gray-300 mb-6 sm:mb-8 leading-relaxed">
-                Unisciti alla community di imprenditori digitali che ogni mese competono per vincere <strong className="text-white">un'automobile, scooter, viaggi e tanti altri premi</strong>. Più usi la piattaforma e più sali in classifica!
+                {t('heroDescription')}{' '}
+                <strong className="text-white">{t('heroDescriptionStrong')}</strong>: {t('heroDescriptionEnd')}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
-                <Link 
+                <Link
                   href="/register"
                   className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center justify-center gap-2"
                 >
-                  Entra in Competizione
+                  {t('heroCta')}
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Link>
-                <Link 
+                <Link
                   href="/login"
                   className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all border border-white/20 flex items-center justify-center"
                 >
-                  Accedi
+                  {t('login')}
                 </Link>
               </div>
+              {/* Stats */}
               <div className="grid grid-cols-3 gap-3 sm:gap-6">
                 <div>
                   <div className="text-2xl sm:text-3xl font-bold text-white">10K+</div>
-                  <div className="text-xs sm:text-sm text-gray-400">Competitor Attivi</div>
+                  <div className="text-xs sm:text-sm text-gray-400">{t('statActiveEntrepreneurs')}</div>
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl font-bold text-yellow-400">€50K+</div>
-                  <div className="text-xs sm:text-sm text-gray-400">Premi Distribuiti</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-yellow-400">49€</div>
+                  <div className="text-xs sm:text-sm text-gray-400">{t('statYearlyLabel')}</div>
                 </div>
                 <div>
                   <div className="text-2xl sm:text-3xl font-bold text-white">50+</div>
-                  <div className="text-xs sm:text-sm text-gray-400">Paesi</div>
+                  <div className="text-xs sm:text-sm text-gray-400">{t('statCountriesLabel')}</div>
                 </div>
               </div>
             </div>
+            {/* Carosello Ultimi Iscritti */}
             <div className="lg:pl-8 mt-8 lg:mt-0">
-              <Suspense 
+              <Suspense
                 fallback={
                   <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 w-full">
                     <div className="flex items-center gap-2 mb-4">
                       <Star className="w-5 h-5 text-yellow-400 animate-pulse" />
-                      <h3 className="text-lg font-bold text-white">Ultimi Entrati</h3>
+                      <h3 className="text-lg font-bold text-white">{t('latestUsers')}</h3>
                     </div>
                     <div className="h-24 bg-white/10 rounded-xl animate-pulse"></div>
                   </div>
@@ -119,118 +173,109 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 🏆 SEZIONE: I PREMI IN PALIO */}
+      {/* 🛠️ SEZIONE: IL MARKETPLACE AL CENTRO */}
+      <section className="py-12 sm:py-20 bg-black/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 sm:mb-16">
+            <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-500/30 px-4 py-1.5 rounded-full text-sm font-medium text-indigo-300 mb-4">
+              <Target className="w-4 h-4" />
+              {t('marketplaceEyebrow')}
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4 break-words">
+              {t('marketplaceTitle')} <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{t('marketplaceAccent')}</span>{t('marketplaceTitleEnd')}
+            </h2>
+            <p className="text-base sm:text-xl text-gray-300 max-w-3xl mx-auto">
+              {t('marketplaceDescription')}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {tools.map((tool, index) => (
+              <div key={index} className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 border border-white/10 hover:border-white/25 transition-all hover:scale-105 group">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                  <tool.icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-base font-bold text-white mb-1">{tool.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{tool.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 🎟️ SEZIONE: PROGRAMMA BONUS & COUPON */}
       <section className="py-12 sm:py-20 bg-gradient-to-b from-black/40 to-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10 sm:mb-16">
             <div className="inline-flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/30 px-4 py-1.5 rounded-full text-sm font-medium text-yellow-300 mb-4">
-              <Crown className="w-4 h-4" />
-              I Premi di Fine Anno
+              <Ticket className="w-4 h-4" />
+              {t('bonusEyebrow')}
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4 break-words">
-              Competi per <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">Premi Reali</span>
+              {t('bonusTitle')} <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">{t('bonusAccent')}</span>
             </h2>
             <p className="text-base sm:text-xl text-gray-300 max-w-3xl mx-auto">
-              Ogni anno i migliori competitor si dividono un montepremi straordinario. 
-              Più usi la piattaforma, più sali in classifica, più sei vicino a vincere.
+              {t('bonusDescription')}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity"></div>
-              <div className="relative bg-gradient-to-br from-yellow-400/10 to-orange-500/10 backdrop-blur-lg rounded-2xl border border-yellow-400/40 h-full overflow-hidden">
-                <div className="relative h-40 sm:h-48 overflow-hidden">
-                  <img 
-                    src="/prizes/car.jpg" 
-                    alt="Automobile - 1° Premio"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-yellow-400 text-black px-2.5 py-1 rounded-full text-xs font-bold">
-                    <Crown className="w-3 h-3" />
-                    1° PREMIO
-                  </div>
+          {/* Come funziona: 3 step */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-10">
+            {steps.map((item, index) => (
+              <div key={index} className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                <div className="absolute -top-4 left-6 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-black font-bold text-sm shadow-lg">
+                  {item.step}
                 </div>
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-white mb-1">Automobile</h3>
-                  <p className="text-sm text-yellow-100/80">Al vincitore assoluto della classifica annuale</p>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4 mt-2">
+                  <item.icon className="w-6 h-6 text-white" />
                 </div>
+                <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
               </div>
-            </div>
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition-opacity"></div>
-              <div className="relative bg-gradient-to-br from-slate-300/10 to-slate-500/10 backdrop-blur-lg rounded-2xl border border-slate-300/40 h-full overflow-hidden">
-                <div className="relative h-40 sm:h-48 overflow-hidden">
-                  <img 
-                    src="/prizes/scooter.jpg" 
-                    alt="Scooter Elettrico - 2° Premio"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-slate-200 text-slate-900 px-2.5 py-1 rounded-full text-xs font-bold">
-                    <Award className="w-3 h-3" />
-                    2° PREMIO
-                  </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-white mb-1">Scooter Elettrico</h3>
-                  <p className="text-sm text-slate-200/80">Al secondo classificato</p>
-                </div>
-              </div>
-            </div>
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-600 to-amber-800 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition-opacity"></div>
-              <div className="relative bg-gradient-to-br from-amber-600/10 to-amber-800/10 backdrop-blur-lg rounded-2xl border border-amber-600/40 h-full overflow-hidden">
-                <div className="relative h-40 sm:h-48 overflow-hidden">
-                  <img 
-                    src="/prizes/ebike.jpg" 
-                    alt="E-Bike Premium - 3° Premio"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-amber-500 text-white px-2.5 py-1 rounded-full text-xs font-bold">
-                    <Award className="w-3 h-3" />
-                    3° PREMIO
-                  </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-white mb-1">E-Bike Premium</h3>
-                  <p className="text-sm text-amber-100/80">Al terzo classificato</p>
-                </div>
-              </div>
-            </div>
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity"></div>
-              <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-600/10 backdrop-blur-lg rounded-2xl border border-indigo-400/40 h-full overflow-hidden">
-                <div className="relative h-40 sm:h-48 overflow-hidden">
-                  <img 
-                    src="/prizes/tech-pack.jpg" 
-                    alt="Mac, iPhone, Viaggi - Premi Speciali"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-indigo-500 text-white px-2.5 py-1 rounded-full text-xs font-bold">
-                    <Sparkles className="w-3 h-3" />
-                    ALTRI PREMI
-                  </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-white mb-1">Mac, iPhone, Viaggi</h3>
-                  <p className="text-sm text-indigo-100/80">E decine di altri premi per i top performer</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="mt-10 text-center">
-            <Link 
-              href="/register"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105"
+          {/* Box trasparenza (importante anche legalmente) */}
+          <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-10">
+            <Shield className="w-8 h-8 text-green-400 flex-shrink-0" />
+            <p className="text-green-100 text-sm sm:text-base leading-relaxed">
+              <strong className="text-green-300">{t('transparencyLead')}</strong> {t('transparencyRest')}
+            </p>
+          </div>
+
+          {/* Tipologie di vantaggi */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {perks.map((perk, index) => (
+              <div key={index} className="relative group">
+                <div className={`absolute inset-0 bg-gradient-to-br ${perk.color} rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity`}></div>
+                <div className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/15 h-full">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${perk.color} flex items-center justify-center mb-4`}>
+                    <perk.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{perk.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{perk.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Banner iniziative esclusive con rimando al regolamento */}
+          <div className="mt-10 bg-gradient-to-r from-indigo-600/30 to-purple-600/30 border border-indigo-400/30 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="flex-1">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                <Gem className="w-6 h-6 text-yellow-400" />
+                {t('bannerTitle')}
+              </h3>
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                {t('bannerText1')} <strong className="text-white">{t('bannerTextBold')}</strong>{t('bannerText2')}
+              </p>
+            </div>
+            <Link
+              href="/terms"
+              className="flex-shrink-0 inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-3 rounded-lg font-semibold transition-all text-sm sm:text-base"
             >
-              <Trophy className="w-5 h-5" />
-              Voglio competere per i premi
-              <ArrowRight className="w-5 h-5" />
+              {t('bannerCta')}
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -241,52 +286,15 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 break-words">
-              Tutto ciò che ti serve per competere e vincere
+              {t('featuresTitle')}
             </h2>
             <p className="text-base sm:text-xl text-gray-400 max-w-2xl mx-auto px-4">
-              Strumenti professionali, una classifica trasparente e premi che cambiano la vita
+              {t('featuresDescription')}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
-            {[
-              {
-                icon: Target,
-                title: 'Sistema a Classifica Competitivo',
-                description: 'Ogni mese e ogni anno, una classifica trasparente basata su chi promuove di più il proprio referral link e utilizza i servizi del marketplace. I migliori vincono premi reali.',
-                color: 'from-blue-500 to-cyan-500'
-              },
-              {
-                icon: Gift,
-                title: 'Marketplace Premium (1€/mese)',
-                description: 'QR Code dinamici, Link in Bio, template WhatsApp, MemoLife AI e molto altro. Un ecosistema completo di strumenti per far crescere il tuo business a soli 12€/anno.',
-                color: 'from-pink-500 to-rose-500'
-              },
-              {
-                icon: Trophy,
-                title: 'Premi e Bonus per i Top Performer',
-                description: 'Non guadagni "sulla rete", ma vieni premiato per il tuo impegno reale: chi promuove il proprio link e usa i servizi del marketplace sale in classifica e compete per premi straordinari.',
-                color: 'from-yellow-500 to-orange-500'
-              },
-              {
-                icon: Globe,
-                title: 'La tua Vetrina Globale',
-                description: 'La tua pagina Link in Bio personale, visibile in tutto il mondo. Condividi il tuo link, fatti conoscere e scala la classifica internazionale.',
-                color: 'from-purple-500 to-indigo-500'
-              },
-              {
-                icon: Shield,
-                title: 'Classifica Trasparente e Sicura',
-                description: 'Dati protetti, transazioni sicure e una classifica pubblica e verificabile. Sai sempre esattamente dove sei e quanto ti manca per raggiungere il prossimo premio.',
-                color: 'from-green-500 to-emerald-500'
-              },
-              {
-                icon: Zap,
-                title: 'Inizia a Competere in 30 Secondi',
-                description: 'Registrati, attiva il tuo Marketplace e inizia subito a scalare la classifica. Nessun costo nascosto: solo 1€ al mese per accedere a tutti gli strumenti.',
-                color: 'from-orange-500 to-red-500'
-              }
-            ].map((feature, index) => (
-              <div 
+            {features.map((feature, index) => (
+              <div
                 key={index}
                 className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 sm:p-8 border border-white/10 hover:border-white/20 transition-all hover:scale-105 group"
               >
@@ -307,47 +315,57 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <h2 className="text-2xl sm:text-4xl font-bold text-white mb-4 sm:mb-6 break-words">
-                Perché scegliere la nostra piattaforma?
+                {t('benefitsTitle')}
               </h2>
               <p className="text-base sm:text-xl text-gray-300 mb-6 sm:mb-8">
-                Non è il solito network marketing. È una vera competizione digitale dove chi si impegna di più viene premiato con premi reali e tangibili.
+                {t('benefitsDescription')}
               </p>
               <div className="space-y-3 sm:space-y-4">
-                {[
-                  'Marketplace completo a soli 1€/mese (12€/anno)',
-                  'Strumenti professionali inclusi: QR Code, Link in Bio, WhatsApp templates',
-                  'Classifica pubblica e trasparente basata su meriti reali',
-                  'Premi di fine anno: auto, scooter, viaggi, tecnologia',
-                  'Community attiva di competitor motivati',
-                  'Bonus mensili per i top performer della classifica',
-                  'Flessibilità totale: competi da dove vuoi, quando vuoi'
-                ].map((benefit, index) => (
+                {benefits.map((benefit, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-400 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300 text-sm sm:text-base">{benefit}</span>
                   </div>
                 ))}
               </div>
-              <Link 
+              <Link
                 href="/register"
                 className="inline-flex items-center gap-2 mt-6 sm:mt-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all shadow-xl hover:shadow-2xl"
               >
-                Inizia a Competere Ora
+                {t('benefitsCta')}
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-3xl blur-3xl opacity-30"></div>
-              <div className="relative bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-lg rounded-3xl p-6 sm:p-8 border border-yellow-400/30">
-                <div className="bg-[url('/people.jpg')] bg-cover bg-center rounded-2xl h-48 sm:h-80 mb-4 sm:mb-6"></div>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center">
-                    <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-1">🏆</div>
-                    <div className="text-xs sm:text-sm text-gray-300">Premi Reali Ogni Anno</div>
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-3xl blur-3xl opacity-20"></div>
+              <div className="relative bg-gradient-to-br from-yellow-500/10 to-orange-500/10 backdrop-blur-lg rounded-3xl p-6 sm:p-8 border border-yellow-400/30">
+                <div className="space-y-4">
+                  <div className="bg-white/10 rounded-xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0">
+                      <Ticket className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-white font-bold">{t('sideRow1Title')}</div>
+                      <div className="text-gray-300 text-sm">{t('sideRow1Description')}</div>
+                    </div>
                   </div>
-                  <div className="bg-white/10 rounded-xl p-3 sm:p-4 text-center">
-                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">100%</div>
-                    <div className="text-xs sm:text-sm text-gray-300">Trasparenza Totale</div>
+                  <div className="bg-white/10 rounded-xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-white font-bold">{t('sideRow2Title')}</div>
+                      <div className="text-gray-300 text-sm">{t('sideRow2Description')}</div>
+                    </div>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      <Gem className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-white font-bold">{t('sideRow3Title')}</div>
+                      <div className="text-gray-300 text-sm">{t('sideRow3Description')}</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -359,22 +377,22 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-12 sm:py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Trophy className="w-12 h-12 sm:w-16 sm:h-16 text-yellow-300 mx-auto mb-4 sm:mb-6" />
+          <Ticket className="w-12 h-12 sm:w-16 sm:h-16 text-yellow-300 mx-auto mb-4 sm:mb-6" />
           <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 break-words">
-            Pronto a entrare in competizione?
+            {t('ctaTitle')}
           </h2>
           <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8">
-            Unisciti a migliaia di competitor digitali. Scala la classifica, usa gli strumenti del Marketplace e competi per vincere l'automobile e gli altri premi straordinari.
+            {t('ctaDescription')}
           </p>
-          <Link 
+          <Link
             href="/register"
             className="inline-flex items-center gap-2 bg-white text-indigo-600 px-6 sm:px-10 py-3 sm:py-5 rounded-lg font-bold text-base sm:text-xl transition-all shadow-2xl hover:scale-105 hover:shadow-3xl"
           >
-            Crea il Tuo Account e Inizia a Competere
+            {t('ctaButton')}
             <ArrowRight className="w-4 h-4 sm:w-6 sm:h-6" />
           </Link>
           <p className="text-white/70 mt-4 text-xs sm:text-sm">
-            ✓ Marketplace a soli 1€/mese ✓ Classifica trasparente ✓ Premi reali garantiti
+            {t('ctaNote')}
           </p>
         </div>
       </section>
@@ -391,13 +409,18 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-gray-400 text-sm">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-white transition-colors">Termini</Link>
-              <Link href="/contact" className="hover:text-white transition-colors">Contatti</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">{t('terms')}</Link>
+              <Link href="/contact" className="hover:text-white transition-colors">{t('contact')}</Link>
             </div>
             <div className="text-gray-400 text-xs sm:text-sm text-center">
-              © 2026 NMP. Tutti i diritti riservati.
+              {t('copyright')}
             </div>
           </div>
+          <p className="text-gray-500 text-xs text-center mt-6 max-w-3xl mx-auto leading-relaxed">
+            {t('footerLegalNote1')}
+            {' '}
+            {t('footerLegalNote2')}
+          </p>
         </div>
       </footer>
     </div>
