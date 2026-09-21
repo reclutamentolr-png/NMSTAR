@@ -4,8 +4,7 @@ import type { NextConfig } from 'next';
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 const nextConfig: NextConfig = {
-  // Qui puoi mantenere le tue configurazioni esistenti
-  // (es. images, experimental, ecc.)
+  allowedDevOrigins: ['192.168.1.133', 'localhost'],
 };
 
 export default withNextIntl(nextConfig);

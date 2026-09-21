@@ -1,25 +1,46 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import createMiddleware from 'next-intl/middleware';
+import { createServerClient } from '@supabase/ssr';
+import type { NextRequest } from 'next/server';
+import { locales, defaultLocale } from '../i18n';
 
-const LOCALES = ['it', 'en']
-const DEFAULT_LOCALE = 'it'
+const intlMiddleware = createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'as-needed'
+});
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+export async function middleware(request: NextRequest) {
+  const response = intlMiddleware(request);
 
-  // ✅ Se il percorso ha già un locale valido, lascia passare
-  const firstSegment = pathname.split('/')[1]
-  if (LOCALES.includes(firstSegment)) {
-    return NextResponse.next()
-  }
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
 
-  // ✅ Altrimenti aggiungi il locale default: /admin → /it/admin
-  const url = request.nextUrl.clone()
-  url.pathname = `/${DEFAULT_LOCALE}${pathname === '/' ? '' : pathname}`
-  return NextResponse.redirect(url)
+  await supabase.auth.getUser();
+  return response;
 }
 
 export const config = {
-  // Esclude API, file statici, next internals e qualsiasi percorso con un punto
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
-}
+  // Ignora: api, short link /o/* e /q/*, /billing (pagina non localizzata,
+  // fuori da [locale] — senza questa esclusione next-intl la riscrive come
+  // /it/billing, che non esiste, causando 404 anche sulla pagina di
+  // successo pagamento Stripe), _next, favicon.ico e file con estensioni di
+  // immagini/asset
+  matcher: [
+    '/((?!api|o/|q/|billing|_next/static|_next/image|favicon.ico|.*\\..*).*)'
+  ]
+};
