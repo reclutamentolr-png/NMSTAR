@@ -3,6 +3,7 @@ export type Permission =
   | 'users.read' | 'users.write' | 'users.delete'
   | 'matrix.read' | 'matrix.write'
   | 'marketplace.read' | 'marketplace.write'
+  | 'coupons.read' | 'coupons.write'
   | 'stats.read'
   | 'support.read' | 'support.write'
   | 'settings.read' | 'settings.write'

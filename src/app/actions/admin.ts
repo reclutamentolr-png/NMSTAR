@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { Permission } from '@/lib/admin-permissions'
+import { generateShortCode } from '@/lib/shortLink'
 
 const getServiceClient = () =>
   createServiceClient(
@@ -141,4 +142,71 @@ export async function getAllUsers() {
   )
 
   return { users: enrichedUsers, error: null }
+}
+
+// ── Wallet coupons ──────────────────────────────────────────────────────
+// Manual coupon issuance: an admin assigns a coupon directly to one user,
+// who then sees and self-redeems it from their My Wallet. See
+// supabase/migrations/20260921240000_add_wallet_coupons.sql for the RLS
+// rationale (owner can only ever read + redeem, never edit).
+
+export async function createCoupon(input: {
+  userId: string
+  title: string
+  description: string
+  expiresAt: string | null
+}) {
+  const admin = await verifyAdmin('coupons.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  if (!input.userId || !input.title.trim()) {
+    return { success: false, error: 'Utente e titolo sono obbligatori' }
+  }
+
+  const supabaseAdmin = getServiceClient()
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateShortCode()
+    const { error } = await supabaseAdmin.from('wallet_coupons').insert({
+      user_id: input.userId,
+      code,
+      title: input.title.trim(),
+      description: input.description.trim() || null,
+      expires_at: input.expiresAt,
+      issued_by: admin.id,
+    })
+
+    if (!error) return { success: true }
+    if (error.code !== '23505') {
+      // Not a unique-code collision — a real error, stop retrying.
+      return { success: false, error: error.message }
+    }
+  }
+
+  return { success: false, error: 'Impossibile generare un codice coupon univoco. Riprova.' }
+}
+
+export async function listCoupons() {
+  const admin = await verifyAdmin('coupons.read')
+  if (!admin) return { coupons: [], error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { data, error } = await supabaseAdmin
+    .from('wallet_coupons')
+    .select('id, code, title, description, expires_at, redeemed_at, created_at, user_id, profiles:user_id(first_name, last_name, email)')
+    .order('created_at', { ascending: false })
+    .limit(200)
+
+  if (error) return { coupons: [], error: error.message }
+  return { coupons: data || [], error: null }
+}
+
+export async function revokeCoupon(couponId: string) {
+  const admin = await verifyAdmin('coupons.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { error } = await supabaseAdmin.from('wallet_coupons').delete().eq('id', couponId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }

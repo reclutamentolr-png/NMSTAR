@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import Link from '@/components/LocalizedLink' // ✅ CAMBIATO: usa LocalizedLink invece di next/link
 import { logout } from '@/app/actions/logout'
-import { 
-  Hand, 
-  Settings, 
-  LogOut, 
-  User 
+import {
+  Hand,
+  Settings,
+  LogOut,
+  User,
+  Wallet
 } from 'lucide-react'
 import ProfileModal from './ProfileModal'
 
@@ -39,21 +40,30 @@ export default function DashboardHeaderActions({ user, profile, isAdmin }: Dashb
           </span>
         </button>
 
+        {/* Pulsante My Wallet */}
+        <Link
+          href="/wallet"
+          className="text-sm text-white bg-indigo-600 hover:bg-indigo-700 font-medium transition-colors flex items-center gap-1 px-3 py-1.5 rounded-md shadow-sm"
+        >
+          <Wallet className="w-4 h-4" />
+          <span className="hidden sm:inline">Il mio Wallet</span>
+        </Link>
+
         {/* Pulsante Pannello Admin (Visibile solo agli admin) */}
         {isAdmin && (
-          <Link 
-            href="/admin" 
+          <Link
+            href="/admin"
             className="text-sm text-white bg-red-600 hover:bg-red-700 font-medium transition-colors flex items-center gap-1 px-3 py-1.5 rounded-md shadow-sm"
           >
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">Pannello Admin</span>
           </Link>
         )}
-        
+
         {/* Pulsante di Logout */}
         <form action={logout} className="inline">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors flex items-center gap-1 hover:bg-red-50 px-3 py-1.5 rounded-md"
             title="Esci"
           >

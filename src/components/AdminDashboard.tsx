@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { hasPermission, Permission } from '@/lib/admin-permissions'
 import MatrixTree from '@/components/MatrixTree'
-import { adminUpdateProfile, impersonateUser } from '@/app/actions/admin'
+import { adminUpdateProfile, impersonateUser, createCoupon, listCoupons, revokeCoupon } from '@/app/actions/admin'
 import {
   LayoutDashboard,
   Users,
@@ -21,7 +21,9 @@ import {
   Save,
   Eye,
   Pencil,
-  UserCog
+  UserCog,
+  Ticket,
+  Trash2
 } from 'lucide-react'
 
 type AdminDashboardProps = {
@@ -63,6 +65,13 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   const [savingProfile, setSavingProfile] = useState(false)
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null)
 
+  const [couponUsers, setCouponUsers] = useState<any[]>([])
+  const [coupons, setCoupons] = useState<any[]>([])
+  const [loadingCoupons, setLoadingCoupons] = useState(false)
+  const [couponForm, setCouponForm] = useState({ userId: '', title: '', description: '', expiresAt: '' })
+  const [savingCoupon, setSavingCoupon] = useState(false)
+  const [couponError, setCouponError] = useState<string | null>(null)
+
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({
     site_name: 'Network Marketing Program',
     max_matrix_depth: 5,
@@ -82,6 +91,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     else if (activeSection === 'users') loadUsers()
     else if (activeSection === 'matrix') loadMatrixUsers()
     else if (activeSection === 'marketplace') loadMarketplaceData()
+    else if (activeSection === 'coupons') loadCouponsData()
     else if (activeSection === 'settings') loadSystemSettings()
   }, [activeSection])
 
@@ -188,6 +198,52 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
         usage_count: usageCount[t.tool_name] || 0
       }))
     )
+  }
+
+  const loadCouponsData = async () => {
+    setLoadingCoupons(true)
+    const { data: usersData } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, referral_code')
+      .order('first_name')
+      .limit(500)
+    setCouponUsers(usersData || [])
+
+    const result = await listCoupons()
+    setCoupons(result.coupons)
+    setLoadingCoupons(false)
+  }
+
+  const handleCreateCoupon = async () => {
+    setCouponError(null)
+    if (!couponForm.userId || !couponForm.title.trim()) {
+      setCouponError('Seleziona un utente e inserisci un titolo.')
+      return
+    }
+    setSavingCoupon(true)
+    const result = await createCoupon({
+      userId: couponForm.userId,
+      title: couponForm.title,
+      description: couponForm.description,
+      expiresAt: couponForm.expiresAt ? new Date(couponForm.expiresAt).toISOString() : null,
+    })
+    setSavingCoupon(false)
+    if (!result.success) {
+      setCouponError(result.error || 'Errore durante la creazione del coupon.')
+      return
+    }
+    setCouponForm({ userId: '', title: '', description: '', expiresAt: '' })
+    await loadCouponsData()
+  }
+
+  const handleRevokeCoupon = async (couponId: string) => {
+    if (!confirm('Revocare questo coupon? L\'operazione non è reversibile.')) return
+    const result = await revokeCoupon(couponId)
+    if (result.success) {
+      setCoupons((prev) => prev.filter((c) => c.id !== couponId))
+    } else {
+      alert(result.error || 'Errore durante la revoca del coupon.')
+    }
   }
 
   const toggleToolEnabled = async (toolName: string, currentStatus: boolean) => {
@@ -353,6 +409,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   { id: 'users', label: 'Utenti', Icon: Users, permission: 'users.read' as Permission },
   { id: 'matrix', label: 'Matrice', Icon: GitBranch, permission: 'matrix.read' as Permission },
   { id: 'marketplace', label: 'Marketplace', Icon: ShoppingBag, permission: 'marketplace.read' as Permission },
+  { id: 'coupons', label: 'Coupon', Icon: Ticket, permission: 'coupons.read' as Permission },
   { id: 'settings', label: 'Impostazioni', Icon: Settings, permission: 'settings.read' as Permission },
 ]
 
@@ -596,6 +653,143 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     )
   }
 
+  const renderCoupons = () => {
+    const now = new Date()
+    const statusOf = (c: any) => {
+      if (c.redeemed_at) return { label: 'Utilizzato', className: 'bg-gray-100 text-gray-600' }
+      if (c.expires_at && new Date(c.expires_at) < now) return { label: 'Scaduto', className: 'bg-red-100 text-red-700' }
+      return { label: 'Disponibile', className: 'bg-green-100 text-green-700' }
+    }
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Ticket className="w-7 h-7" />
+            Coupon Wallet
+          </h2>
+          <p className="text-gray-600 mt-1">Assegna un coupon direttamente a un utente: lo vedrà nel suo My Wallet</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+          <h3 className="font-bold text-gray-900">Nuovo coupon</h3>
+          {couponError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">{couponError}</div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Utente</label>
+              <select
+                value={couponForm.userId}
+                onChange={(e) => setCouponForm({ ...couponForm, userId: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              >
+                <option value="">Seleziona un utente...</option>
+                {couponUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.first_name} {u.last_name} — {u.referral_code}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Scadenza (opzionale)</label>
+              <input
+                type="date"
+                value={couponForm.expiresAt}
+                onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Titolo</label>
+              <input
+                type="text"
+                placeholder="Es. Spedizione gratuita"
+                value={couponForm.title}
+                onChange={(e) => setCouponForm({ ...couponForm, title: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione (opzionale)</label>
+              <textarea
+                placeholder="Es. Valido su un ordine dal Marketplace"
+                value={couponForm.description}
+                onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none h-20"
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleCreateCoupon}
+            disabled={savingCoupon}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+          >
+            <Ticket className="w-4 h-4" />
+            {savingCoupon ? 'Creazione...' : 'Crea e assegna coupon'}
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Titolo</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Utente</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Codice</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Scadenza</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Stato</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingCoupons ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Caricamento...</td></tr>
+              ) : coupons.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Nessun coupon emesso ancora</td></tr>
+              ) : (
+                coupons.map((c) => {
+                  const status = statusOf(c)
+                  return (
+                    <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{c.title}</div>
+                        {c.description && <div className="text-xs text-gray-500">{c.description}</div>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {c.profiles?.first_name} {c.profiles?.last_name}
+                        <div className="text-xs text-gray-400">{c.profiles?.email}</div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{c.code}</td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {c.expires_at ? new Date(c.expires_at).toLocaleDateString('it-IT') : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${status.className}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleRevokeCoupon(c.id)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Revoca coupon"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
   const renderSettings = () => (
     <div className="space-y-6">
       <div>
@@ -807,6 +1001,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
         {activeSection === 'users' && renderUsers()}
         {activeSection === 'matrix' && renderMatrix()}
         {activeSection === 'marketplace' && renderMarketplace()}
+        {activeSection === 'coupons' && renderCoupons()}
         {activeSection === 'settings' && renderSettings()}
       </div>
 
