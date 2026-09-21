@@ -140,7 +140,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
   // 8. Statistiche rapide
   const totalDownline = downlineData?.length || 0
-  const maxDownlineDepth = (downlineData || []).reduce((max: number, node: { depth: number }) => Math.max(max, node.depth), 0)
+  // matrix_nodes.depth is absolute (from the global matrix root), not
+  // relative to the viewed user — anyone placed via spillover has a
+  // nonzero depth themselves, so it must be subtracted to get "how many
+  // levels below ME" rather than "how many levels below the company root".
+  const rootDepth = userNode?.depth ?? 0
+  const maxDownlineDepth = (downlineData || []).reduce(
+    (max: number, node: { depth: number }) => Math.max(max, node.depth - rootDepth),
+    0
+  )
   const userNodeId = userNode?.id
 
   // 9. RECUPERA LO SPONSOR
