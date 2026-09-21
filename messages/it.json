@@ -206,7 +206,9 @@
     "matrixNodesError": "Errore nel caricamento dei nodi della matrice",
     "noProfiles": "Nessun profilo trovato nel database",
     "noMatrixNodes": "Nessun nodo nella matrice. Verifica che gli utenti abbiano nodi creati.",
-    "unexpectedError": "Errore imprevisto nel caricamento della classifica"
+    "unexpectedError": "Errore imprevisto nel caricamento della classifica",
+    "error": "Errore",
+    "myPosition": "La mia posizione"
   },
   "memolife": {
     "greeting": "Ciao, {name}!",

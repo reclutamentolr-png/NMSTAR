@@ -306,7 +306,7 @@
     "freeSlot": "Free position",
     "waitingForDirect": "Waiting for a direct",
     "matrixInfo": "The matrix shows your 5 direct affiliates and the total people under each position.",
-    "myPosition": "Your position",
+    "myPosition": "My position",
     "leaderboard": "Leaderboard",
     "leaderboardDirectActive": "active direct",
     "leaderboardNetworkActive": "active network",
@@ -379,7 +379,8 @@
     "matrixNodesError": "Error loading matrix nodes",
     "noProfiles": "No profiles found in database",
     "noMatrixNodes": "No nodes in the matrix. Check that users have nodes created.",
-    "unexpectedError": "Unexpected error loading leaderboard"
+    "unexpectedError": "Unexpected error loading leaderboard",
+    "error": "Error"
   },
   "landingUi": {
     "login": "Log in",
