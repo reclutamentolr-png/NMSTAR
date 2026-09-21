@@ -141,7 +141,7 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
 
           {/* Badge */}
           <WalletSection icon={<Award className="h-5 w-5 text-[var(--gold)]" />} title={t('badgeTitle')}>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {RANKS.map((rank) => {
                 const earned = directActiveCount >= rank.threshold
                 return (

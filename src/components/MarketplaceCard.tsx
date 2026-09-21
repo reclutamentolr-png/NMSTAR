@@ -1,12 +1,20 @@
 'use client'
 
 import Link from '@/components/LocalizedLink' // ✅ Sostituisci 'next/link'
-import { 
-  Smartphone, 
-  Link2, 
-  MessageCircle, 
+import { useTranslations } from 'next-intl'
+import {
+  Smartphone,
+  Link2,
+  MessageCircle,
   Brain,
-  type LucideIcon 
+  Waves,
+  ShieldCheck,
+  Wand2,
+  QrCode,
+  CalendarClock,
+  PackageSearch,
+  FileCheck2,
+  type LucideIcon
 } from 'lucide-react'
 
 type MarketplaceCardProps = {
@@ -18,6 +26,7 @@ type MarketplaceCardProps = {
   title: string
   description: string
   color: string
+  disabledReason?: 'offline' | 'subscription'
 }
 
 // Mappa dei nomi delle icone ai componenti Lucide
@@ -26,25 +35,33 @@ const iconMap: Record<string, LucideIcon> = {
   'Link2': Link2,
   'MessageCircle': MessageCircle,
   'Brain': Brain,
+  'Waves': Waves,
+  'ShieldCheck': ShieldCheck,
+  'Wand2': Wand2,
+  'QrCode': QrCode,
+  'CalendarClock': CalendarClock,
+  'PackageSearch': PackageSearch,
+  'FileCheck2': FileCheck2,
 }
 
 export default function MarketplaceCard({
   toolName,
   isEnabled,
-  href,
-  gradient,
-  iconName,
-  title,
-  description,
-  color,
+   href,
+   gradient,
+   iconName,
+   title,
+   description,
+   color,
+   disabledReason,
 }: MarketplaceCardProps) {
-  
+  const t = useTranslations('marketplace')
   const Icon = iconMap[iconName] || Smartphone
   
   const handleClick = (e: React.MouseEvent) => {
     if (!isEnabled) {
       e.preventDefault()
-      alert(`Lo strumento "${title}" è temporaneamente non disponibile. Riprova più tardi.`)
+      alert(t('toolUnavailable', { title }))
     }
   }
 
@@ -52,48 +69,46 @@ export default function MarketplaceCard({
     <Link
       href={isEnabled ? href : '#'}
       onClick={handleClick}
-      className={`group block rounded-2xl shadow-sm border transition-all duration-300 overflow-hidden ${
+      className={`group flex h-full min-h-[356px] flex-col rounded-xl border transition-all duration-300 overflow-hidden ${
         isEnabled
-          ? 'bg-white hover:shadow-xl cursor-pointer'
-          : 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-70'
+          ? 'border-[var(--gold)]/45 bg-[var(--paper)] shadow-[0_12px_35px_rgba(23,23,23,0.08)] hover:-translate-y-1 hover:border-[var(--gold-bright)] hover:shadow-[0_18px_45px_rgba(23,23,23,0.16)] cursor-pointer'
+          : 'border-stone-300 bg-stone-100 cursor-not-allowed opacity-70'
       }`}
     >
       <div
-        className={`h-40 flex items-center justify-center ${
-          isEnabled ? gradient : 'bg-gradient-to-br from-gray-400 to-gray-500'
+        className={`relative flex h-40 items-center justify-center overflow-hidden border-b border-[var(--gold)]/35 ${
+          isEnabled ? 'bg-[var(--ink)]' : 'bg-gradient-to-br from-gray-400 to-gray-500'
         }`}
       >
-        <Icon className="w-20 h-20 text-white" />
+        {isEnabled && <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_25%,rgba(231,197,106,0.2),transparent_55%)]" />}
+        <Icon className="relative z-10 h-16 w-16 text-[var(--gold-bright)] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.4} />
       </div>
-      <div className="p-6 relative">
+      <div className="relative flex flex-1 flex-col p-6">
         {!isEnabled && (
-          <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-            NON DISPONIBILE
+          <div className="absolute right-4 top-4 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+                  {disabledReason === 'subscription' ? t('subscriptionRequired') : t('notAvailable')}
           </div>
         )}
         <div className="flex justify-between items-start mb-2">
           <h3
             className={`text-xl font-bold ${
-              isEnabled ? 'text-gray-900 group-hover:text-' + color + '-600' : 'text-gray-500'
+              isEnabled ? 'text-[var(--ink)] group-hover:text-[var(--gold)]' : 'text-gray-500'
             }`}
           >
             {title}
           </h3>
-          {isEnabled && (
-            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-              GRATIS
-            </span>
-          )}
         </div>
-        <p className={`text-sm mb-4 ${isEnabled ? 'text-gray-600' : 'text-gray-400'}`}>
+        <p className={`mb-4 text-sm leading-6 ${isEnabled ? 'text-[var(--muted)]' : 'text-gray-400'}`}>
           {description}
         </p>
         {isEnabled ? (
-          <span className={`text-${color}-600 font-semibold text-sm group-hover:underline`}>
-            Usa lo strumento →
+          <span className="mt-auto text-sm font-semibold text-[var(--gold)] group-hover:text-[var(--ink)]">
+            {t('useTool')} →
           </span>
         ) : (
-          <span className="text-gray-400 font-semibold text-sm">Temporaneamente offline</span>
+          <span className="text-gray-400 font-semibold text-sm">
+            {disabledReason === 'subscription' ? t('subscriptionRequired') : t('temporarilyOffline')}
+          </span>
         )}
       </div>
     </Link>
