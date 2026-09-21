@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTranslations } from 'next-intl/server'
 import { Sparkles } from 'lucide-react'
 
 type User = {
@@ -12,6 +13,7 @@ type User = {
 }
 
 export default async function LatestUsersServer() {
+  const t = await getTranslations('landingHome')
   // ✅ Fetch diretto dal server, nessun useEffect, nessun useState
   const supabase = await createClient()
   
@@ -22,7 +24,7 @@ export default async function LatestUsersServer() {
     console.error('Errore caricamento ultimi utenti:', error)
     return (
       <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 w-full">
-        <p className="text-red-300 text-sm text-center">Errore nel caricamento</p>
+        <p className="text-red-300 text-sm text-center">{t('latestUsers')}</p>
       </div>
     )
   }
@@ -30,7 +32,7 @@ export default async function LatestUsersServer() {
   if (!users || users.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 w-full text-center">
-        <p className="text-gray-400 text-sm">Nessun utente registrato</p>
+        <p className="text-gray-400 text-sm">{t('latestUsers')}</p>
       </div>
     )
   }
@@ -40,7 +42,7 @@ export default async function LatestUsersServer() {
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-5 h-5 text-yellow-400" />
         <h3 className="text-lg font-bold text-white">
-          Ultimi Entrati ({users.length})
+          {t('latestUsers')} ({users.length})
         </h3>
       </div>
 
@@ -87,7 +89,7 @@ export default async function LatestUsersServer() {
 
       {/* Indicatore scroll */}
       <p className="text-xs text-gray-500 text-center mt-3">
-        ← Scorri per vedere altri →
+        {t('latestUsers')}
       </p>
     </div>
   )

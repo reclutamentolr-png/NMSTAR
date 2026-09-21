@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTranslations } from 'next-intl/server'
 import { redirect } from 'next/navigation'
 import Link from '@/components/LocalizedLink'
 import { 
@@ -15,6 +16,7 @@ import WhatsAppTemplates from '@/components/WhatsAppTemplates'
 export default async function WhatsAppPage({ params }: { params: Promise<{ locale: string }> }) {
   // ✅ Ottieni la lingua dall'URL (es. 'it', 'en', 'fr')
   const { locale } = await params
+  const t = await getTranslations('whatsappPage')
   
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -42,13 +44,13 @@ export default async function WhatsAppPage({ params }: { params: Promise<{ local
             className="flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5" />
-            Torna al Marketplace
+            {t('back')}
           </Link>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-green-400 to-emerald-600 p-2 rounded-lg">
               <MessageCircle className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-800">Messaggi WhatsApp</h1>
+            <h1 className="text-xl font-bold text-gray-800">{t('title')}</h1>
           </div>
         </div>
       </header>
@@ -57,13 +59,13 @@ export default async function WhatsAppPage({ params }: { params: Promise<{ local
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
             <Sparkles className="w-4 h-4" />
-            Template pronti all'uso
+            {t('badge')}
           </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-3">
-            Invia il tuo link in pochi secondi
+            {t('heroTitle')}
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Scegli un template, personalizzalo e invialo. Il tuo link referral è già incluso.
+            {t('heroDescription')}
           </p>
         </div>
 
@@ -71,18 +73,18 @@ export default async function WhatsAppPage({ params }: { params: Promise<{ local
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <Users className="w-8 h-8 text-green-600 mb-2" />
-            <h3 className="font-semibold text-gray-900 mb-1">4 Template</h3>
-            <p className="text-sm text-gray-600">Per ogni situazione</p>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('templatesTitle')}</h3>
+            <p className="text-sm text-gray-600">{t('templatesDescription')}</p>
           </div>
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <Send className="w-8 h-8 text-emerald-600 mb-2" />
-            <h3 className="font-semibold text-gray-900 mb-1">Invio Rapido</h3>
-            <p className="text-sm text-gray-600">Copia e incolla in WhatsApp</p>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('sendTitle')}</h3>
+            <p className="text-sm text-gray-600">{t('sendDescription')}</p>
           </div>
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <TrendingUp className="w-8 h-8 text-teal-600 mb-2" />
-            <h3 className="font-semibold text-gray-900 mb-1">Link Integrato</h3>
-            <p className="text-sm text-gray-600">Referral già incluso</p>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('linkTitle')}</h3>
+            <p className="text-sm text-gray-600">{t('linkDescription')}</p>
           </div>
         </div>
 
@@ -93,20 +95,20 @@ export default async function WhatsAppPage({ params }: { params: Promise<{ local
         <div className="mt-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
           <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
-            Consigli per messaggi efficaci
+            {t('tipsTitle')}
           </h3>
           <ul className="space-y-2 text-green-50 text-sm">
             <li className="flex items-start gap-2">
               <span className="text-white font-bold">•</span>
-              <span>Personalizza sempre il messaggio con il nome del destinatario</span>
+              <span>{t('tipOne')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-white font-bold">•</span>
-              <span>Non inviare lo stesso messaggio a troppe persone contemporaneamente</span>
+              <span>{t('tipTwo')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-white font-bold">•</span>
-              <span>Segui sempre con una chiamata o un messaggio vocale</span>
+              <span>{t('tipThree')}</span>
             </li>
           </ul>
         </div>

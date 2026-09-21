@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Copy, Send, MessageSquare } from 'lucide-react'
 
 type Template = {
@@ -15,41 +16,33 @@ type WhatsAppTemplatesProps = {
 }
 
 export default function WhatsAppTemplates({ referralUrl }: WhatsAppTemplatesProps) {
+  const t = useTranslations('whatsappPage')
   const [copiedId, setCopiedId] = useState<number | null>(null)
-
-  // ✅ FIX EMOJI: Usiamo Unicode escape sequences invece di emoji visibili
-  // Questo rende il codice IMMUNE da problemi di encoding del file
-  const emojis = {
-    wave: '\u{1F44B}',      // 👋
-    smile: '\u{1F60A}',     // 😊
-    rocket: '\u{1F680}',    // 🚀
-    coffee: '\u{2615}'      // ☕
-  }
 
   const templates: Template[] = [
     {
       id: 1,
-      title: 'Invito amichevole',
-      tone: 'Informale',
-      message: `Ciao! ${emojis.wave} Ho scoperto un'opportunità interessante e ho pensato a te. Dai un'occhiata al mio progetto: ${referralUrl} Fammi sapere cosa ne pensi! ${emojis.smile}`
+      title: t('template1Title'),
+      tone: t('template1Tone'),
+      message: t('template1Message', { url: referralUrl })
     },
     {
       id: 2,
-      title: 'Approccio professionale',
-      tone: 'Formale',
-      message: `Buongiorno, le scrivo per presentarle un'opportunità di business nel settore del network marketing. Può trovare maggiori informazioni qui: ${referralUrl} Resto a disposizione per eventuali chiarimenti.`
+      title: t('template2Title'),
+      tone: t('template2Tone'),
+      message: t('template2Message', { url: referralUrl })
     },
     {
       id: 3,
-      title: 'Storytelling personale',
-      tone: 'Emozionale',
-      message: `Ehi! Volevo condividere con te un'esperienza che ha cambiato il mio modo di vedere il lavoro. Ho iniziato questo percorso e i risultati mi stanno sorprendendo. Se ti va di saperne di più: ${referralUrl} ${emojis.rocket}`
+      title: t('template3Title'),
+      tone: t('template3Tone'),
+      message: t('template3Message', { url: referralUrl })
     },
     {
       id: 4,
-      title: 'Follow-up dopo incontro',
-      tone: 'Caldo',
-      message: `Ciao! È stato un piacere conoscerti oggi. Come promesso, ecco il link al mio progetto: ${referralUrl} Quando hai un momento, diamoci un feedback! ${emojis.coffee}`
+      title: t('template4Title'),
+      tone: t('template4Tone'),
+      message: t('template4Message', { url: referralUrl })
     }
   ]
 
@@ -58,9 +51,9 @@ export default function WhatsAppTemplates({ referralUrl }: WhatsAppTemplatesProp
       await navigator.clipboard.writeText(template.message)
       setCopiedId(template.id)
       setTimeout(() => setCopiedId(null), 2000)
-      alert('Messaggio copiato! Incollalo in WhatsApp.')
+      alert(t('copiedMsg'))
     } catch (err) {
-      console.error('Errore copia:', err)
+      console.error('Copy error:', err)
     }
   }
 
@@ -89,7 +82,7 @@ export default function WhatsAppTemplates({ referralUrl }: WhatsAppTemplatesProp
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Copy className="w-4 h-4" />
-                {copiedId === template.id ? 'Copiato!' : 'Copia messaggio'}
+                {copiedId === template.id ? t('copied') : t('copyMsg')}
               </button>
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(template.message)}`}
@@ -98,7 +91,7 @@ export default function WhatsAppTemplates({ referralUrl }: WhatsAppTemplatesProp
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
               >
                 <Send className="w-4 h-4" />
-                Invia su WhatsApp
+                {t('sendWhatsApp')}
               </a>
             </div>
           </div>

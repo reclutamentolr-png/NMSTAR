@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from '@/components/LocalizedLink'
 import MemoLifeDashboard from '@/components/MemoLifeDashboard'
+import { getTranslations } from 'next-intl/server'
 import { 
   Brain, 
   ArrowLeft, 
@@ -12,9 +13,10 @@ import {
   Users
 } from 'lucide-react'
 
-// ✅ Aggiunto params per coerenza con le altre pagine del marketplace
 export default async function MemoLifePage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params // Anche se non usato direttamente qui, è buona pratica averlo
+  const { locale } = await params
+  const t = await getTranslations('memolife')
+  const marketplaceT = await getTranslations('marketplace')
   
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -37,13 +39,13 @@ export default async function MemoLifePage({ params }: { params: Promise<{ local
             className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5" />
-            Torna al Marketplace
+            {marketplaceT('backToMarketplace')}
           </Link>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
               <Brain className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-800">MemoLife</h1>
+            <h1 className="text-xl font-bold text-gray-800">{t('memolife')}</h1>
           </div>
         </div>
       </header>
@@ -55,31 +57,31 @@ export default async function MemoLifePage({ params }: { params: Promise<{ local
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-xs font-medium mb-3">
                 <Sparkles className="w-3 h-3" />
-                Il tuo assistente personale
+                {t('personalAssistant')}
               </div>
               <h2 className="text-2xl font-bold mb-2">
-                Organizza la tua vita quotidiana
+                {t('organizeLife')}
               </h2>
               <p className="text-white/90 text-sm max-w-2xl">
-                Gestisci appuntamenti, bollette, task e note in un unico posto. Semplice, veloce, sempre sotto controllo.
+                {t('organizeLifeDesc')}
               </p>
             </div>
             <div className="flex gap-3">
               <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
                 <Calendar className="w-5 h-5 mx-auto mb-1" />
-                <div className="text-xs">Appuntamenti</div>
+                <div className="text-xs">{t('statAppointments')}</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
                 <CheckSquare className="w-5 h-5 mx-auto mb-1" />
-                <div className="text-xs">Task</div>
+                <div className="text-xs">{t('statTasks')}</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
                 <Receipt className="w-5 h-5 mx-auto mb-1" />
-                <div className="text-xs">Bollette</div>
+                <div className="text-xs">{t('statBills')}</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
                 <Users className="w-5 h-5 mx-auto mb-1" />
-                <div className="text-xs">Contatti</div>
+                <div className="text-xs">{t('statContacts')}</div>
               </div>
             </div>
           </div>
@@ -89,6 +91,7 @@ export default async function MemoLifePage({ params }: { params: Promise<{ local
         <MemoLifeDashboard 
           userId={user.id}
           userName={`${profile.first_name} ${profile.last_name}`}
+          locale={locale}
         />
       </main>
     </div>

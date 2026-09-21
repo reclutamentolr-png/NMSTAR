@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Sparkles } from 'lucide-react'
 
@@ -15,6 +16,7 @@ type User = {
 }
 
 export default function LatestUsersRotating() {
+  const t = useTranslations('landingHome')
   const [users, setUsers] = useState<User[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -61,7 +63,7 @@ export default function LatestUsersRotating() {
     <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 w-full max-w-sm mx-auto">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-5 h-5 text-yellow-400" />
-        <h3 className="text-lg font-bold text-white">Ultimi Entrati</h3>
+        <h3 className="text-lg font-bold text-white">{t('latestUsers')}</h3>
       </div>
 
       {/* Card con fade transition */}

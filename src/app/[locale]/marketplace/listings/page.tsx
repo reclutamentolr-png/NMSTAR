@@ -1,16 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from '@/components/LocalizedLink'
+import { getTranslations } from 'next-intl/server'
 import { getActiveListings, getUserListings } from '@/lib/listings-server'
-import { CATEGORY_LABELS, CATEGORY_ICONS, type ListingCategory } from '@/lib/listings'
+import { CATEGORY_ICONS, type ListingCategory } from '@/lib/listings'
 import { deleteListingAction } from '@/app/actions/listings'
-import { ArrowLeft, Plus, Calendar, Tag, User, Trash2, Eye } from 'lucide-react'
+import { ArrowLeft, Plus, Tag, User, Trash2, Eye, Calendar } from 'lucide-react'
 import ListingForm from '@/components/ListingForm'
 import ContactListingButton from '@/components/ContactListingButton'
 import ChatModalWrapper from '@/components/ChatModalWrapper'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+const CATEGORY_LABELS_MAP: Record<ListingCategory, string> = {
+  servizi: 'services',
+  prodotti: 'products',
+  collaborazioni: 'collaborations',
+  eventi: 'events'
+}
 
 export default async function ListingsPage({ 
   params,
@@ -21,6 +29,8 @@ export default async function ListingsPage({
 }) {
   const { locale } = await params
   const { category, showForm } = await searchParams
+  const t = await getTranslations('marketplace')
+  const commonT = await getTranslations('common')
   
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -38,6 +48,8 @@ export default async function ListingsPage({
   
   const myListings = await getUserListings(user.id)
 
+  const getCategoryLabel = (cat: ListingCategory) => t(CATEGORY_LABELS_MAP[cat] || 'other')
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
       {/* Header */}
@@ -48,13 +60,13 @@ export default async function ListingsPage({
             className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5" />
-            Torna alla Dashboard
+            {t('backToMarketplace')}
           </Link>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-2 rounded-lg">
               <Tag className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-800">Bacheca Annunci</h1>
+            <h1 className="text-xl font-bold text-gray-800">{t('listings')}</h1>
           </div>
         </div>
       </header>
@@ -65,11 +77,10 @@ export default async function ListingsPage({
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-1">
-                I tuoi punti: <span className="text-yellow-600">{profile?.daily_points || 0}</span>
+                {t('myPoints')} <span className="text-yellow-600">{profile?.daily_points || 0}</span>
               </h2>
               <p className="text-gray-600 text-sm">
-                Ogni annuncio costa <strong>10 punti</strong> (10 accessi giornalieri). 
-                Più accedi, più annunci puoi pubblicare!
+                {t('listingCostDesc')}
               </p>
             </div>
             <Link
@@ -77,7 +88,7 @@ export default async function ListingsPage({
               className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-5 h-5" />
-              Nuovo Annuncio (10 punti)
+              {t('newListing')}
             </Link>
           </div>
         </div>
@@ -101,7 +112,7 @@ export default async function ListingsPage({
                 : 'bg-white text-gray-700 border border-gray-200 hover:border-indigo-300'
             }`}
           >
-            Tutti ({allListings.length})
+            {t('allListings', { count: allListings.length })}
           </Link>
           {(['servizi', 'prodotti', 'collaborazioni', 'eventi'] as ListingCategory[]).map((cat) => {
             const count = allListings.filter(l => l.category === cat).length
@@ -116,7 +127,7 @@ export default async function ListingsPage({
                 }`}
               >
                 <span>{CATEGORY_ICONS[cat]}</span>
-                {CATEGORY_LABELS[cat]} ({count})
+                {getCategoryLabel(cat)} ({count})
               </Link>
             )
           })}
@@ -127,35 +138,35 @@ export default async function ListingsPage({
           <section className="mb-10">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Eye className="w-5 h-5 text-indigo-600" />
-              I tuoi annunci ({myListings.length})
+              {t('myListings', { count: myListings.length })}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {myListings.map((listing: any) => (
                 <div key={listing.id} className="bg-white rounded-xl border-2 border-indigo-200 p-5 shadow-sm">
                   <div className="flex items-start justify-between mb-2">
                     <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
-                      {CATEGORY_ICONS[listing.category as ListingCategory]} {CATEGORY_LABELS[listing.category as ListingCategory]}
+                      {CATEGORY_ICONS[listing.category as ListingCategory]} {getCategoryLabel(listing.category as ListingCategory)}
                     </span>
                     <span className="text-xs text-gray-500">
                       <Calendar className="w-3 h-3 inline mr-1" />
-                      {new Date(listing.created_at).toLocaleDateString('it-IT')}
+                      {new Date(listing.created_at).toLocaleDateString(locale)}
                     </span>
                   </div>
                   <h3 className="font-bold text-gray-900 mb-2">{listing.title}</h3>
                   <p className="text-sm text-gray-600 line-clamp-2 mb-3">{listing.description}</p>
                   {listing.price && (
-                    <p className="text-lg font-bold text-green-600 mb-2">€{listing.price}</p>
+                    <p className="text-lg font-bold text-green-600 mb-2">\u20ac{listing.price}</p>
                   )}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <span className="text-xs text-gray-500">
-                      Scade: {new Date(listing.expires_at).toLocaleDateString('it-IT')}
+                      {t('expires')}: {new Date(listing.expires_at).toLocaleDateString(locale)}
                     </span>
                     <form action={async () => {
                       'use server'
                       await deleteListingAction(listing.id, user.id)
                     }}>
                       <button type="submit" className="text-red-500 hover:text-red-700 text-xs flex items-center gap-1">
-                        <Trash2 className="w-3 h-3" /> Elimina
+                        <Trash2 className="w-3 h-3" /> {commonT('delete')}
                       </button>
                     </form>
                   </div>
@@ -168,14 +179,14 @@ export default async function ListingsPage({
         {/* Annunci della Community */}
         <section>
           <h2 className="text-lg font-bold text-gray-900 mb-4">
-            Annunci della Community ({allListings.length})
+            {t('allListings', { count: allListings.length })}
           </h2>
           
           {allListings.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
               <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Nessun annuncio ancora</h3>
-              <p className="text-gray-500">Sii il primo a pubblicare un annuncio nella community!</p>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('noListingsYet')}</h3>
+              <p className="text-gray-500">{t('beFirstListing')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -192,16 +203,15 @@ export default async function ListingsPage({
                   )}
                   <div className="flex items-start justify-between mb-2">
                     <span className="text-xs font-bold bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                      {CATEGORY_ICONS[listing.category as ListingCategory]} {CATEGORY_LABELS[listing.category as ListingCategory]}
+                      {CATEGORY_ICONS[listing.category as ListingCategory]} {getCategoryLabel(listing.category as ListingCategory)}
                     </span>
                     {listing.price && (
-                      <span className="text-sm font-bold text-green-600">€{listing.price}</span>
+                      <span className="text-sm font-bold text-green-600">\u20ac{listing.price}</span>
                     )}
                   </div>
                   <h3 className="font-bold text-gray-900 mb-2 line-clamp-1">{listing.title}</h3>
                   <p className="text-sm text-gray-600 line-clamp-3 mb-3 flex-1">{listing.description}</p>
                   
-                                    {/* ✅ SEZIONE CONTATTI: badge "Il tuo annuncio" se sei l'autore, altrimenti pulsante Contatta */}
                   <div className="pt-3 border-t border-gray-100 mt-auto">
                     <div className="flex items-center gap-2 text-xs text-gray-600 mb-3">
                       <User className="w-3 h-3" />
@@ -209,13 +219,11 @@ export default async function ListingsPage({
                     </div>
                     
                     {listing.user_id === user.id ? (
-                      /* ✅ Se è un nostro annuncio, mostriamo il badge verde */
                       <div className="w-full py-2 bg-green-50 border border-green-200 text-green-700 text-sm font-semibold rounded-lg flex items-center justify-center gap-1.5">
                         <Tag className="w-4 h-4" />
-                        Il tuo annuncio
+                        {t('myListing')}
                       </div>
                     ) : (
-                      /* ✅ Se è di un altro utente, mostriamo il pulsante Contatta */
                       <ContactListingButton 
                         listingId={listing.id}
                         listingTitle={listing.title}
@@ -235,7 +243,6 @@ export default async function ListingsPage({
         </section>
       </main>
       
-      {/* ✅ CHAT MODAL WRAPPER per la pagina Listings */}
       <ChatModalWrapper userId={user.id} />
     </div>
   )

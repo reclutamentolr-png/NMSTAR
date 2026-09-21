@@ -2,10 +2,12 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { AlertTriangle, Shield } from 'lucide-react'
 
 function ImpersonationBannerContent() {
+  const t = useTranslations('dashboard')
   const searchParams = useSearchParams()
   const [mounted, setMounted] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
@@ -41,9 +43,8 @@ function ImpersonationBannerContent() {
     } catch (e) {}
   }
 
-  // ✅ ESCI E TORNA ADMIN: usa il magic link di ripristino
   const handleExit = async () => {
-    if (!confirm('Vuoi uscire dalla modalità impersonificazione e tornare al tuo account admin?')) return
+    if (!confirm(t('exitImpersonation'))) return
 
     const restoreUrl = localStorage.getItem('impersonation_restore')
     localStorage.removeItem('impersonation_restore')
@@ -52,7 +53,6 @@ function ImpersonationBannerContent() {
     const supabase = createClient()
     await supabase.auth.signOut()
 
-    // ✅ Ripristina la sessione admin senza rifare il login
     window.location.href = restoreUrl || '/login'
   }
 
@@ -66,10 +66,10 @@ function ImpersonationBannerContent() {
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <p className="font-bold text-sm">⚠️ Modalità Impersonificazione Attiva</p>
+            <p className="font-bold text-sm">{t('impersonationActive')}</p>
             <p className="text-xs text-amber-50 truncate">
-              Stai navigando come un altro utente.
-              {adminName && <> Account admin: <strong>{adminName}</strong></>}
+              {t('impersonationDesc')}
+              {adminName && <> {t('adminAccount')} <strong>{adminName}</strong></>}
             </p>
           </div>
         </div>
@@ -78,7 +78,7 @@ function ImpersonationBannerContent() {
           className="flex items-center gap-2 px-4 py-2 bg-white text-orange-600 hover:bg-orange-50 rounded-lg text-sm font-bold transition-colors shadow-md flex-shrink-0"
         >
           <Shield className="w-4 h-4" />
-          Torna Admin
+          {t('returnAdmin')}
         </button>
       </div>
     </div>

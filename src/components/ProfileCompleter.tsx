@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation' // ✅ Importato per il refresh
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { 
   User, 
   Mail, 
@@ -21,7 +22,9 @@ type ProfileCompleterProps = {
 }
 
 export default function ProfileCompleter({ initialData }: ProfileCompleterProps) {
-  const router = useRouter() // ✅ Inizializzato il router
+  const t = useTranslations('dashboard')
+  const commonT = useTranslations('common')
+  const router = useRouter()
   
   const [formData, setFormData] = useState({
     first_name: initialData?.first_name || '',
@@ -58,18 +61,15 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
       setSuccess(true)
       setSaved(true) 
       
-      // ✅ FIX CRUCIALE: Forza la Dashboard (Server Component) a ricaricare i dati
-      // In questo modo rileggerà il profilo aggiornato e il banner sparirà definitivamente
       router.refresh()
       
     } catch (err: any) {
-      setError(err.message || 'Errore durante il salvataggio')
+      setError(err.message || t('error'))
     } finally {
       setSaving(false)
     }
   }
 
-  // Il banner si chiude se l'utente lo ha dismissato OPPURE se il salvataggio è riuscito
   if (dismissed || saved) return null
 
   return (
@@ -80,16 +80,16 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
             <AlertCircle className="w-5 h-5 text-amber-600" />
           </div>
           <div>
-            <h3 className="font-bold text-amber-900">Completa il tuo profilo</h3>
+            <h3 className="font-bold text-amber-900">{t('completeProfile')}</h3>
             <p className="text-sm text-amber-700 mt-1">
-              Aggiungi le tue informazioni per apparire professionalmente nella piattaforma
+              {t('completeProfileDesc')}
             </p>
           </div>
         </div>
         <button 
           onClick={() => setDismissed(true)}
           className="text-amber-600 hover:text-amber-800"
-          title="Chiudi"
+          title={commonT('close')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -99,7 +99,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <User className="w-4 h-4" /> Nome
+              <User className="w-4 h-4" /> {t('firstName')}
             </label>
             <input
               type="text"
@@ -111,7 +111,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <User className="w-4 h-4" /> Cognome
+              <User className="w-4 h-4" /> {t('lastName')}
             </label>
             <input
               type="text"
@@ -123,7 +123,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Phone className="w-4 h-4" /> Telefono
+              <Phone className="w-4 h-4" /> {t('phone')}
             </label>
             <input
               type="tel"
@@ -134,19 +134,19 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <MapPin className="w-4 h-4" /> Paese
+              <MapPin className="w-4 h-4" /> {t('country')}
             </label>
             <input
               type="text"
               value={formData.country_code}
               onChange={(e) => setFormData({...formData, country_code: e.target.value})}
               className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              placeholder="es. IT"
+              placeholder={t('countryShort')}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Calendar className="w-4 h-4" /> Data di nascita
+              <Calendar className="w-4 h-4" /> {t('dateOfBirth')}
             </label>
             <input
               type="date"
@@ -157,7 +157,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Briefcase className="w-4 h-4" /> Occupazione
+              <Briefcase className="w-4 h-4" /> {t('occupation')}
             </label>
             <input
               type="text"
@@ -176,7 +176,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
 
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> Profilo aggiornato con successo!
+            <CheckCircle2 className="w-4 h-4" /> {t('profileUpdated')}
           </div>
         )}
 
@@ -187,7 +187,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
             className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium flex items-center gap-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {saving ? 'Salvataggio...' : 'Salva profilo'}
+            {saving ? t('saving') : t('saveProfile')}
           </button>
         </div>
       </form>

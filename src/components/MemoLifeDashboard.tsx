@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
 import {
   Home, Calendar, CheckSquare, Receipt, Users, FileText, CalendarDays,
   Bell, AlertTriangle, Banknote, Target, Trash2, Phone, Mail,
@@ -10,9 +11,11 @@ import {
 type MemoLifeDashboardProps = {
   userId: string
   userName: string
+  locale: string
 }
 
-export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboardProps) {
+export default function MemoLifeDashboard({ userId, userName, locale }: MemoLifeDashboardProps) {
+  const t = useTranslations('memolife')
   const [activeSection, setActiveSection] = useState('home')
   const [stats, setStats] = useState({ appointments: 0, tasks: 0, bills: 0, notes: 0 })
   const [appointments, setAppointments] = useState<any[]>([])
@@ -118,26 +121,25 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     const upcomingTasks = (tasks || []).filter(t => !t.completed && t.due_date && t.due_date >= todayStr && t.due_date <= threeDaysStr)
 
     setUpcomingAlerts([
-      ...overdueBills.map(b => ({ type: 'overdue_bill', item: b, message: `Bolletta scaduta: ${b.title} (€${b.amount})` })),
-      // ✅ FIX 3: Formattazione dinamica in base al browser dell'utente
-      ...upcomingBills.map(b => ({ type: 'upcoming_bill', item: b, message: `Bolletta in scadenza: ${b.title} - €${b.amount} il ${new Date(b.due_date + 'T00:00:00').toLocaleDateString()}` })),
-      ...upcomingTasks.map(t => ({ type: 'upcoming_task', item: t, message: `Task in scadenza: ${t.title} il ${new Date(t.due_date + 'T00:00:00').toLocaleDateString()}` }))
+      ...overdueBills.map(b => ({ type: 'overdue_bill', item: b, message: t('billExpiredAlert', { title: b.title, amount: b.amount }) })),
+      ...upcomingBills.map(b => ({ type: 'upcoming_bill', item: b, message: t('billDueAlert', { title: b.title, amount: b.amount, date: new Date(b.due_date + 'T00:00:00').toLocaleDateString(locale) }) })),
+      ...upcomingTasks.map(task => ({ type: 'upcoming_task', item: task, message: t('taskDueAlert', { title: task.title, date: new Date(task.due_date + 'T00:00:00').toLocaleDateString(locale) }) }))
     ])
   }
 
   const validateAppointmentData = () => {
     if (!newItem.title || newItem.title.trim() === '') {
-      return 'Inserisci un titolo per l\'appuntamento'
+      return t('apptTitleRequired')
     }
     if (!newItem.date_time) {
-      return 'Seleziona data e ora dell\'appuntamento'
+      return t('dateRequired')
     }
     
     const selectedDate = new Date(newItem.date_time)
     const now = new Date()
     
     if (selectedDate < now) {
-      return 'Non puoi creare un appuntamento nel passato. Seleziona una data e ora future.'
+      return t('pastDateError')
     }
     
     return null
@@ -154,11 +156,11 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     
     if (activeSection === 'tasks' || activeSection === 'bills') {
       if (!newItem.title || newItem.title.trim() === '') {
-        alert('Inserisci un titolo')
+        alert(t('titleRequired'))
         return
       }
       if (!newItem.due_date) {
-        alert(activeSection === 'tasks' ? 'Seleziona una data di scadenza' : 'Seleziona una data di scadenza')
+        alert(t('dateRequired'))
         return
       }
       
@@ -167,7 +169,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       today.setHours(0, 0, 0, 0)
       
       if (selectedDate < today) {
-        alert('Non puoi selezionare una data passata')
+        alert(t('pastDateErrorShort'))
         return
       }
     }
@@ -190,26 +192,26 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
         dataToSave.user_id = userId
         result = await supabase.from(table).insert(dataToSave)
       }
-
       if (result?.error) {
-        console.error('Errore DB:', result.error)
+        console.error('DB error:', result.error)
         throw result.error
       }
       
+
       setShowAddForm(false)
       setNewItem({})
       setEditingId(null)
-      setSuccessMessage(editingId ? 'Elemento aggiornato con successo!' : 'Elemento creato con successo!')
+      setSuccessMessage(editingId ? t('itemSuccess') : t('elementCreated'))
       setTimeout(() => setSuccessMessage(''), 3000)
       await loadData()
     } catch (error: any) {
       console.error(error)
       if (error.message?.includes('null value in column')) {
-        alert('Errore: Alcuni campi obbligatori non sono stati compilati correttamente. Controlla data e ora.')
+        alert(t('dbErrorRequired'))
       } else if (error.message?.includes('violates not-null constraint')) {
-        alert('Errore: Assicurati di aver compilato tutti i campi obbligatori, specialmente data e ora.')
+        alert(t('dbErrorGeneric'))
       } else {
-        alert(`Errore durante il salvataggio: ${error.message || 'Riprova'}`)
+        alert(t('saveError', { error: error.message || t('retry') }))
       }
     }
   }
@@ -252,7 +254,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   }
 
   const deleteItem = async (table: string, id: string) => {
-    if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
+    if (confirm(t('confirmDelete'))) {
       await supabase.from(table).delete().eq('id', id)
       loadData()
     }
@@ -260,8 +262,34 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
 
   const getDaysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate()
   const getFirstDayOfMonth = (month: number, year: number) => new Date(year, month, 1).getDay()
-  const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
-  const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
+  
+  const formatDate = (dateString: string, dateOnly = false) => {
+    const date = new Date(dateString)
+    if (dateOnly) {
+      return date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
+    }
+    return date.toLocaleString(locale, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const formatMonthYear = (monthIdx: number, year: number) => {
+    return new Date(year, monthIdx, 1).toLocaleDateString(locale, { year: 'numeric', month: 'long' })
+  }
+
+  const getDayNames = () => {
+    const names: string[] = []
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(2024, 0, i + 1)
+      names.push(date.toLocaleDateString(locale, { weekday: 'short' }))
+    }
+    return names
+  }
+  const dayNames = getDayNames()
 
   const getEventsForDay = (day: number) => {
     const dateStr = new Date(currentYear, currentMonth, day).toISOString().split('T')[0]
@@ -318,7 +346,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                     type === 'bill' ? (item.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') :
                       'bg-orange-100 text-orange-700'
                   }`}>
-                  {type === 'appointment' ? 'Appuntamento' : type === 'bill' ? 'Bolletta' : 'Task'}
+                  {type === 'appointment' ? t('appointment') : type === 'bill' ? t('bill') : t('task')}
                 </span>
               </div>
             </div>
@@ -332,7 +360,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 <div className="flex items-center gap-2 text-gray-700">
                   <Clock className="w-4 h-4" />
                   {/* ✅ FIX 5: Visualizzazione adattiva alla lingua del browser */}
-                  <span className="font-medium">{new Date(item.date_time).toLocaleString()}</span>
+                  <span className="font-medium">{formatDate(item.date_time)}</span>
                 </div>
                 {item.description && (
                   <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{item.description}</div>
@@ -343,11 +371,11 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               <>
                 <div className="flex items-center gap-2 text-gray-700">
                   <Calendar className="w-4 h-4" />
-                  <span className="font-medium">Scadenza: {new Date(item.due_date + 'T00:00:00').toLocaleDateString()}</span>
+                  <span className="font-medium">{t('dueDateLabel')} {formatDate(item.due_date + 'T00:00:00', true)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">
                   <Banknote className="w-4 h-4" />
-                  <span className="font-bold text-lg">{item.paid ? `€${item.amount} (Pagata)` : `€${item.amount} (Da pagare)`}</span>
+                  <span className="font-bold text-lg">{item.paid ? `${t('paidLabel')} ${String.fromCharCode(0x20AC)}${item.amount}` : `${t('toPayLabel')} ${String.fromCharCode(0x20AC)}${item.amount}`}</span>
                 </div>
                 {item.notes && (
                   <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{item.notes}</div>
@@ -358,15 +386,15 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               <>
                 <div className="flex items-center gap-2 text-gray-700">
                   <Target className="w-4 h-4" />
-                  <span className="font-medium">Scadenza: {item.due_date ? new Date(item.due_date + 'T00:00:00').toLocaleDateString() : 'Non impostata'}</span>
+                  <span className="font-medium">{t('dueDateLabel')} {item.due_date ? formatDate(item.due_date + 'T00:00:00', true) : t('notSet')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-1 rounded ${
                     item.priority === 'high' ? 'bg-red-100 text-red-600' :
-                      item.priority === 'medium' ? 'bg-orange-100 text-orange-600' :
-                        'bg-green-100 text-green-600'
-                    }`}>
-                    Priorità: {item.priority === 'high' ? 'Alta' : item.priority === 'medium' ? 'Media' : 'Bassa'}
+                    item.priority === 'medium' ? 'bg-orange-100 text-orange-600' :
+                    'bg-green-100 text-green-600'
+                  }`}>
+                    {t('priorityLabel')} {item.priority === 'high' ? t('high') : item.priority === 'medium' ? t('medium') : t('low')}
                   </span>
                 </div>
                 {item.description && (
@@ -380,7 +408,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               onClick={() => { handleEditClick(item, type === 'appointment' ? 'appointments' : type === 'bill' ? 'bills' : 'tasks'); closeEventModal(); }}
               className="flex-1 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-1"
             >
-              <Pencil className="w-4 h-4" /> Modifica
+              <Pencil className="w-4 h-4" /> {t('edit')}
             </button>
             
             {type === 'bill' && (
@@ -390,7 +418,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                   item.paid ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
                   }`}
               >
-                {item.paid ? 'Segna non pagata' : 'Segna pagata'}
+                {item.paid ? t('markAsUnpaid') : t('markAsPaid')}
               </button>
             )}
             {type === 'task' && (
@@ -400,7 +428,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                   item.completed ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
                   }`}
               >
-                {item.completed ? 'Segna incompleto' : 'Segna completato'}
+                {item.completed ? t('markAsNotCompleted') : t('markAsCompleted')}
               </button>
             )}
             <button
@@ -411,10 +439,10 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               }}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium"
             >
-              Elimina
+              {t('delete')}
             </button>
             <button onClick={closeEventModal} className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-medium">
-              Chiudi
+              {t('close')}
             </button>
           </div>
         </div>
@@ -441,18 +469,18 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       const weekDays = getWeekDays()
       const firstDay = weekDays[0]
       const lastDay = weekDays[6]
-      const weekTitle = `${firstDay.getDate()} ${monthNames[firstDay.getMonth()]} - ${lastDay.getDate()} ${monthNames[lastDay.getMonth()]} ${lastDay.getFullYear()}`
+      const weekTitle = `${firstDay.getDate()} ${formatMonthYear(firstDay.getMonth(), firstDay.getFullYear())} - ${lastDay.getDate()} ${formatMonthYear(lastDay.getMonth(), lastDay.getFullYear())} ${lastDay.getFullYear()}`
       return (
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-            <button onClick={prevWeek} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 font-bold text-sm">&lt; Prec.</button>
+            <button onClick={prevWeek} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 font-bold text-sm">&lt; {t('previousWeek')}</button>
             <div className="flex items-center gap-3">
               <h3 className="text-lg font-bold text-gray-900">{weekTitle}</h3>
-              <button onClick={() => setCalendarView('month')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">Vista Mese</button>
+              <button onClick={() => setCalendarView('month')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">{t('monthView')}</button>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setWeekOffset(0)} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-sm font-medium">Oggi</button>
-              <button onClick={nextWeek} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 font-bold text-sm">Succ. &gt;</button>
+              <button onClick={() => setWeekOffset(0)} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-sm font-medium">{t('today')}</button>
+              <button onClick={nextWeek} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 font-bold text-sm">{t('nextWeek')} &gt;</button>
             </div>
           </div>
           <div className="grid grid-cols-7 gap-2">
@@ -488,10 +516,10 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             })}
           </div>
           <div className="mt-4 flex flex-wrap gap-3 text-xs">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-indigo-100 rounded"></span> Appuntamenti</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> Bollette da pagare</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> Bollette pagate</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-orange-100 rounded"></span> Task</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-indigo-100 rounded"></span> {t('appointments')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> {t('billsToPay')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> {t('billsPaid')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-orange-100 rounded"></span> {t('tasks')}</span>
           </div>
         </div>
       )
@@ -526,7 +554,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               </div>
             ))}
             {hasEvents && (events.appts.length + events.bills.length + events.tasks.length > 3) && (
-              <div className="text-[9px] text-gray-500">+{events.appts.length + events.bills.length + events.tasks.length - 3} altri</div>
+              <div className="text-[9px] text-gray-500">+{events.appts.length + events.bills.length + events.tasks.length - 3} {t('others')}</div>
             )}
           </div>
         </div>
@@ -535,22 +563,22 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-          <button onClick={prevMonth} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&lt; Mese prec.</button>
+          <button onClick={prevMonth} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&lt; {t('previousMonth')}</button>
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-bold text-gray-900">{monthNames[currentMonth]} {currentYear}</h3>
-            <button onClick={() => setCalendarView('week')} className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">Vista Settimana</button>
+            <h3 className="text-lg font-bold text-gray-900">{formatMonthYear(currentMonth, currentYear)}</h3>
+            <button onClick={() => setCalendarView('week')} className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">{t('weekView')}</button>
           </div>
-          <button onClick={nextMonth} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Mese succ. &gt;</button>
+          <button onClick={nextMonth} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t('nextMonth')} &gt;</button>
         </div>
         <div className="grid grid-cols-7 gap-1 mb-2">
           {dayNames.map(d => <div key={d} className="text-center text-xs font-semibold text-gray-600 py-1">{d}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1">{days}</div>
         <div className="mt-4 flex flex-wrap gap-3 text-xs">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-indigo-100 rounded"></span> Appuntamenti</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> Bollette da pagare</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> Bollette pagate</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-orange-100 rounded"></span> Task</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-indigo-100 rounded"></span> {t('appointments')}</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> {t('billsToPay')}</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> {t('billsPaid')}</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-orange-100 rounded"></span> {t('tasks')}</span>
         </div>
       </div>
     )
@@ -562,7 +590,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 p-4 rounded-lg">
           <h3 className="font-bold text-amber-900 mb-2 flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            Alert Scadenze ({upcomingAlerts.length})
+            {t('alertsTitle', { count: upcomingAlerts.length })}
           </h3>
           <div className="space-y-1">
             {upcomingAlerts.map((alert, idx) => (
@@ -576,28 +604,28 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">Da Pagare Totale</div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('totalToPay')}</div>
           <div className="text-2xl font-bold text-red-600 mt-1 flex items-center gap-1">
             <Banknote className="w-5 h-5" />
             €{financialStats.totalUnpaid.toFixed(2)}
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">Pagato Questo Mese</div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('paidThisMonth')}</div>
           <div className="text-2xl font-bold text-green-600 mt-1 flex items-center gap-1">
             <Banknote className="w-5 h-5" />
             €{financialStats.totalPaid.toFixed(2)}
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">In Scadenza Questo Mese</div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dueThisMonth')}</div>
           <div className="text-2xl font-bold text-orange-600 mt-1 flex items-center gap-1">
             <Clock className="w-5 h-5" />
             €{financialStats.dueThisMonth.toFixed(2)}
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">Scadute</div>
+          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('overdue')}</div>
           <div className="text-2xl font-bold text-red-700 mt-1 flex items-center gap-1">
             <AlertCircle className="w-5 h-5" />
             €{financialStats.overdue.toFixed(2)}
@@ -606,36 +634,36 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><Calendar className="w-4 h-4" /> Appuntamenti</div>
+          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><Calendar className="w-4 h-4" /> {t('appointments')}</div>
           <div className="text-3xl font-bold text-indigo-600 mt-2">{stats.appointments}</div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><CheckSquare className="w-4 h-4" /> Da Fare</div>
+          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><CheckSquare className="w-4 h-4" /> {t('tasks')}</div>
           <div className="text-3xl font-bold text-orange-600 mt-2">{stats.tasks}</div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><Receipt className="w-4 h-4" /> Bollette</div>
+          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><Receipt className="w-4 h-4" /> {t('bills')}</div>
           <div className="text-3xl font-bold text-red-600 mt-2">{stats.bills}</div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><FileText className="w-4 h-4" /> Note</div>
+          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><FileText className="w-4 h-4" /> {t('notes')}</div>
           <div className="text-3xl font-bold text-green-600 mt-2">{stats.notes}</div>
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><Calendar className="w-5 h-5" /> Prossimi Appuntamenti</h3>
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><Calendar className="w-5 h-5" /> {t('upcomingAppointments')}</h3>
           <div className="space-y-2">
             {appointments.slice(0, 3).map(a => (
               <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="bg-white p-3 rounded-lg border border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-                <div><div className="font-medium text-sm">{a.title}</div><div className="text-xs text-gray-500">{new Date(a.date_time).toLocaleString()}</div></div>
+                <div><div className="font-medium text-sm">{a.title}</div><div className="text-xs text-gray-500">{formatDate(a.date_time)}</div></div>
               </div>
             ))}
-            {appointments.length === 0 && <div className="text-sm text-gray-400 text-center py-4">Nessun appuntamento</div>}
+            {appointments.length === 0 && <div className="text-sm text-gray-400 text-center py-4">{t('noAppointmentsList')}</div>}
           </div>
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><CheckSquare className="w-5 h-5" /> Task & Bollette</h3>
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><CheckSquare className="w-5 h-5" /> {t('tasksAndBills')}</h3>
           <div className="space-y-2">
             {tasks.slice(0, 2).map(t => (
               <div key={t.id} className="bg-white p-3 rounded-lg border border-gray-200 flex items-center gap-3">
@@ -658,12 +686,12 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const renderAppointments = () => (
     <div className="space-y-4">
       <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuovo Appuntamento'}
+        <Plus className="w-5 h-5" /> {editingId ? t('cancelEdit') : t('newAppointment')}
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
           <input 
-            placeholder="Titolo (es. Dentista)" 
+             placeholder={t('titleApptPlaceholder')} 
             value={newItem.title || ''} 
             onChange={e => setNewItem({ ...newItem, title: e.target.value })} 
             className="w-full p-2 border rounded" 
@@ -679,7 +707,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 const selected = new Date(val)
                 const now = new Date()
                 if (selected < now) {
-                  alert('⚠️ Hai selezionato una data/ora nel passato. Per favore seleziona un momento futuro.')
+                  alert(t('pastDateError'))
                   setNewItem({ ...newItem, date_time: '' })
                   return
                 }
@@ -690,7 +718,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             required 
           />
           <textarea 
-            placeholder="Note (opzionale)" 
+             placeholder={t('notesOptional')} 
             value={newItem.description || ''} 
             onChange={e => setNewItem({ ...newItem, description: e.target.value })} 
             className="w-full p-2 border rounded h-20" 
@@ -700,13 +728,13 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               onClick={handleSaveItem} 
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
             >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
+              <Save className="w-4 h-4" /> {editingId ? t('update') : t('save')}
             </button>
             <button 
               onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
             >
-              Annulla
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -714,14 +742,14 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       <div className="space-y-3">
         {appointments.map(a => (
           <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="bg-white p-4 rounded-xl border border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-            <div><div className="font-semibold">{a.title}</div><div className="text-sm text-gray-500">{new Date(a.date_time).toLocaleString()}</div></div>
+            <div><div className="font-semibold">{a.title}</div><div className="text-sm text-gray-500">{formatDate(a.date_time)}</div></div>
             <div className="flex gap-2" onClick={e => e.stopPropagation()}>
               <button onClick={() => handleEditClick(a, 'appointments')} className="text-blue-500 hover:text-blue-700 p-1"><Pencil className="w-5 h-5" /></button>
               <button onClick={() => deleteItem('appointments', a.id)} className="text-red-500 hover:text-red-700 p-1"><Trash2 className="w-5 h-5" /></button>
             </div>
           </div>
         ))}
-        {appointments.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">Nessun appuntamento.</div>}
+        {appointments.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">{t('noAppointmentsList')}</div>}
       </div>
     </div>
   )
@@ -729,12 +757,12 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const renderTasks = () => (
     <div className="space-y-4">
       <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuovo Task'}
+        <Plus className="w-5 h-5" /> {editingId ? t('cancelEdit') : t('newTask')}
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
           <input 
-            placeholder="Cosa devi fare?" 
+             placeholder={t('taskPlaceholder')} 
             value={newItem.title || ''} 
             onChange={e => setNewItem({ ...newItem, title: e.target.value })} 
             className="w-full p-2 border rounded" 
@@ -751,7 +779,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 const today = new Date()
                 today.setHours(0, 0, 0, 0)
                 if (selected < today) {
-                  alert('⚠️ Non puoi selezionare una data passata')
+                  alert(t('pastDateErrorShort'))
                   setNewItem({ ...newItem, due_date: '' })
                   return
                 }
@@ -765,22 +793,22 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             onChange={e => setNewItem({ ...newItem, priority: e.target.value })} 
             className="w-full p-2 border rounded"
           >
-            <option value="low">Bassa</option>
-            <option value="medium">Media</option>
-            <option value="high">Alta</option>
+            <option value="low">{t('low')}</option>
+            <option value="medium">{t('medium')}</option>
+            <option value="high">{t('high')}</option>
           </select>
           <div className="flex gap-2">
             <button 
               onClick={handleSaveItem} 
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
             >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
+              <Save className="w-4 h-4" /> {editingId ? t('update') : t('save')}
             </button>
             <button 
               onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
             >
-              Annulla
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -800,12 +828,12 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 className="cursor-pointer hover:bg-gray-50 p-2 rounded flex-1"
               >
                 <div className={`font-medium ${t.completed ? 'line-through' : ''}`}>{t.title}</div>
-                {t.due_date && <div className="text-xs text-gray-500">Scadenza: {new Date(t.due_date + 'T00:00:00').toLocaleDateString()}</div>}
+                {t.due_date && <div className="text-xs text-gray-500">{t('dueDateLabel')} {formatDate(t.due_date + 'T00:00:00', true)}</div>}
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-xs px-2 py-1 rounded ${t.priority === 'high' ? 'bg-red-100 text-red-600' : t.priority === 'medium' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-                {t.priority === 'high' ? 'Alta' : t.priority === 'medium' ? 'Media' : 'Bassa'}
+                {t.priority === 'high' ? t('high') : t.priority === 'medium' ? t('medium') : t('low')}
               </span>
               <button 
                 onClick={() => handleEditClick(t, 'tasks')} 
@@ -822,7 +850,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             </div>
           </div>
         ))}
-        {tasks.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">Nessun task.</div>}
+        {tasks.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">{t('noTasksList')}</div>}
       </div>
     </div>
   )
@@ -831,25 +859,25 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-          <div className="text-xs text-red-600 flex items-center gap-1"><Receipt className="w-3 h-3" /> Da Pagare</div>
+          <div className="text-xs text-red-600 flex items-center gap-1"><Receipt className="w-3 h-3" /> {t('toPay')}</div>
           <div className="text-xl font-bold text-red-700">€{financialStats.totalUnpaid.toFixed(2)}</div>
         </div>
         <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-          <div className="text-xs text-green-600 flex items-center gap-1"><Banknote className="w-3 h-3" /> Pagato</div>
+          <div className="text-xs text-green-600 flex items-center gap-1"><Banknote className="w-3 h-3" /> {t('paid')}</div>
           <div className="text-xl font-bold text-green-700">€{financialStats.totalPaid.toFixed(2)}</div>
         </div>
         <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-          <div className="text-xs text-orange-600 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Scadute</div>
+          <div className="text-xs text-orange-600 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {t('overdue')}</div>
           <div className="text-xl font-bold text-orange-700">€{financialStats.overdue.toFixed(2)}</div>
         </div>
       </div>
       <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuova Bolletta'}
+        <Plus className="w-5 h-5" /> {editingId ? t('cancelEdit') : t('newBill')}
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
           <input 
-            placeholder="Titolo (es. Luce)" 
+             placeholder={t('titleBillPlaceholder')} 
             value={newItem.title || ''} 
             onChange={e => setNewItem({ ...newItem, title: e.target.value })} 
             className="w-full p-2 border rounded" 
@@ -858,7 +886,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
           <input 
             type="number" 
             step="0.01" 
-            placeholder="Importo €" 
+             placeholder={t('amountPlaceholder')} 
             value={newItem.amount || ''} 
             onChange={e => setNewItem({ ...newItem, amount: e.target.value })} 
             className="w-full p-2 border rounded" 
@@ -875,30 +903,30 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 const today = new Date()
                 today.setHours(0, 0, 0, 0)
                 if (selected < today) {
-                  alert('⚠️ Non puoi selezionare una data passata')
-                  setNewItem({ ...newItem, due_date: '' })
-                  return
-                }
-              }
-              setNewItem({ ...newItem, due_date: val })
-            }} 
-            className="w-full p-2 border rounded" 
-            required 
-          />
-          <div className="flex gap-2">
-            <button 
-              onClick={handleSaveItem} 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-            >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
-            </button>
-            <button 
-              onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
-              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            >
-              Annulla
-            </button>
-          </div>
+                   alert(t('pastDateErrorShort'))
+                   setNewItem({ ...newItem, due_date: '' })
+                   return
+                 }
+               }
+               setNewItem({ ...newItem, due_date: val })
+             }} 
+             className="w-full p-2 border rounded" 
+             required 
+           />
+           <div className="flex gap-2">
+             <button 
+               onClick={handleSaveItem} 
+               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+             >
+               <Save className="w-4 h-4" /> {editingId ? t('update') : t('save')}
+             </button>
+             <button 
+               onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
+               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+             >
+               {t('cancel')}
+             </button>
+           </div>
         </div>
       )}
       <div className="space-y-3">
@@ -917,7 +945,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               />
               <div>
                 <div className={`font-semibold ${b.paid ? 'line-through text-gray-500' : ''}`}>{b.title}</div>
-                <div className="text-xs text-gray-500">Scadenza: {new Date(b.due_date + 'T00:00:00').toLocaleDateString()}</div>
+                <div className="text-xs text-gray-500">{t('dueDateLabel')} {formatDate(b.due_date + 'T00:00:00', true)}</div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -939,7 +967,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             </div>
           </div>
         ))}
-        {bills.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">Nessuna bolletta.</div>}
+        {bills.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8">{t('noBillsList')}</div>}
       </div>
     </div>
   )
@@ -947,25 +975,25 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const renderContacts = () => (
     <div className="space-y-4">
       <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuovo Contatto'}
+        <Plus className="w-5 h-5" /> {editingId ? t('cancelEdit') : t('newContact')}
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
           <input 
-            placeholder="Nome" 
+            placeholder={t('name')} 
             value={newItem.name || ''} 
             onChange={e => setNewItem({ ...newItem, name: e.target.value })} 
             className="w-full p-2 border rounded" 
             required 
           />
           <input 
-            placeholder="Telefono" 
+            placeholder={t('phone')} 
             value={newItem.phone || ''} 
             onChange={e => setNewItem({ ...newItem, phone: e.target.value })} 
             className="w-full p-2 border rounded" 
           />
           <input 
-            placeholder="Email" 
+            placeholder={t('email')} 
             value={newItem.email || ''} 
             onChange={e => setNewItem({ ...newItem, email: e.target.value })} 
             className="w-full p-2 border rounded" 
@@ -975,13 +1003,13 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               onClick={handleSaveItem} 
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
             >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
+              <Save className="w-4 h-4" /> {editingId ? t('update') : t('save')}
             </button>
             <button 
               onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
             >
-              Annulla
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -997,18 +1025,18 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 onClick={() => handleEditClick(c, 'contacts')} 
                 className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1"
               >
-                <Pencil className="w-3 h-3" /> Modifica
+                <Pencil className="w-3 h-3" /> {t('edit')}
               </button>
               <button 
                 onClick={() => deleteItem('contacts', c.id)} 
                 className="text-red-500 hover:text-red-700 text-xs flex items-center gap-1"
               >
-                <Trash2 className="w-3 h-3" /> Elimina
+                <Trash2 className="w-3 h-3" /> {t('delete')}
               </button>
             </div>
           </div>
         ))}
-        {contacts.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8 col-span-2">Nessun contatto.</div>}
+        {contacts.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8 col-span-2">{t('noContactsList')}</div>}
       </div>
     </div>
   )
@@ -1016,7 +1044,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
   const renderNotes = () => (
     <div className="space-y-4">
       <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2">
-        <Plus className="w-5 h-5" /> {editingId ? 'Annulla Modifica' : 'Nuova Nota'}
+        <Plus className="w-5 h-5" /> {editingId ? t('cancelEdit') : t('newNote')}
       </button>
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
@@ -1028,7 +1056,7 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
             required 
           />
           <textarea 
-            placeholder="Contenuto..." 
+            placeholder={t('contentPlaceholder')} 
             value={newItem.content || ''} 
             onChange={e => setNewItem({ ...newItem, content: e.target.value })} 
             className="w-full p-2 border rounded h-24" 
@@ -1039,13 +1067,13 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
               onClick={handleSaveItem} 
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
             >
-              <Save className="w-4 h-4" /> {editingId ? 'Aggiorna' : 'Salva'}
+              <Save className="w-4 h-4" /> {editingId ? t('update') : t('save')}
             </button>
             <button 
               onClick={() => { setShowAddForm(false); setNewItem({}); setEditingId(null) }} 
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
             >
-              Annulla
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -1060,30 +1088,30 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
                 onClick={() => handleEditClick(n, 'notes')} 
                 className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1"
               >
-                <Pencil className="w-3 h-3" /> Modifica
+                <Pencil className="w-3 h-3" /> {t('edit')}
               </button>
               <button 
                 onClick={() => deleteItem('notes', n.id)} 
                 className="text-red-500 hover:text-red-700 text-xs flex items-center gap-1"
               >
-                <Trash2 className="w-3 h-3" /> Elimina
+                <Trash2 className="w-3 h-3" /> {t('delete')}
               </button>
             </div>
           </div>
         ))}
-        {notes.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8 col-span-2">Nessuna nota.</div>}
+        {notes.length === 0 && !showAddForm && <div className="text-center text-gray-400 py-8 col-span-2">{t('noNotesList')}</div>}
       </div>
     </div>
   )
 
   const menuItems = [
-    { id: 'home', label: 'Home', Icon: Home },
-    { id: 'appointments', label: 'Appuntamenti', Icon: Calendar },
-    { id: 'tasks', label: 'Da Fare', Icon: CheckSquare },
-    { id: 'bills', label: 'Bollette', Icon: Receipt },
-    { id: 'contacts', label: 'Contatti', Icon: Users },
-    { id: 'notes', label: 'Note', Icon: FileText },
-    { id: 'calendar', label: 'Calendario', Icon: CalendarDays },
+    { id: 'home', label: t('home'), Icon: Home },
+    { id: 'appointments', label: t('appointments'), Icon: Calendar },
+    { id: 'tasks', label: t('tasks'), Icon: CheckSquare },
+    { id: 'bills', label: t('bills'), Icon: Receipt },
+    { id: 'contacts', label: t('contacts'), Icon: Users },
+    { id: 'notes', label: t('notes'), Icon: FileText },
+    { id: 'calendar', label: t('calendar'), Icon: CalendarDays },
   ]
 
   return (
@@ -1106,13 +1134,13 @@ export default function MemoLifeDashboard({ userId, userName }: MemoLifeDashboar
       <div className="lg:col-span-3 space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            {activeSection === 'home' && <>Ciao, {userName.split(' ')[0]}! <Hand className="w-7 h-7" /></>}
-            {activeSection === 'appointments' && <><Calendar className="w-7 h-7" /> I tuoi Appuntamenti</>}
-            {activeSection === 'tasks' && <><CheckSquare className="w-7 h-7" /> Le tue Cose da Fare</>}
-            {activeSection === 'bills' && <><Receipt className="w-7 h-7" /> Bollette & Scadenze</>}
-            {activeSection === 'contacts' && <><Users className="w-7 h-7" /> La tua Rubrica</>}
-            {activeSection === 'notes' && <><FileText className="w-7 h-7" /> Le tue Note</>}
-            {activeSection === 'calendar' && <><CalendarDays className="w-7 h-7" /> Calendario</>}
+            {activeSection === 'home' && <>{t('greeting', { name: userName.split(' ')[0] })} <Hand className="w-7 h-7" /></>}
+            {activeSection === 'appointments' && <><Calendar className="w-7 h-7" /> {t('appointments')}</>}
+            {activeSection === 'tasks' && <><CheckSquare className="w-7 h-7" /> {t('tasks')}</>}
+            {activeSection === 'bills' && <><Receipt className="w-7 h-7" /> {t('bills')}</>}
+            {activeSection === 'contacts' && <><Users className="w-7 h-7" /> {t('contacts')}</>}
+            {activeSection === 'notes' && <><FileText className="w-7 h-7" /> {t('notes')}</>}
+            {activeSection === 'calendar' && <><CalendarDays className="w-7 h-7" /> {t('calendar')}</>}
           </h2>
         </div>
         {successMessage && <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 font-medium">{successMessage}</div>}

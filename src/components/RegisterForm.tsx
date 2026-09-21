@@ -192,68 +192,74 @@ export default function RegisterForm() {
           throw new Error(`Errore nel salvataggio del nodo: ${insertError.message}`)
         }
       } 
-      // 5. Spillover: il nodo dello sponsor è pieno (5 figli), cerca il primo nodo con spazio
+      // 5. Spillover: distribuisce i nuovi membri in modo equilibrato tra i rami dello sponsor.
       else {
-        const { data: allNodes, error: allNodesError } = await supabase.from('matrix_nodes').select('id, path, level')
+        const { data: allNodes, error: allNodesError } = await supabase
+          .from('matrix_nodes')
+          .select('id, parent_id, path, level, position')
+
         if (allNodesError) throw allNodesError
 
-        let foundNode = false
-        
-        for (const node of (allNodes || [])) {
-          const { count, error: countError } = await supabase
-            .from('matrix_nodes')
-            .select('*', { count: 'exact', head: true })
-            .eq('parent_id', node.id)
-          
-          if (countError) throw countError
-          
-          if ((count || 0) < 5) {
-            const { data: children, error: spillChildrenError } = await supabase
-              .from('matrix_nodes')
-              .select('position')
-              .eq('parent_id', node.id)
-            
-            if (spillChildrenError) throw spillChildrenError
+        const nodesInSponsorTree = (allNodes || []).filter((node) =>
+          node.path.startsWith(`${parentPath}.`)
+        )
 
-            const usedPos = children?.map((c: any) => c.position) || []
-            let pos = 1
-            while (usedPos.includes(pos) && pos <= 5) pos++
-            
-            const newNodePath = `${node.path}.${pos}`
-            const newNodeLevel = node.level + 1
-            const newNodeDepth = node.path.split('.').length
+        const pathOrder = (path: string) =>
+          path.split('.').map((part) => Number(part.replace(/\D/g, '')) || 0)
 
-            // ✅ FIX: Controllo esplicito dell'errore di inserimento nello spillover
-            const { error: spillInsertError } = await supabase.from('matrix_nodes').insert({
-              user_id: userId,
-              parent_id: node.id,
-              path: newNodePath,
-              level: newNodeLevel,
-              position: pos,
-              depth: newNodeDepth,
-            })
+        const comparePaths = (firstPath: string, secondPath: string) => {
+          const firstParts = pathOrder(firstPath)
+          const secondParts = pathOrder(secondPath)
+          const length = Math.max(firstParts.length, secondParts.length)
 
-            if (spillInsertError) {
-              console.error('Errore DB insert spillover:', spillInsertError)
-              throw new Error(`Errore nel salvataggio del nodo (spillover): ${spillInsertError.message}`)
-            }
-
-            foundNode = true
-            break
+          for (let index = 0; index < length; index++) {
+            const difference = (firstParts[index] || 0) - (secondParts[index] || 0)
+            if (difference !== 0) return difference
           }
+
+          return 0
         }
-        
-        if (!foundNode) {
-          // Fallback estremo
-          const { error: fallbackError } = await supabase.from('matrix_nodes').insert({
-            user_id: userId,
-            parent_id: null,
-            path: 'root',
-            level: 1,
-            position: 1,
-            depth: 0,
-          })
-          if (fallbackError) throw fallbackError
+
+        const candidate = nodesInSponsorTree
+          .map((node) => ({
+            node,
+            children: nodesInSponsorTree.filter((child) => child.parent_id === node.id),
+          }))
+          .filter(({ children }) => children.length < 5)
+          .sort((first, second) => {
+            const levelDifference = first.node.level - second.node.level
+            if (levelDifference !== 0) return levelDifference
+
+            const childDifference = first.children.length - second.children.length
+            if (childDifference !== 0) return childDifference
+
+            return comparePaths(first.node.path, second.node.path)
+          })[0]
+
+        if (!candidate) {
+          throw new Error('Non è disponibile alcuna posizione libera nella rete dello sponsor.')
+        }
+
+        const usedPositions = candidate.children.map((child) => child.position)
+        let position = 1
+        while (usedPositions.includes(position) && position <= 5) position++
+
+        const newNodePath = `${candidate.node.path}.${position}`
+        const newNodeLevel = candidate.node.level + 1
+        const newNodeDepth = candidate.node.path.split('.').length
+
+        const { error: spillInsertError } = await supabase.from('matrix_nodes').insert({
+          user_id: userId,
+          parent_id: candidate.node.id,
+          path: newNodePath,
+          level: newNodeLevel,
+          position,
+          depth: newNodeDepth,
+        })
+
+        if (spillInsertError) {
+          console.error('Errore DB insert spillover:', spillInsertError)
+          throw new Error(`Errore nel salvataggio del nodo (spillover): ${spillInsertError.message}`)
         }
       }
     } catch (error: any) {

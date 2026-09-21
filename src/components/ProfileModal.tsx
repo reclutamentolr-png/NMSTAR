@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation' // ✅ CORRETTO e stabile
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { 
   User, 
   Phone, 
@@ -23,6 +24,8 @@ type ProfileModalProps = {
 }
 
 export default function ProfileModal({ isOpen, onClose, initialData, userId }: ProfileModalProps) {
+  const t = useTranslations('dashboard')
+  const commonT = useTranslations('common')
   const [formData, setFormData] = useState({
     first_name: initialData?.first_name || '',
     last_name: initialData?.last_name || '',
@@ -58,15 +61,14 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
       if (error) throw error
 
       setSuccess(true)
-      router.refresh() // Aggiorna i dati nel server component
+      router.refresh()
       
-      // Chiudi il modale dopo 1.5 secondi
       setTimeout(() => {
         onClose()
         setSuccess(false)
       }, 1500)
     } catch (err: any) {
-      setError(err.message || 'Errore durante il salvataggio')
+      setError(err.message || t('error'))
     } finally {
       setSaving(false)
     }
@@ -84,7 +86,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
             <div className="bg-indigo-100 p-2 rounded-full">
               <User className="w-5 h-5 text-indigo-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Modifica Profilo</h3>
+            <h3 className="text-xl font-bold text-gray-900">{t('editProfileTitle')}</h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-6 h-6" />
@@ -96,7 +98,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                <User className="w-4 h-4" /> Nome
+                <User className="w-4 h-4" /> {t('firstName')}
               </label>
               <input
                 type="text"
@@ -108,7 +110,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                <User className="w-4 h-4" /> Cognome
+                <User className="w-4 h-4" /> {t('lastName')}
               </label>
               <input
                 type="text"
@@ -120,7 +122,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                <Phone className="w-4 h-4" /> Telefono
+                <Phone className="w-4 h-4" /> {t('phone')}
               </label>
               <input
                 type="tel"
@@ -131,19 +133,19 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                <MapPin className="w-4 h-4" /> Paese
+                <MapPin className="w-4 h-4" /> {t('country')}
               </label>
               <input
                 type="text"
                 value={formData.country_code}
                 onChange={(e) => setFormData({...formData, country_code: e.target.value})}
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                placeholder="es. IT"
+                placeholder={t('countryShort')}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                <Calendar className="w-4 h-4" /> Data di nascita
+                <Calendar className="w-4 h-4" /> {t('dateOfBirth')}
               </label>
               <input
                 type="date"
@@ -154,7 +156,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                <Briefcase className="w-4 h-4" /> Occupazione
+                <Briefcase className="w-4 h-4" /> {t('occupation')}
               </label>
               <input
                 type="text"
@@ -173,7 +175,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
 
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> Profilo aggiornato con successo!
+              <CheckCircle2 className="w-4 h-4" /> {t('profileUpdated')}
             </div>
           )}
 
@@ -183,7 +185,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
               onClick={onClose}
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
             >
-              Annulla
+              {commonT('cancel')}
             </button>
             <button
               type="submit"
@@ -191,7 +193,7 @@ export default function ProfileModal({ isOpen, onClose, initialData, userId }: P
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
             >
               <Save className="w-4 h-4" />
-              {saving ? 'Salvataggio...' : 'Salva Modifiche'}
+              {saving ? t('saving') : t('saveChanges')}
             </button>
           </div>
         </form>

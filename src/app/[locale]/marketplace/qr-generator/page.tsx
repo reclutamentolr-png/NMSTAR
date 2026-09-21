@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTranslations } from 'next-intl/server'
 import { redirect } from 'next/navigation'
 import Link from '@/components/LocalizedLink'
 import QRGeneratorTool from '@/components/QRGeneratorTool'
@@ -15,6 +16,7 @@ import {
 export default async function QRGeneratorPage({ params }: { params: Promise<{ locale: string }> }) {
   // ✅ Ottieni la lingua dall'URL (es. 'it', 'en', 'fr')
   const { locale } = await params
+  const t = await getTranslations('qrGenerator')
   
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,13 +45,13 @@ export default async function QRGeneratorPage({ params }: { params: Promise<{ lo
             className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5" />
-            Torna al Marketplace
+            {t('back')}
           </Link>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg">
               <QrCode className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-800">QR Code Dinamico</h1>
+            <h1 className="text-xl font-bold text-gray-800">{t('title')}</h1>
           </div>
         </div>
       </header>
@@ -59,14 +61,13 @@ export default async function QRGeneratorPage({ params }: { params: Promise<{ lo
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
             <Sparkles className="w-4 h-4" />
-            Strumento Gratuito
+            {t('badge')}
           </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-3">
-            Crea il tuo QR Code Virale
+            {t('heroTitle')}
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Genera un QR code personalizzato che punta al tuo link di referral. 
-            Chiunque lo scannerizzerà verrà diretto alla tua pagina personale.
+            {t('heroDescription')}
           </p>
         </div>
 
@@ -74,18 +75,18 @@ export default async function QRGeneratorPage({ params }: { params: Promise<{ lo
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <Smartphone className="w-8 h-8 text-indigo-600 mb-2" />
-            <h3 className="font-semibold text-gray-900 mb-1">Scansione Istantanea</h3>
-            <p className="text-sm text-gray-600">Compatibile con tutti i smartphone moderni</p>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('instantTitle')}</h3>
+            <p className="text-sm text-gray-600">{t('instantDescription')}</p>
           </div>
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <Share2 className="w-8 h-8 text-purple-600 mb-2" />
-            <h3 className="font-semibold text-gray-900 mb-1">Condividi Ovunque</h3>
-            <p className="text-sm text-gray-600">Stampa, condividi sui social o via email</p>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('shareTitle')}</h3>
+            <p className="text-sm text-gray-600">{t('shareDescription')}</p>
           </div>
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <Download className="w-8 h-8 text-pink-600 mb-2" />
-            <h3 className="font-semibold text-gray-900 mb-1">Download HD</h3>
-            <p className="text-sm text-gray-600">Scarica in alta risoluzione per la stampa</p>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('downloadTitle')}</h3>
+            <p className="text-sm text-gray-600">{t('downloadDescription')}</p>
           </div>
         </div>
 
@@ -102,20 +103,20 @@ export default async function QRGeneratorPage({ params }: { params: Promise<{ lo
         <div className="mt-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white">
           <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
-            Consigli per massimizzare le conversioni
+            {t('tipsTitle')}
           </h3>
           <ul className="space-y-2 text-indigo-100 text-sm">
             <li className="flex items-start gap-2">
               <span className="text-white font-bold">•</span>
-              <span>Stampa il QR code su biglietti da visita e volantini</span>
+              <span>{t('tipOne')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-white font-bold">•</span>
-              <span>Condividilo sui social media con un messaggio accattivante</span>
+              <span>{t('tipTwo')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-white font-bold">•</span>
-              <span>Inseriscilo nella firma delle tue email</span>
+              <span>{t('tipThree')}</span>
             </li>
           </ul>
         </div>

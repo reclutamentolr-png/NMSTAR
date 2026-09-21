@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, Pagination, EffectFade } from 'swiper/modules'
@@ -22,6 +23,7 @@ type User = {
 }
 
 export default function LatestUsersSwiper() {
+  const t = useTranslations('landingHome')
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -54,7 +56,7 @@ export default function LatestUsersSwiper() {
       <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 w-full max-w-md mx-auto">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
-          <h3 className="text-lg font-bold text-white">Ultimi Entrati</h3>
+          <h3 className="text-lg font-bold text-white">{t('latestUsers')}</h3>
         </div>
         <div className="h-32 bg-white/10 rounded-xl animate-pulse"></div>
       </div>
@@ -64,7 +66,7 @@ export default function LatestUsersSwiper() {
   if (users.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 w-full max-w-md mx-auto text-center">
-        <p className="text-gray-400 text-sm">Nessun utente registrato</p>
+        <p className="text-gray-400 text-sm">{t('latestUsers')}</p>
       </div>
     )
   }
@@ -75,7 +77,7 @@ export default function LatestUsersSwiper() {
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-yellow-400" />
           <h3 className="text-lg font-bold text-white">
-            Ultimi Entrati ({users.length})
+            {t('latestUsers')} ({users.length})
           </h3>
         </div>
 

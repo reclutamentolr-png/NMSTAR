@@ -1,6 +1,7 @@
 'use client'
 
 import { MessageCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 
 export default function ContactListingButton({ 
@@ -20,7 +21,7 @@ export default function ContactListingButton({
   receiverId: string
   authorName: string
 }) {
-  // ✅ L'onClick è gestito INTERNAMENTE, non passato come prop
+  const t = useTranslations('dashboard')
   const handleClick = () => {
     const listing = {
       id: listingId,
@@ -46,7 +47,7 @@ export default function ContactListingButton({
       className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-1"
     >
       <MessageCircle className="w-4 h-4" />
-      Contatta l'autore
+      {t('contactAuthor')}
     </button>
   )
 }

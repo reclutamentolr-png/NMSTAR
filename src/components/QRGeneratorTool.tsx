@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import QRCode from 'qrcode'
+import { Download, MousePointerClick } from 'lucide-react'
 
 type Props = {
   referralCode: string
@@ -10,12 +12,12 @@ type Props = {
 }
 
 export default function QRGeneratorTool({ referralCode, referralUrl, userName }: Props) {
+  const t = useTranslations('qrGenerator')
   const [qrDataUrl, setQrDataUrl] = useState<string>('')
-  const [fgColor, setFgColor] = useState('#4f46e5') // Indigo-600
+  const [fgColor, setFgColor] = useState('#4f46e5')
   const [bgColor, setBgColor] = useState('#ffffff')
   const [loading, setLoading] = useState(true)
 
-  // Genera il QR code quando cambiano i colori o l'URL
   useEffect(() => {
     const generateQR = async () => {
       try {
@@ -26,7 +28,7 @@ export default function QRGeneratorTool({ referralCode, referralUrl, userName }:
             dark: fgColor,
             light: bgColor
           },
-          errorCorrectionLevel: 'H' // Alta correzione errori (utile se si aggiunge un logo in futuro)
+          errorCorrectionLevel: 'H'
         })
         setQrDataUrl(url)
         setLoading(false)
@@ -52,23 +54,23 @@ export default function QRGeneratorTool({ referralCode, referralUrl, userName }:
         
         {/* COLONNA SINISTRA: Controlli */}
         <div className="p-8 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Personalizza il tuo QR</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-6">{t('customizeQR')}</h3>
           
           <div className="space-y-6">
             {/* Info Link */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Link di destinazione</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('targetLink')}</label>
               <div className="bg-white border border-gray-300 rounded-lg p-3 text-sm text-gray-600 font-mono break-all">
                 {referralUrl}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Questo link è bloccato per garantire il tracciamento dei tuoi affiliati.
+                {t('lockedLink')}
               </p>
             </div>
 
             {/* Colore QR */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Colore del QR Code</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('qrColor')}</label>
               <div className="flex gap-3 items-center">
                 <input 
                   type="color" 
@@ -87,7 +89,7 @@ export default function QRGeneratorTool({ referralCode, referralUrl, userName }:
 
             {/* Colore Sfondo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Colore di Sfondo</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bgColor')}</label>
               <div className="flex gap-3 items-center">
                 <input 
                   type="color" 
@@ -106,7 +108,7 @@ export default function QRGeneratorTool({ referralCode, referralUrl, userName }:
 
             {/* Colori Preimpostati */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Temi rapidi</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('quickThemes')}</label>
               <div className="flex gap-2">
                 <button onClick={() => { setFgColor('#4f46e5'); setBgColor('#ffffff') }} className="w-8 h-8 rounded-full bg-indigo-600 border-2 border-white shadow ring-1 ring-gray-200"></button>
                 <button onClick={() => { setFgColor('#000000'); setBgColor('#ffffff') }} className="w-8 h-8 rounded-full bg-black border-2 border-white shadow ring-1 ring-gray-200"></button>
@@ -119,12 +121,12 @@ export default function QRGeneratorTool({ referralCode, referralUrl, userName }:
 
         {/* COLONNA DESTRA: Anteprima e Download */}
         <div className="p-8 flex flex-col items-center justify-center bg-white">
-          <h3 className="text-lg font-bold text-gray-900 mb-6 w-full text-left">Anteprima</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-6 w-full text-left">{t('preview')}</h3>
           
           <div className="relative group">
             {loading ? (
               <div className="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center animate-pulse">
-                <span className="text-gray-400">Generazione...</span>
+                <span className="text-gray-400">{t('generating')}</span>
               </div>
             ) : (
               <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100">
@@ -139,17 +141,18 @@ export default function QRGeneratorTool({ referralCode, referralUrl, userName }:
               disabled={loading}
               className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              Scarica PNG
+              <Download className="w-5 h-5" />
+              {t('downloadPNG')}
             </button>
             
             <div className="text-center">
               <p className="text-xs text-gray-500">
-                Generato per <span className="font-semibold text-gray-700">{userName}</span>
+                {t('generatedFor')} <span className="font-semibold text-gray-700">{userName}</span>
               </p>
               <p className="text-xs font-mono text-indigo-600 mt-1">{referralCode}</p>
             </div>
           </div>
+
         </div>
 
       </div>

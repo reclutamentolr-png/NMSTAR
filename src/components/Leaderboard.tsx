@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
 import { Trophy, Medal, Award, Crown, TrendingUp } from 'lucide-react'
+import { isActiveSubscription } from '@/lib/subscriptionGate'
 
 type LeaderboardProps = {
   currentUserId: string
@@ -13,10 +15,13 @@ type LeaderboardEntry = {
   first_name: string
   last_name: string
   referral_code: string
-  downline_count: number
+  direct_active_count: number
+  network_active_count: number
 }
 
+
 export default function Leaderboard({ currentUserId }: LeaderboardProps) {
+  const t = useTranslations('dashboard')
   const [allEntries, setAllEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [userRank, setUserRank] = useState<number | null>(null)
@@ -32,63 +37,72 @@ export default function Leaderboard({ currentUserId }: LeaderboardProps) {
     setLoading(true)
     setError(null)
     try {
-      console.log('🔍 Inizio caricamento leaderboard...')
-
       // 1. Recupera tutti i profili
-      const { data: profiles, error: profilesError } = await supabase
+      let { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, referral_code')
-      
-      console.log(' Profili trovati:', profiles?.length, 'Errore:', profilesError)
+        .select('id, first_name, last_name, referral_code, sponsor_id, subscription_status, subscription_expires_at')
+
+      if (profilesError) {
+        // subscription_expires_at may not exist yet on this database (same
+        // defensive fallback used in marketplace/page.tsx).
+        const fallback = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, referral_code, sponsor_id, subscription_status')
+        profiles = fallback.data?.map(p => ({ ...p, subscription_expires_at: null })) ?? null
+        profilesError = fallback.error
+      }
 
       // 2. Recupera tutti i nodi della matrice
       const { data: allNodes, error: nodesError } = await supabase
         .from('matrix_nodes')
         .select('id, user_id, path')
 
-      console.log('🌳 Nodi matrice trovati:', allNodes?.length)
-      console.log('🌳 Errore nodi:', nodesError)
-
       if (profilesError) {
-        console.error('❌ Errore profili:', profilesError)
-        setError(`Errore profili: ${profilesError.message}`)
+        setError(`${t('matrixProfilesError')}: ${profilesError.message}`)
         return
       }
 
       if (nodesError) {
-        console.error('❌ Errore nodi dettagliato:', nodesError)
-        setError(`Errore matrice: ${nodesError.message} (Code: ${nodesError.code})`)
+        setError(`${t('matrixNodesError')}: ${nodesError.message} (Code: ${nodesError.code})`)
         return
       }
 
       if (!profiles || profiles.length === 0) {
-        setError('Nessun profilo trovato nel database')
+        setError(t('noProfiles'))
         return
       }
 
       if (!allNodes || allNodes.length === 0) {
-        setError('Nessun nodo nella matrice. Verifica che gli utenti abbiano nodi creati.')
+        setError(t('noMatrixNodes'))
         return
       }
 
-      // Crea una mappa user_id -> path
+      // Crea una mappa user_id -> path e una user_id -> profilo (per lo stato abbonamento)
       const userPathMap = new Map<string, string>()
       allNodes.forEach(node => {
         if (node.user_id && node.path) {
           userPathMap.set(node.user_id, node.path)
         }
       })
+      const profileById = new Map(profiles.map(p => [p.id, p]))
 
-      console.log('🗺️ Mappa user->path creata con', userPathMap.size, 'utenti')
-
-      // Calcola la downline per ogni profilo
+      // Calcola, per ogni profilo: quanti sponsorizzati diretti sono attivi
+      // (paganti) e quanti utenti attivi ci sono nell'intera rete sotto di lui.
       const entriesWithCount: LeaderboardEntry[] = profiles.map(profile => {
-        const userPath = userPathMap.get(profile.id)
-        let downlineCount = 0
+        const directActiveCount = profiles.filter(
+          p => p.sponsor_id === profile.id && isActiveSubscription(p)
+        ).length
 
+        const userPath = userPathMap.get(profile.id)
+        let networkActiveCount = 0
         if (userPath) {
           const prefix = userPath + '.'
-          downlineCount = allNodes.filter(node => node.path?.startsWith(prefix)).length
+          networkActiveCount = allNodes
+            .filter(node => node.path?.startsWith(prefix))
+            .filter(node => {
+              const p = node.user_id ? profileById.get(node.user_id) : null
+              return p ? isActiveSubscription(p) : false
+            }).length
         }
 
         return {
@@ -96,28 +110,28 @@ export default function Leaderboard({ currentUserId }: LeaderboardProps) {
           first_name: profile.first_name,
           last_name: profile.last_name,
           referral_code: profile.referral_code,
-          downline_count: downlineCount
+          direct_active_count: directActiveCount,
+          network_active_count: networkActiveCount
         }
       })
 
-      // Ordina per downline count decrescente
+      // Ordina per rete attiva decrescente, a parità per diretti attivi
       const sorted = entriesWithCount.sort((a, b) => {
-        if (b.downline_count !== a.downline_count) {
-          return b.downline_count - a.downline_count
+        if (b.network_active_count !== a.network_active_count) {
+          return b.network_active_count - a.network_active_count
+        }
+        if (b.direct_active_count !== a.direct_active_count) {
+          return b.direct_active_count - a.direct_active_count
         }
         return (a.first_name || '').localeCompare(b.first_name || '')
       })
-
-      console.log('🏆 Classifica ordinata:', sorted.slice(0, 5))
 
       setAllEntries(sorted)
 
       const rank = sorted.findIndex(e => e.id === currentUserId) + 1
       setUserRank(rank > 0 ? rank : null)
-      console.log('👤 Tuo rank:', rank)
     } catch (error) {
-      console.error(' Errore generico leaderboard:', error)
-      setError('Errore imprevisto nel caricamento')
+      setError(t('unexpectedError'))
     } finally {
       setLoading(false)
     }
@@ -144,14 +158,14 @@ export default function Leaderboard({ currentUserId }: LeaderboardProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <Trophy className="w-6 h-6 text-yellow-500" />
-          Classifica
+          {t('leaderboard')}
         </h2>
         
         <div className="flex items-center gap-3">
           {userRank && (
             <div className="flex items-center gap-1 text-sm text-indigo-600 font-medium bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
               <TrendingUp className="w-4 h-4" />
-              Sei #{userRank}
+              {t('yourRank', { rank: userRank })}
             </div>
           )}
           
@@ -178,17 +192,17 @@ export default function Leaderboard({ currentUserId }: LeaderboardProps) {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
-          <strong>Errore:</strong> {error}
+          <strong>{t('error')}:</strong> {error}
         </div>
       )}
 
       {loading ? (
         <div className="text-center py-8 text-gray-500 flex flex-col items-center gap-2">
           <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <span>Caricamento classifica...</span>
+          <span>{t('loadingLeaderboard')}</span>
         </div>
       ) : displayedEntries.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">Nessun dato disponibile</div>
+        <div className="text-center py-8 text-gray-500">{t('noData')}</div>
       ) : (
         <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
           {displayedEntries.map((entry, index) => {
@@ -213,15 +227,21 @@ export default function Leaderboard({ currentUserId }: LeaderboardProps) {
                     </span>
                     {isCurrentUser && (
                       <span className="text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                        Tu
+                        {t('youLabel')}
                       </span>
                     )}
                   </div>
                   <div className="text-xs text-gray-500 font-mono truncate">{entry.referral_code}</div>
                 </div>
-                <div className="flex-shrink-0 text-right">
-                  <div className="text-lg font-bold text-gray-900">{entry.downline_count}</div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wide">Affiliati</div>
+                <div className="flex flex-shrink-0 items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900">{entry.direct_active_count}</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">{t('leaderboardDirectActive')}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-gray-900">{entry.network_active_count}</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">{t('leaderboardNetworkActive')}</div>
+                  </div>
                 </div>
               </div>
             )

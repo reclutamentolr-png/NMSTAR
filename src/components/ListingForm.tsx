@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { createListingAction } from '@/app/actions/listings'
-import { LISTING_COST, type ListingCategory, CATEGORY_LABELS } from '@/lib/listings'
+import { LISTING_COST, type ListingCategory, CATEGORY_ICONS } from '@/lib/listings'
 import { X, AlertCircle, CheckCircle2 } from 'lucide-react'
 import Link from '@/components/LocalizedLink'
 
@@ -12,7 +13,16 @@ type Props = {
   onCloseUrl: string
 }
 
+const CATEGORY_LABELS_MAP: Record<ListingCategory, string> = {
+  servizi: 'services',
+  prodotti: 'products',
+  collaborazioni: 'collaborations',
+  eventi: 'events'
+}
+
 export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props) {
+  const t = useTranslations('marketplace')
+  const commonT = useTranslations('common')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -28,12 +38,11 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
 
   const canPublish = currentPoints >= LISTING_COST
 
-  // ✅ FIX EMOJI: Unicode escape sequences invece di caratteri visibili
   const categoryEmojis = {
-    servizi: '\u{1F4BC}',      // 💼
-    prodotti: '\u{1F6CD}',     // 🛍️
-    collaborazioni: '\u{1F91D}', // 🤝
-    eventi: '\u{1F389}'        // 🎉
+    servizi: '\u{1F4BC}',
+    prodotti: '\u{1F6CD}',
+    collaborazioni: '\u{1F91D}',
+    eventi: '\u{1F389}'
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +51,7 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
     setError(null)
 
     if (!canPublish) {
-      setError(`Ti servono almeno ${LISTING_COST} punti per pubblicare`)
+      setError(`${t('notEnoughPointsDesc', { current: currentPoints, cost: LISTING_COST })} ${t('dailyAccess')}`)
       setLoading(false)
       return
     }
@@ -61,8 +70,7 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
     if (result.success) {
       setSuccess(true)
     } else {
-      // ✅ FIX TS2345: Usa ?? per gestire il caso in cui result.message sia undefined
-      setError(result.message ?? 'Errore durante la pubblicazione. Riprova.')
+      setError(result.message ?? t('publishError'))
     }
     setLoading(false)
   }
@@ -71,13 +79,12 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
     return (
       <div className="bg-green-50 border border-green-200 rounded-2xl p-8 mb-8 text-center">
         <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
-        <h3 className="text-xl font-bold text-green-900 mb-2">Annuncio pubblicato!</h3>
+        <h3 className="text-xl font-bold text-green-900 mb-2">{t('publishSuccess')}</h3>
         <p className="text-green-700 mb-4">
-          Ti sono stati scalati {LISTING_COST} punti. 
-          Nuovi punti: <strong>{currentPoints - LISTING_COST}</strong>
+          {t('pointsDeducted', { cost: LISTING_COST, remaining: currentPoints - LISTING_COST })}
         </p>
         <Link href={onCloseUrl} className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold">
-          Torna alla Bacheca
+          {t('backToMarketplace')}
         </Link>
       </div>
     )
@@ -86,7 +93,7 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6 mb-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Pubblica un nuovo annuncio</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('publishYourListing')}</h2>
         <Link href={onCloseUrl} className="text-gray-500 hover:text-gray-700">
           <X className="w-5 h-5" />
         </Link>
@@ -96,65 +103,65 @@ export default function ListingForm({ userId, currentPoints, onCloseUrl }: Props
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-orange-900">Punti insufficienti</p>
-            <p className="text-sm text-orange-700">Hai {currentPoints} punti, te ne servono {LISTING_COST}. Accedi ogni giorno per accumularli!</p>
+            <p className="text-sm font-semibold text-orange-900">{t('notEnoughPoints')}</p>
+            <p className="text-sm text-orange-700">{t('notEnoughPointsDesc', { current: currentPoints, cost: LISTING_COST })} {t('dailyAccess')}</p>
           </div>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700 text-sm">{error}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">{error}</div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Titolo *</label>
-          <input type="text" required maxLength={100} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Es: Consulenza marketing digitale" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('listingTitle')} *</label>
+          <input type="text" required maxLength={100} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder={t('listingTitlePlaceholder')} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('listingCategory')} *</label>
           <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as ListingCategory })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="servizi">{categoryEmojis.servizi} Servizi</option>
-            <option value="prodotti">{categoryEmojis.prodotti} Prodotti</option>
-            <option value="collaborazioni">{categoryEmojis.collaborazioni} Collaborazioni</option>
-            <option value="eventi">{categoryEmojis.eventi} Eventi</option>
+            <option value="servizi">{categoryEmojis.servizi} {t('services')}</option>
+            <option value="prodotti">{categoryEmojis.prodotti} {t('products')}</option>
+            <option value="collaborazioni">{categoryEmojis.collaborazioni} {t('collaborations')}</option>
+            <option value="eventi">{categoryEmojis.eventi} {t('events')}</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione *</label>
-          <textarea required maxLength={1000} rows={4} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Descrivi il tuo annuncio in dettaglio..." />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('listingDescription')} *</label>
+          <textarea required maxLength={1000} rows={4} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder={t('listingDescPlaceholder')} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prezzo (€)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('listingPrice')}</label>
             <input type="number" min="0" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="0.00" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL Immagine</label>
-            <input type="url" value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="https://..." />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('listingImageUrl')}</label>
+            <input type="url" value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder={t('listingImageUrlPlaceholder')} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email contatto</label>
-            <input type="email" value={formData.contactEmail} onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="tua@email.com" />
-            <p className="text-xs text-gray-500 mt-1">Non sarà visibile pubblicamente</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('contactEmail')}</label>
+            <input type="email" value={formData.contactEmail} onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder={t('contactEmailPlaceholder')} />
+            <p className="text-xs text-gray-500 mt-1">{t('notVisiblePublicly')}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
-            <input type="tel" value={formData.contactPhone} onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="+39..." />
-            <p className="text-xs text-gray-500 mt-1">Non sarà visibile pubblicamente</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('contactPhone')}</label>
+            <input type="tel" value={formData.contactPhone} onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder={t('contactPhonePlaceholder')} />
+            <p className="text-xs text-gray-500 mt-1">{t('notVisiblePublicly')}</p>
           </div>
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">Costo: <strong className="text-yellow-600">{LISTING_COST} punti</strong> (ti rimarranno <strong>{currentPoints - LISTING_COST}</strong> punti)</p>
+          <p className="text-sm text-gray-600">{t('cost')}: <strong className="text-yellow-600">{LISTING_COST} {commonT('points')}</strong> ({t('remaining')}: <strong>{currentPoints - LISTING_COST}</strong> {commonT('points')})</p>
           <button type="submit" disabled={loading || !canPublish} className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-            {loading ? 'Pubblicazione...' : 'Pubblica Annuncio'}
+            {loading ? t('publishing') : t('publish')}
           </button>
         </div>
       </form>

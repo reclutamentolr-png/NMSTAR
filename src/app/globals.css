@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #f4f1e8;
   --foreground: #171717;
+  --ink: #171717;
+  --ink-soft: #292722;
+  --gold: #c79a3b;
+  --gold-bright: #e7c56a;
+  --gold-pale: #f5e8bd;
+  --paper: #fffdf7;
+  --muted: #756f62;
 }
 
 @theme inline {
@@ -12,17 +19,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--ink);
 }
 
 @keyframes fadeIn {

@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { X, Download, Share, PlusSquare, Rocket } from 'lucide-react'
 
 export default function InstallAppPrompt() {
+  const t = useTranslations('dashboard')
   const [visible, setVisible] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isIOS, setIsIOS] = useState(false)
@@ -82,8 +84,8 @@ export default function InstallAppPrompt() {
               <Rocket className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-lg">Installa NMP</h3>
-              <p className="text-indigo-100 text-sm">Accedi più velocemente, come una vera app</p>
+              <h3 className="font-bold text-lg">{t('installTitle')}</h3>
+              <p className="text-indigo-100 text-sm">{t('installDesc')}</p>
             </div>
           </div>
         </div>
@@ -92,25 +94,23 @@ export default function InstallAppPrompt() {
           {isIOS ? (
             /* ✅ iPhone/iPad: istruzioni passo-passo */
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">Su iPhone/iPad bastano 2 tocchi:</p>
+              <p className="text-sm text-gray-600">{t('installIOS')}</p>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                 <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
                   <Share className="w-4 h-4" />
                 </div>
-                <p className="text-sm text-gray-700"><strong>1.</strong> Tocca <strong>Condividi</strong> in basso</p>
+                <p className="text-sm text-gray-700"><strong>1.</strong> {t('installStep1')} <strong>{t('shareButton')}</strong> {t('installStep1Lower')}</p>
               </div>
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                 <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
                   <PlusSquare className="w-4 h-4" />
                 </div>
-                <p className="text-sm text-gray-700"><strong>2.</strong> Scegli <strong>"Aggiungi alla schermata Home"</strong></p>
+                <p className="text-sm text-gray-700"><strong>2.</strong> {t('installStep2')} <strong>{t('addToHome')}</strong></p>
               </div>
             </div>
           ) : (
             /* ✅ Android/Desktop: testo + pulsante nativo */
-            <p className="text-sm text-gray-600">
-              Aggiungi Network Marketing Program alla schermata home: avrai un'icona dedicata e si aprirà a schermo intero, senza la barra del browser.
-            </p>
+            <p className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: t('installPrompt') }}></p>
           )}
 
           <div className="flex gap-3 mt-5">
@@ -120,7 +120,7 @@ export default function InstallAppPrompt() {
                 className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all"
               >
                 <Download className="w-4 h-4" />
-                Installa ora
+                {t('installNow')}
               </button>
             )}
             <button
@@ -131,7 +131,7 @@ export default function InstallAppPrompt() {
                   : 'flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700'
               }`}
             >
-              {deferredPrompt ? 'Non ora' : 'Ho capito'}
+              {deferredPrompt ? t('notNow') : t('gotIt')}
             </button>
           </div>
         </div>
