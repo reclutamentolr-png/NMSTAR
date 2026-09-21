@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { saveLinkInBio } from '@/app/actions/linkInBio'
 import { Plus, Trash2, Save, Link as LinkIcon } from 'lucide-react'
 
 type LinkItem = {
@@ -60,14 +61,8 @@ export default function LinkInBioEditor({ userId }: { userId: string }) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const { error } = await supabase.from('link_in_bio').upsert({
-        user_id: userId,
-        bio_text: bioText,
-        links: JSON.stringify(links.filter(l => l.title && l.url)),
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' })
-
-      if (error) throw error
+      const result = await saveLinkInBio(bioText, links)
+      if (!result.success) throw new Error('save failed')
       alert(t('savedSuccess'))
     } catch (error) {
       console.error('Save error:', error)

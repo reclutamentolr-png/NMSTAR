@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { hasActiveLifeCalendarAccess } from '@/lib/lifeCalendar-server'
 import { computeNextDueDate, type LifeCalendarItemFormData } from '@/lib/lifeCalendar'
+import { awardToolPoint } from '@/lib/toolPoints'
 
 type ActionResult<T> =
   | { success: true; data: T }
@@ -54,6 +55,7 @@ export async function createItem(form: LifeCalendarItemFormData): Promise<Action
     return { success: false, message: 'saveError' }
   }
 
+  await awardToolPoint('life-calendar')
   return { success: true, data: { id: data.id } }
 }
 

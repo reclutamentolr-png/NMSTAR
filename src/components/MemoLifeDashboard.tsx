@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { awardMemolifePoint } from '@/app/actions/memolife'
 import { useTranslations } from 'next-intl'
 import {
   Home, Calendar, CheckSquare, Receipt, Users, FileText, CalendarDays,
@@ -196,7 +197,11 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
         console.error('DB error:', result.error)
         throw result.error
       }
-      
+
+      if (!editingId) {
+        await awardMemolifePoint()
+      }
+
 
       setShowAddForm(false)
       setNewItem({})

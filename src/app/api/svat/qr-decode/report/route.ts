@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { awardToolPoint } from '@/lib/toolPoints'
 
 const VALID_TYPES = ['phishing', 'scam', 'impersonation', 'other']
 
@@ -30,5 +31,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  await awardToolPoint('svat')
   return NextResponse.json({ success: true })
 }

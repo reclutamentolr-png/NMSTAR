@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAnthropicClient, MissingApiKeyError } from '@/lib/anthropic'
 import { hasActiveOfferMakerAccess } from '@/lib/offermaker-server'
+import { awardToolPoint } from '@/lib/toolPoints'
 import {
   ANTHROPIC_MODEL,
   generateCampaignCode,
@@ -205,6 +206,7 @@ export async function publishOfferCampaign(
       .single()
 
     if (!error && data) {
+      await awardToolPoint('offermaker')
       return { success: true, data: { id: data.id, code: data.code } }
     }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { awardNeurobalancePoint } from '@/app/actions/neurobalance'
 import { Headphones, Music2, Pause, Play, RotateCcw, Volume2 } from 'lucide-react'
 
 type Preset = {
@@ -120,6 +121,7 @@ export default function NeurobalancePlayer() {
     oscillatorsRef.current = [left, right]
     setRemaining(selected.duration * 60)
     setIsPlaying(true)
+    await awardNeurobalancePoint()
   }
 
   const selectPreset = (preset: Preset) => {
@@ -152,6 +154,7 @@ export default function NeurobalancePlayer() {
 
     await audio.play()
     setIsGuidedPlaying(true)
+    await awardNeurobalancePoint()
   }
 
   const minutes = Math.floor(remaining / 60).toString().padStart(2, '0')

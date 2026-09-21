@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { hasActiveFindoAccess } from '@/lib/findo-server'
 import { buildBreadcrumb, type FindoItemFormData, type FindoLocation } from '@/lib/findo'
+import { awardToolPoint } from '@/lib/toolPoints'
 
 type ActionResult<T> =
   | { success: true; data: T }
@@ -52,6 +53,7 @@ export async function createItem(
     return { success: false, message: 'saveError' }
   }
 
+  await awardToolPoint('findo')
   return { success: true, data: { id } }
 }
 

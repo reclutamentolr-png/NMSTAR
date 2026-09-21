@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { hasActiveQrProAccess } from '@/lib/qrPro-server'
 import { generateShortCode } from '@/lib/shortLink'
+import { awardToolPoint } from '@/lib/toolPoints'
 import type { QrCodeFormData } from '@/lib/qrPro'
 
 type ActionResult<T> =
@@ -54,6 +55,7 @@ export async function createQrCode(form: QrCodeFormData): Promise<ActionResult<{
       .single()
 
     if (!error && data) {
+      await awardToolPoint('qr-code-pro')
       return { success: true, data: { id: data.id, code: data.code } }
     }
 

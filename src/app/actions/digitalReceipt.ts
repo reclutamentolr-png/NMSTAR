@@ -5,6 +5,7 @@ import { hasActiveDigitalReceiptAccess } from '@/lib/digitalReceipt-server'
 import { generateShortCode } from '@/lib/shortLink'
 import type { DigitalReceiptFormData } from '@/lib/digitalReceipt'
 import { createItem as createLifeCalendarItem } from '@/app/actions/lifeCalendar'
+import { awardToolPoint } from '@/lib/toolPoints'
 
 type ActionResult<T> =
   | { success: true; data: T }
@@ -87,6 +88,7 @@ export async function createReceipt(
       .single()
 
     if (!error && data) {
+      await awardToolPoint('digital-receipt')
       return { success: true, data: { id: data.id, code: data.code } }
     }
 
