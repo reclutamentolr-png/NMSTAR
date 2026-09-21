@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { awardNeurobalancePoint } from '@/app/actions/neurobalance'
 import { Headphones, Music2, Pause, Play, RotateCcw, Volume2 } from 'lucide-react'
 
@@ -35,10 +35,20 @@ const specialSounds: SpecialSound[] = [
   { id: 'innalzare-vibrazioni', frequency: 963, name: 'Innalzare le vibrazioni', description: 'Una frequenza acuta da ascoltare a volume basso e confortevole.' },
 ]
 
-const guidedMeditationAudio = '/audio/MeditazioneGuidataperRilassamentoAnsiaDepressioneRespirazioneconMusicaRelax%281%29.mp3'
+const guidedMeditationAudioByLocale: Record<string, string> = {
+  it: '/audio/meditazione_it.mp3',
+  en: '/audio/meditazione_en.mp3',
+  de: '/audio/meditazione_de.mp3',
+  es: '/audio/meditazione_es.mp3',
+  fr: '/audio/meditazione_fr.mp3',
+  pt: '/audio/meditazione_pt.mp3',
+  ru: '/audio/meditazione_ru.mp3',
+}
 
 export default function NeurobalancePlayer() {
   const t = useTranslations('neurobalance')
+  const locale = useLocale()
+  const guidedMeditationAudio = guidedMeditationAudioByLocale[locale] ?? guidedMeditationAudioByLocale.it
   const [selectedId, setSelectedId] = useState(presets[0].id)
   const [isPlaying, setIsPlaying] = useState(false)
   const [remaining, setRemaining] = useState(presets[0].duration * 60)
