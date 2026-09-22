@@ -1,0 +1,34 @@
+import {
+  Smartphone,
+  Link2,
+  MessageCircle,
+  Brain,
+  Waves,
+  ShieldCheck,
+  Wand2,
+  QrCode,
+  CalendarClock,
+  PackageSearch,
+  FileCheck2,
+  Stethoscope,
+  type LucideIcon,
+} from 'lucide-react'
+
+// Shared by MarketplaceCard and any other UI that renders a tool by its
+// marketplaceTools.ts `iconName` string — single source of truth so a new
+// tool's icon never silently falls back to the default in one place but
+// not another.
+export const marketplaceIconMap: Record<string, LucideIcon> = {
+  Smartphone,
+  Link2,
+  MessageCircle,
+  Brain,
+  Waves,
+  ShieldCheck,
+  Wand2,
+  QrCode,
+  CalendarClock,
+  PackageSearch,
+  FileCheck2,
+  Stethoscope,
+}

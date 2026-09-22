@@ -1,0 +1,325 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { AlertTriangle, Eye as EyeIcon, PlayCircle, RotateCcw } from 'lucide-react'
+import { saveVisualTestResult } from '@/app/actions/aureya'
+import {
+  computeEyeVisualScore,
+  computeVisualScore,
+  type Eye,
+  type VisualEyeResult,
+  type VisualFieldPoint,
+} from '@/lib/aureya'
+
+const POINTS_PER_EYE = 9
+const CATCH_TRIALS_PER_EYE = 3
+const STIMULUS_RAMP_MS = 3000
+const STIMULUS_HOLD_MS = 1000
+const START_OPACITY = 0.03
+const MAX_OPACITY = 0.85
+const MIN_GAP_MS = 500
+const MAX_GAP_MS = 1200
+const EYE_ORDER: Eye[] = ['left', 'right']
+
+type Trial = { kind: 'stimulus'; x: number; y: number } | { kind: 'catch' }
+
+type Phase = 'instructions' | 'eye-ready' | 'testing' | 'saving' | 'results'
+
+function buildTrials(): Trial[] {
+  const stimuli: Trial[] = Array.from({ length: POINTS_PER_EYE }, () => {
+    const angle = Math.random() * Math.PI * 2
+    const eccentricity = 0.3 + Math.random() * 0.65
+    return { kind: 'stimulus', x: Math.cos(angle) * eccentricity, y: Math.sin(angle) * eccentricity }
+  })
+  const catches: Trial[] = Array.from({ length: CATCH_TRIALS_PER_EYE }, () => ({ kind: 'catch' }))
+  const trials = [...stimuli, ...catches]
+  for (let i = trials.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[trials[i], trials[j]] = [trials[j], trials[i]]
+  }
+  return trials
+}
+
+export default function AureyaVisualFieldTest({
+  previousScore,
+  previousTestedAt,
+}: {
+  previousScore: number | null
+  previousTestedAt: string | null
+}) {
+  const t = useTranslations('aureya.visual')
+  const [phase, setPhase] = useState<Phase>('instructions')
+  const [eyeIndex, setEyeIndex] = useState(0)
+  const [activeTrial, setActiveTrial] = useState<Trial | null>(null)
+  const [rampVisible, setRampVisible] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [score, setScore] = useState<number | null>(null)
+  const [eyeResults, setEyeResults] = useState<VisualEyeResult[]>([])
+
+  // Refs drive the trial-by-trial timeout chain so it never reads stale
+  // state from the render that scheduled a given step (same reasoning as
+  // the acoustic test's thresholdsRef).
+  const queueRef = useRef<Trial[]>([])
+  const cursorRef = useRef(0)
+  const pointsRef = useRef<VisualFieldPoint[]>([])
+  const falsePositivesRef = useRef(0)
+  const eyeResultsRef = useRef<VisualEyeResult[]>([])
+  const trialStartRef = useRef(0)
+  const awaitingRef = useRef(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rampTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      if (rampTimeoutRef.current) clearTimeout(rampTimeoutRef.current)
+    }
+  }, [])
+
+  const finishTest = async (eyes: VisualEyeResult[]) => {
+    setPhase('saving')
+    setEyeResults(eyes)
+    const computed = computeVisualScore(eyes)
+    setScore(computed)
+    const result = await saveVisualTestResult({ eyes })
+    if (!result.success) {
+      setError(result.message)
+    }
+    setPhase('results')
+  }
+
+  const finishEye = () => {
+    const eye = EYE_ORDER[eyeIndex]
+    const points = pointsRef.current
+    const eyeScore = computeEyeVisualScore(points)
+    eyeResultsRef.current = [
+      ...eyeResultsRef.current,
+      { eye, points, falsePositives: falsePositivesRef.current, catchTrials: CATCH_TRIALS_PER_EYE, score: eyeScore },
+    ]
+
+    const nextEyeIndex = eyeIndex + 1
+    if (nextEyeIndex < EYE_ORDER.length) {
+      setEyeIndex(nextEyeIndex)
+      setPhase('eye-ready')
+    } else {
+      void finishTest(eyeResultsRef.current)
+    }
+  }
+
+  const scheduleNext = () => {
+    const gap = MIN_GAP_MS + Math.random() * (MAX_GAP_MS - MIN_GAP_MS)
+    timeoutRef.current = setTimeout(() => {
+      const next = cursorRef.current + 1
+      if (next >= queueRef.current.length) {
+        finishEye()
+        return
+      }
+      cursorRef.current = next
+      runTrial(next)
+    }, gap)
+  }
+
+  const runTrial = (index: number) => {
+    const trial = queueRef.current[index]
+    setActiveTrial(trial)
+    setRampVisible(false)
+    trialStartRef.current = performance.now()
+    awaitingRef.current = true
+
+    if (trial.kind === 'stimulus') {
+      rampTimeoutRef.current = setTimeout(() => setRampVisible(true), 20)
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      awaitingRef.current = false
+      if (trial.kind === 'stimulus') {
+        pointsRef.current = [...pointsRef.current, { x: trial.x, y: trial.y, detected: false, reactionMs: null, threshold: null }]
+      }
+      setActiveTrial(null)
+      scheduleNext()
+    }, STIMULUS_RAMP_MS + STIMULUS_HOLD_MS)
+  }
+
+  const respond = () => {
+    if (!awaitingRef.current) return
+    awaitingRef.current = false
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    if (rampTimeoutRef.current) {
+      clearTimeout(rampTimeoutRef.current)
+      rampTimeoutRef.current = null
+    }
+
+    const trial = queueRef.current[cursorRef.current]
+    if (trial.kind === 'stimulus') {
+      const elapsed = performance.now() - trialStartRef.current
+      const frac = Math.min(1, elapsed / STIMULUS_RAMP_MS)
+      const threshold = START_OPACITY + (MAX_OPACITY - START_OPACITY) * frac
+      pointsRef.current = [
+        ...pointsRef.current,
+        { x: trial.x, y: trial.y, detected: true, reactionMs: Math.round(elapsed), threshold },
+      ]
+    } else {
+      falsePositivesRef.current += 1
+    }
+    setActiveTrial(null)
+    scheduleNext()
+  }
+
+  useEffect(() => {
+    if (phase !== 'testing') return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault()
+        respond()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
+  const startEye = () => {
+    queueRef.current = buildTrials()
+    cursorRef.current = 0
+    pointsRef.current = []
+    falsePositivesRef.current = 0
+    setPhase('testing')
+    runTrial(0)
+  }
+
+  const restart = () => {
+    setEyeIndex(0)
+    eyeResultsRef.current = []
+    setEyeResults([])
+    setScore(null)
+    setError(null)
+    setPhase('instructions')
+  }
+
+  const currentEye = EYE_ORDER[eyeIndex]
+
+  return (
+    <div className="rounded-[1.75rem] border border-teal-100 bg-white shadow-[0_20px_60px_rgba(18,74,68,0.1)]">
+      <div className="border-b border-teal-100 p-6 sm:p-8">
+        <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">{t('title')}</h1>
+        <p className="mt-2 text-slate-600">{t('intro')}</p>
+      </div>
+
+      {phase === 'instructions' && (
+        <div className="p-6 sm:p-8">
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <p className="text-sm leading-6 text-amber-800">{t('medicalDisclaimer')}</p>
+          </div>
+          <h2 className="mb-2 font-bold text-slate-900">{t('instructionsTitle')}</h2>
+          <p className="mb-6 whitespace-pre-line text-sm leading-6 text-slate-600">{t('instructionsBody')}</p>
+          <button
+            type="button"
+            onClick={() => setPhase('eye-ready')}
+            className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
+          >
+            <PlayCircle className="h-5 w-5" /> {t('startButton')}
+          </button>
+        </div>
+      )}
+
+      {phase === 'eye-ready' && (
+        <div className="p-6 sm:p-8 text-center">
+          <EyeIcon className={`mx-auto mb-4 h-12 w-12 text-teal-600 ${currentEye === 'left' ? '-scale-x-100' : ''}`} />
+          <h2 className="mb-2 font-bold text-slate-900">
+            {currentEye === 'left' ? t('coverRightEye') : t('coverLeftEye')}
+          </h2>
+          <p className="mb-6 text-sm leading-6 text-slate-600">{t('eyeReadyHint')}</p>
+          <button
+            type="button"
+            onClick={startEye}
+            className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
+          >
+            {currentEye === 'left' ? t('startLeftEye') : t('startRightEye')}
+          </button>
+        </div>
+      )}
+
+      {phase === 'testing' && (
+        <div className="p-6 sm:p-8">
+          <p className="mb-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-teal-600">
+            {currentEye === 'left' ? t('testingLeftEye') : t('testingRightEye')}
+          </p>
+          <div
+            role="button"
+            tabIndex={0}
+            onPointerDown={respond}
+            className="relative mx-auto aspect-square w-full max-w-md cursor-pointer select-none overflow-hidden rounded-2xl border border-teal-200 bg-slate-950"
+          >
+            <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-teal-300">
+              <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-teal-300" />
+              <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-teal-300" />
+            </div>
+            {activeTrial?.kind === 'stimulus' && (
+              <div
+                className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+                style={{
+                  left: `${50 + activeTrial.x * 45}%`,
+                  top: `${50 + activeTrial.y * 45}%`,
+                  opacity: rampVisible ? MAX_OPACITY : START_OPACITY,
+                  transition: `opacity ${STIMULUS_RAMP_MS}ms linear`,
+                }}
+              />
+            )}
+          </div>
+          <p className="mt-4 text-center text-sm text-slate-500">{t('respondHint')}</p>
+        </div>
+      )}
+
+      {phase === 'saving' && <div className="p-6 sm:p-8 text-center text-slate-600">{t('savingLabel')}</div>}
+
+      {phase === 'results' && score !== null && (
+        <div className="p-6 sm:p-8">
+          <h2 className="mb-1 font-bold text-slate-900">{t('resultsTitle')}</h2>
+          <p className="mb-6 text-sm text-slate-600">{t('resultsSummary', { score })}</p>
+
+          <div className="mb-6 grid gap-3 sm:grid-cols-2">
+            {eyeResults.map((eyeResult) => (
+              <div key={eyeResult.eye} className="rounded-2xl border border-slate-200 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+                  {eyeResult.eye === 'left' ? t('eyeLeftLabel') : t('eyeRightLabel')}
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{eyeResult.score}%</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {t('falsePositivesLabel', { count: eyeResult.falsePositives, total: eyeResult.catchTrials })}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {previousScore !== null && previousTestedAt && (
+            <p className="mb-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+              {t('resultsComparison', {
+                score,
+                previousScore,
+                date: new Date(previousTestedAt).toLocaleDateString(),
+              })}
+            </p>
+          )}
+
+          {error && <p className="mb-4 text-sm text-red-600">{t(error)}</p>}
+          {!error && <p className="mb-4 text-sm text-emerald-600">{t('saveSuccess')}</p>}
+
+          <button
+            type="button"
+            onClick={restart}
+            className="inline-flex items-center gap-2 rounded-full border border-teal-200 px-5 py-3 font-semibold text-teal-700 transition-colors hover:bg-teal-50"
+          >
+            <RotateCcw className="h-4 w-4" /> {t('restartButton')}
+          </button>
+
+          <p className="mt-8 text-xs leading-5 text-slate-500">{t('medicalDisclaimer')}</p>
+        </div>
+      )}
+    </div>
+  )
+}

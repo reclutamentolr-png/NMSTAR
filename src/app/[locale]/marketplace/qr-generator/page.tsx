@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations } from 'next-intl/server'
 import { redirect } from 'next/navigation'
-import Link from '@/components/LocalizedLink'
+import ToolBackLink from '@/components/ToolBackLink'
 import QRGeneratorTool from '@/components/QRGeneratorTool'
 import { 
   QrCode, 
@@ -17,7 +17,8 @@ export default async function QRGeneratorPage({ params }: { params: Promise<{ lo
   // ✅ Ottieni la lingua dall'URL (es. 'it', 'en', 'fr')
   const { locale } = await params
   const t = await getTranslations('qrGenerator')
-  
+  const commonT = await getTranslations('common')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -40,13 +41,13 @@ export default async function QRGeneratorPage({ params }: { params: Promise<{ lo
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link 
-            href="/marketplace" 
+          <ToolBackLink
             className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors font-medium"
+            dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {t('back')}
-          </Link>
+          </ToolBackLink>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg">
               <QrCode className="w-5 h-5 text-white" />

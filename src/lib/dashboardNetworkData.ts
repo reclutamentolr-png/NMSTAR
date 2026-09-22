@@ -1,0 +1,193 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { isActiveSubscription } from './subscriptionGate'
+import { fetchDirectSponsored } from './directAffiliates'
+import { getCurrentRank, getNewlyAchievedRank, getUnclaimedRankBonuses } from './ranks'
+
+/**
+ * Everything the "rete" (network) section needs: matrix tree, KUMI
+ * (sponsor), qualifications/rank, and the KUMANI / Non ancora KUMANI
+ * lists. Extracted from dashboard/page.tsx so both the Tipo 1 layout
+ * (rendered inline) and the dedicated /dashboard/rete page (Tipo 2) share
+ * one source of truth instead of duplicating these queries.
+ */
+export async function getDashboardNetworkData(
+  supabase: SupabaseClient,
+  user: { id: string },
+  profile: {
+    sponsor_id?: string | null
+    referral_code?: string | null
+    qualifications_seen?: string[] | null
+    rank_bonuses_claimed?: string[] | null
+  } | null,
+  locale: string
+) {
+  // Recupera il nodo matrice dell'utente corrente
+  const { data: userNode } = await supabase.from('matrix_nodes').select('*').eq('user_id', user.id).single()
+
+  // Recupera tutti i nodi della matrice
+  const { data: allMatrixNodes, error: matrixError } = await supabase
+    .from('matrix_nodes')
+    .select(
+      `
+      id,
+      user_id,
+      parent_id,
+      path,
+      level,
+      position,
+      depth,
+      created_at,
+      profiles:user_id (
+        first_name,
+        last_name,
+        referral_code,
+        country_code,
+        username,
+        subscription_status,
+        subscription_expires_at
+      )
+    `
+    )
+    .order('level', { ascending: true })
+
+  // Filtra i discendenti
+  const downlineData = allMatrixNodes
+    ?.filter((node: any) => {
+      if (node.id === userNode?.id) return false
+      const rootPath = userNode?.path
+      if (!rootPath) return false
+      return node.path.startsWith(rootPath + '.')
+    })
+    .map((node: any) => ({
+      id: node.id,
+      user_id: node.user_id,
+      parent_id: node.parent_id,
+      path: node.path,
+      level: node.level,
+      position: node.position,
+      depth: node.depth,
+      created_at: node.created_at,
+      first_name: node.profiles?.first_name,
+      last_name: node.profiles?.last_name,
+      referral_code: node.profiles?.referral_code,
+      country_code: node.profiles?.country_code,
+      username: node.profiles?.username,
+      is_active: isActiveSubscription({
+        subscription_status: node.profiles?.subscription_status,
+        subscription_expires_at: node.profiles?.subscription_expires_at,
+      }),
+    }))
+
+  const downlineError = matrixError
+
+  // Solo chi ha un abbonamento attivo appare visivamente nell'albero della
+  // matrice: chi si registra ma non attiva l'abbonamento resta comunque
+  // posizionato nella struttura reale (per lo spillover), ma non è mostrato
+  // qui — appare invece nella lista "Non ancora KUMANI".
+  const activeDownlineForTree = (downlineData || []).filter((node) => node.is_active)
+
+  // Costruisci il rootNode
+  const correctRootId = userNode?.id || (downlineData && downlineData.length > 0 ? downlineData[0].parent_id : `root-${user.id}`)
+  const rootNode = {
+    id: correctRootId,
+    user_id: user.id,
+    parent_id: userNode?.parent_id || null,
+    path: userNode?.path || 'root',
+    level: userNode?.level || 1,
+    position: userNode?.position || 1,
+    depth: userNode?.depth || 0,
+    created_at: userNode?.created_at || new Date().toISOString(),
+    username: (profile as any)?.username,
+    first_name: (profile as any)?.first_name,
+    last_name: (profile as any)?.last_name,
+    referral_code: profile?.referral_code ?? undefined,
+    country_code: (profile as any)?.country_code,
+  }
+
+  // Statistiche rapide
+  const totalDownline = downlineData?.length || 0
+  // matrix_nodes.depth is absolute (from the global matrix root), not
+  // relative to the viewed user — anyone placed via spillover has a
+  // nonzero depth themselves, so it must be subtracted to get "how many
+  // levels below ME" rather than "how many levels below the company root".
+  const rootDepth = userNode?.depth ?? 0
+  const maxDownlineDepth = (downlineData || []).reduce(
+    (max: number, node: { depth: number }) => Math.max(max, node.depth - rootDepth),
+    0
+  )
+  const userNodeId = userNode?.id
+
+  // RECUPERA LO SPONSOR (il KUMI)
+  const { data: sponsorData } = await supabase
+    .from('profiles')
+    .select('first_name, last_name, referral_code')
+    .eq('id', profile?.sponsor_id)
+    .single()
+
+  // QUALIFICHE — basate su quanti utenti QUESTO utente ha sponsorizzato
+  // personalmente (profiles.sponsor_id) E CHE SONO ATTIVI (abbonamento
+  // pagante), non sui figli diretti nella matrice (matrix_nodes.parent_id,
+  // level1Count, che è bloccato a 5 dallo spillover) e non su sponsorizzati
+  // non paganti: Rising Star/Diamond misurano un team di persone attive,
+  // non solo registrate.
+  const directSponsored = await fetchDirectSponsored(supabase, user.id)
+  const directActiveSponsored = directSponsored.filter(isActiveSubscription)
+  const directSponsorCount = directActiveSponsored.length
+  const directSponsoredWithStatus = directSponsored.map((p) => ({ ...p, is_active: isActiveSubscription(p) }))
+  // "I tuoi KUMANI" mostra solo chi ha attivato l'abbonamento; chi si è
+  // registrato ma non ha ancora attivato finisce in "Non ancora KUMANI",
+  // con un promemoria WhatsApp pronto da inviare.
+  const activeKumani = directSponsoredWithStatus.filter((p) => p.is_active)
+  const pendingKumani = directSponsoredWithStatus.filter((p) => !p.is_active)
+
+  // Quanti sponsorizzati diretti NON sono finiti in uno dei 5 posti diretti
+  // della matrice (matrix_nodes.parent_id === userNodeId) ma sono stati
+  // spostati più in profondità dallo spillover perché quei posti erano già
+  // occupati — sono comunque "diretti" (sponsor_id), solo non posizionati
+  // direttamente sotto di lui nell'albero.
+  const downlineNodeByUserId = new Map(
+    (downlineData || []).map((d: { user_id: string; parent_id: string | null }) => [d.user_id, d])
+  )
+  const directSponsorInSpilloverCount = directSponsored.filter((p) => {
+    const node = downlineNodeByUserId.get(p.id)
+    return node ? node.parent_id !== userNodeId : false
+  }).length
+
+  const currentRank = getCurrentRank(directSponsorCount)
+  const newlyAchievedRank = getNewlyAchievedRank(directSponsorCount, profile?.qualifications_seen || [])
+
+  // Silently credits network_points for any rank tier reached but not yet
+  // claimed — independent of qualifications_seen (the popup dismissal
+  // flag), so someone who reached a rank before this feature existed still
+  // gets the bonus the next time their dashboard loads, without a popup.
+  // claim_rank_bonus() recomputes the active-affiliate count itself and is
+  // guarded against double-award, so calling it here on every dashboard
+  // load (from either Tipo 1 or the /dashboard/rete page) is safe.
+  const unclaimedBonuses = getUnclaimedRankBonuses(directSponsorCount, profile?.rank_bonuses_claimed || [])
+  for (const rank of unclaimedBonuses) {
+    await supabase.rpc('claim_rank_bonus', { p_rank_key: rank.key })
+  }
+
+  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/${locale}/login`
+
+  return {
+    rootNode,
+    downlineData,
+    activeDownlineForTree,
+    downlineError,
+    totalDownline,
+    maxDownlineDepth,
+    sponsorData,
+    directSponsored,
+    directActiveSponsored,
+    directSponsorCount,
+    activeKumani,
+    pendingKumani,
+    directSponsorInSpilloverCount,
+    currentRank,
+    newlyAchievedRank,
+    loginUrl,
+  }
+}
+
+export type DashboardNetworkData = Awaited<ReturnType<typeof getDashboardNetworkData>>

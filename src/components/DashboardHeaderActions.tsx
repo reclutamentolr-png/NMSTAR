@@ -29,13 +29,13 @@ export default function DashboardHeaderActions({ user, profile, isAdmin }: Dashb
         {/* Icona Profilo e Nome */}
         <button
           onClick={() => setIsProfileModalOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors group"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
           title="Modifica profilo"
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:shadow-md transition-shadow">
+          <div className="w-8 h-8 rounded-full bg-[var(--gold)] flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:shadow-md transition-shadow">
             {userInitial.toUpperCase()}
           </div>
-          <span className="text-sm text-gray-700 font-medium hidden sm:block">
+          <span className="text-sm text-[var(--gold-bright)] font-medium hidden sm:block">
             {profile?.first_name || 'Il mio profilo'}
           </span>
         </button>

@@ -108,7 +108,7 @@ export default async function LinkInBioPublicPage({ params }: { params: Promise<
             {linkInBio?.bio_text ? (
               <p className="text-white/90 text-sm leading-relaxed">{linkInBio.bio_text}</p>
             ) : (
-              <p className="text-white/70 text-sm">Network Marketing Professional</p>
+              <p className="text-white/70 text-sm">Professionista Kumani</p>
             )}
           </div>
 
@@ -165,7 +165,7 @@ export default async function LinkInBioPublicPage({ params }: { params: Promise<
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-white/60 text-xs">
-            Powered by <span className="font-semibold">Network Marketing Program</span>
+            Powered by <span className="font-semibold">Kumani</span>
           </p>
         </div>
       </div>

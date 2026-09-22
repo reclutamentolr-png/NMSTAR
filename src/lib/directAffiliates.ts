@@ -5,6 +5,7 @@ export interface SponsoredProfile {
   first_name: string | null
   last_name: string | null
   referral_code: string | null
+  phone: string | null
   created_at: string
   subscription_status: string | null
   subscription_expires_at?: string | null
@@ -23,7 +24,7 @@ export async function fetchDirectSponsored(
 ): Promise<SponsoredProfile[]> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, referral_code, created_at, subscription_status, subscription_expires_at')
+    .select('id, first_name, last_name, referral_code, phone, created_at, subscription_status, subscription_expires_at')
     .eq('sponsor_id', sponsorId)
     .order('created_at', { ascending: true })
 
@@ -31,7 +32,7 @@ export async function fetchDirectSponsored(
 
   const { data: fallbackData } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, referral_code, created_at, subscription_status')
+    .select('id, first_name, last_name, referral_code, phone, created_at, subscription_status')
     .eq('sponsor_id', sponsorId)
     .order('created_at', { ascending: true })
   return fallbackData || []

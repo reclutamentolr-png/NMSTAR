@@ -210,3 +210,189 @@ export async function revokeCoupon(couponId: string) {
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
+
+// ── Subscription vouchers ───────────────────────────────────────────────
+// Read-only admin visibility + revocation for the voucher system: creation
+// and redemption both happen client-side via the SECURITY DEFINER RPCs in
+// supabase/migrations/20260922130000_add_subscription_vouchers.sql (never
+// through a server action), so this file only ever reads or revokes —
+// mirrors the coupon admin surface above.
+
+export async function listVouchers() {
+  const admin = await verifyAdmin('vouchers.read')
+  if (!admin) return { vouchers: [], error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { data, error } = await supabaseAdmin
+    .from('subscription_vouchers')
+    .select('id, code, status, created_at, redeemed_at, created_by, redeemed_by')
+    .order('created_at', { ascending: false })
+    .limit(200)
+
+  if (error) return { vouchers: [], error: error.message }
+  const rows = data || []
+
+  // created_by/redeemed_by reference auth.users, not profiles, so PostgREST
+  // can't embed profiles automatically here — fetch the involved profiles
+  // separately and merge (same pattern as getAllUsers() above).
+  const userIds = Array.from(new Set(rows.flatMap((v) => [v.created_by, v.redeemed_by].filter(Boolean))))
+  const profiles = userIds.length
+    ? (await supabaseAdmin.from('profiles').select('id, first_name, last_name, email').in('id', userIds)).data
+    : []
+  const byId = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+
+  const vouchers = rows.map((v) => ({
+    ...v,
+    creator: byId[v.created_by] || null,
+    redeemer: v.redeemed_by ? byId[v.redeemed_by] || null : null,
+  }))
+
+  return { vouchers, error: null }
+}
+
+export async function revokeVoucher(voucherId: string) {
+  const admin = await verifyAdmin('vouchers.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  // Only an still-active voucher can be revoked — one already redeemed has
+  // already activated someone's subscription and revoking the row here
+  // would not undo that, so it must not look like it did.
+  const { error } = await supabaseAdmin
+    .from('subscription_vouchers')
+    .update({ status: 'revoked' })
+    .eq('id', voucherId)
+    .eq('status', 'active')
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+// ── Reward catalog ──────────────────────────────────────────────────────
+// Prizes a Kumano can redeem with network_points (see
+// supabase/migrations/20260922150000_fix_voucher_points_and_reward_tiers.sql
+// for reward_catalog / reward_redemptions / redeem_reward()). Admin manages
+// the catalog here; the actual point spend + redemption record only ever
+// happens through the redeem_reward() RPC, called from
+// src/app/actions/rewards.ts, never from this file.
+
+export async function createReward(input: {
+  title: string
+  description: string
+  imageUrl: string
+  pointsCost: number
+  isVisible: boolean
+}) {
+  const admin = await verifyAdmin('rewards.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  if (!input.title.trim() || !input.pointsCost || input.pointsCost <= 0) {
+    return { success: false, error: 'Titolo e Punti Rete (> 0) sono obbligatori' }
+  }
+
+  const supabaseAdmin = getServiceClient()
+  const { error } = await supabaseAdmin.from('reward_catalog').insert({
+    title: input.title.trim(),
+    description: input.description.trim() || null,
+    image_url: input.imageUrl.trim() || null,
+    points_cost: input.pointsCost,
+    is_visible: input.isVisible,
+  })
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function updateReward(
+  rewardId: string,
+  input: { title: string; description: string; imageUrl: string; pointsCost: number; isVisible: boolean }
+) {
+  const admin = await verifyAdmin('rewards.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  if (!input.title.trim() || !input.pointsCost || input.pointsCost <= 0) {
+    return { success: false, error: 'Titolo e Punti Rete (> 0) sono obbligatori' }
+  }
+
+  const supabaseAdmin = getServiceClient()
+  const { error } = await supabaseAdmin
+    .from('reward_catalog')
+    .update({
+      title: input.title.trim(),
+      description: input.description.trim() || null,
+      image_url: input.imageUrl.trim() || null,
+      points_cost: input.pointsCost,
+      is_visible: input.isVisible,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', rewardId)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function listRewards() {
+  const admin = await verifyAdmin('rewards.read')
+  if (!admin) return { rewards: [], error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { data, error } = await supabaseAdmin
+    .from('reward_catalog')
+    .select('id, title, description, image_url, points_cost, is_visible, created_at')
+    .order('created_at', { ascending: false })
+
+  if (error) return { rewards: [], error: error.message }
+  return { rewards: data || [], error: null }
+}
+
+export async function deleteReward(rewardId: string) {
+  const admin = await verifyAdmin('rewards.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  // reward_redemptions.reward_id is ON DELETE RESTRICT, so this fails with
+  // a clear DB error if the reward has ever been redeemed — a redeemed
+  // reward can only be hidden (is_visible: false via updateReward), never
+  // deleted, so fulfillment history is never lost.
+  const { error } = await supabaseAdmin.from('reward_catalog').delete().eq('id', rewardId)
+  if (error) return { success: false, error: 'Non è possibile eliminare un premio già riscattato: nascondilo invece.' }
+  return { success: true }
+}
+
+export async function listRewardRedemptions() {
+  const admin = await verifyAdmin('rewards.read')
+  if (!admin) return { redemptions: [], error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { data, error } = await supabaseAdmin
+    .from('reward_redemptions')
+    .select('id, reward_id, user_id, points_spent, redeemed_at, fulfilled_at, reward_catalog(title)')
+    .order('redeemed_at', { ascending: false })
+    .limit(200)
+
+  if (error) return { redemptions: [], error: error.message }
+  const rows = data || []
+
+  const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)))
+  const profiles = userIds.length
+    ? (await supabaseAdmin.from('profiles').select('id, first_name, last_name, email').in('id', userIds)).data
+    : []
+  const byId = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+
+  const redemptions = rows.map((r) => ({ ...r, redeemer: byId[r.user_id] || null }))
+  return { redemptions, error: null }
+}
+
+export async function markRewardFulfilled(redemptionId: string) {
+  const admin = await verifyAdmin('rewards.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { error } = await supabaseAdmin
+    .from('reward_redemptions')
+    .update({ fulfilled_at: new Date().toISOString() })
+    .eq('id', redemptionId)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}

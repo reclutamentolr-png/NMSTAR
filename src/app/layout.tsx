@@ -22,23 +22,22 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "NMP - Network Marketing Program",
-    template: "%s | NMP",
+    default: "Kumani - Mani che ti danno una mano",
+    template: "%s | Kumani",
   },
   description:
-    "La piattaforma #1 per il Network Marketing digitale. Costruisci il tuo impero con matrice 5xN automatica, marketplace gratuito e guadagni multi-livello.",
+    "Kumani è la community di strumenti professionali per chi lavora in proprio: QR code dinamici, link in bio, verifica anti-truffa e altro ancora, tutti in un unico marketplace. Prezzo onesto, regole pubbliche, zero promesse vuote.",
   keywords: [
-    "network marketing",
-    "multi-level marketing",
-    "matrice 5xN",
-    "guadagni online",
+    "strumenti professionali",
+    "marketplace digitale",
+    "QR code dinamico",
+    "link in bio",
     "business digitale",
-    "affiliate marketing",
-    "NMP",
+    "kumani",
   ],
-  authors: [{ name: "NMP Team" }],
-  creator: "NMP",
-  publisher: "NMP",
+  authors: [{ name: "Kumani Team" }],
+  creator: "Kumani",
+  publisher: "Kumani",
   formatDetection: {
     email: false,
     address: false,
@@ -48,23 +47,23 @@ export const metadata: Metadata = {
     type: "website",
     locale: "it_IT",
     url: siteUrl,
-    siteName: "NMP - Network Marketing Program",
-    title: "NMP - Costruisci il Tuo Impero Digitale",
+    siteName: "Kumani",
+    title: "Kumani - Mani che ti danno una mano",
     description:
-      "Unisciti a migliaia di imprenditori che stanno rivoluzionando il network marketing con strumenti digitali all'avanguardia.",
+      "Strumenti professionali, un prezzo onesto e una community che presta mani invece di vendere sogni.",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "NMP - Network Marketing Program",
+        alt: "Kumani",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "NMP - Network Marketing Program",
-    description: "La piattaforma #1 per il Network Marketing digitale.",
+    title: "Kumani - Mani che ti danno una mano",
+    description: "Strumenti professionali per chi lavora in proprio. Prezzo onesto, regole pubbliche.",
     images: ["/og-image.jpg"],
   },
   robots: {
@@ -86,7 +85,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'NMP',
+    title: 'Kumani',
   },
   other: {
     'mobile-web-app-capable': 'yes',

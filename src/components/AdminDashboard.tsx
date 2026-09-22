@@ -4,7 +4,22 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { hasPermission, Permission } from '@/lib/admin-permissions'
 import MatrixTree from '@/components/MatrixTree'
-import { adminUpdateProfile, impersonateUser, createCoupon, listCoupons, revokeCoupon } from '@/app/actions/admin'
+import {
+  adminUpdateProfile,
+  impersonateUser,
+  createCoupon,
+  listCoupons,
+  revokeCoupon,
+  listVouchers,
+  revokeVoucher,
+  createReward,
+  updateReward,
+  listRewards,
+  deleteReward,
+  listRewardRedemptions,
+  markRewardFulfilled,
+} from '@/app/actions/admin'
+import { DASHBOARD_LAYOUTS, DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboardLayouts'
 import {
   LayoutDashboard,
   Users,
@@ -23,7 +38,9 @@ import {
   Pencil,
   UserCog,
   Ticket,
-  Trash2
+  Trash2,
+  BadgeCheck,
+  Gift
 } from 'lucide-react'
 
 type AdminDashboardProps = {
@@ -72,12 +89,21 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   const [savingCoupon, setSavingCoupon] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
 
+  const [vouchers, setVouchers] = useState<any[]>([])
+  const [loadingVouchers, setLoadingVouchers] = useState(false)
+
+  const [rewards, setRewards] = useState<any[]>([])
+  const [rewardRedemptions, setRewardRedemptions] = useState<any[]>([])
+  const [loadingRewards, setLoadingRewards] = useState(false)
+  const [rewardForm, setRewardForm] = useState({ title: '', description: '', imageUrl: '', pointsCost: '', isVisible: true })
+  const [editingRewardId, setEditingRewardId] = useState<string | null>(null)
+  const [savingReward, setSavingReward] = useState(false)
+  const [rewardError, setRewardError] = useState<string | null>(null)
+
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({
-    site_name: 'Network Marketing Program',
-    max_matrix_depth: 5,
-    referral_bonus_enabled: true,
     maintenance_mode: false,
-    maintenance_message: 'Sito in manutenzione. Torna presto!'
+    maintenance_message: 'Sito in manutenzione. Torna presto!',
+    dashboard_layout: DEFAULT_DASHBOARD_LAYOUT
   })
   const [savingSettings, setSavingSettings] = useState(false)
 
@@ -92,6 +118,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     else if (activeSection === 'matrix') loadMatrixUsers()
     else if (activeSection === 'marketplace') loadMarketplaceData()
     else if (activeSection === 'coupons') loadCouponsData()
+    else if (activeSection === 'vouchers') loadVouchersData()
+    else if (activeSection === 'rewards') loadRewardsData()
     else if (activeSection === 'settings') loadSystemSettings()
   }, [activeSection])
 
@@ -246,6 +274,93 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     }
   }
 
+  const loadVouchersData = async () => {
+    setLoadingVouchers(true)
+    const result = await listVouchers()
+    setVouchers(result.vouchers)
+    setLoadingVouchers(false)
+  }
+
+  const handleRevokeVoucher = async (voucherId: string) => {
+    if (!confirm('Revocare questo voucher? Solo i voucher non ancora riscattati possono essere revocati.')) return
+    const result = await revokeVoucher(voucherId)
+    if (result.success) {
+      setVouchers((prev) => prev.map((v) => (v.id === voucherId ? { ...v, status: 'revoked' } : v)))
+    } else {
+      alert(result.error || 'Errore durante la revoca del voucher.')
+    }
+  }
+
+  const loadRewardsData = async () => {
+    setLoadingRewards(true)
+    const [rewardsResult, redemptionsResult] = await Promise.all([listRewards(), listRewardRedemptions()])
+    setRewards(rewardsResult.rewards)
+    setRewardRedemptions(redemptionsResult.redemptions)
+    setLoadingRewards(false)
+  }
+
+  const resetRewardForm = () => {
+    setRewardForm({ title: '', description: '', imageUrl: '', pointsCost: '', isVisible: true })
+    setEditingRewardId(null)
+  }
+
+  const handleEditReward = (reward: any) => {
+    setEditingRewardId(reward.id)
+    setRewardForm({
+      title: reward.title,
+      description: reward.description || '',
+      imageUrl: reward.image_url || '',
+      pointsCost: String(reward.points_cost),
+      isVisible: reward.is_visible,
+    })
+  }
+
+  const handleSaveReward = async () => {
+    setRewardError(null)
+    const pointsCost = parseInt(rewardForm.pointsCost, 10)
+    if (!rewardForm.title.trim() || !pointsCost || pointsCost <= 0) {
+      setRewardError('Titolo e Punti Rete (> 0) sono obbligatori.')
+      return
+    }
+    setSavingReward(true)
+    const payload = {
+      title: rewardForm.title,
+      description: rewardForm.description,
+      imageUrl: rewardForm.imageUrl,
+      pointsCost,
+      isVisible: rewardForm.isVisible,
+    }
+    const result = editingRewardId ? await updateReward(editingRewardId, payload) : await createReward(payload)
+    setSavingReward(false)
+    if (!result.success) {
+      setRewardError(result.error || 'Errore durante il salvataggio del premio.')
+      return
+    }
+    resetRewardForm()
+    await loadRewardsData()
+  }
+
+  const handleDeleteReward = async (rewardId: string) => {
+    if (!confirm('Eliminare questo premio? Possibile solo se non è mai stato riscattato.')) return
+    const result = await deleteReward(rewardId)
+    if (result.success) {
+      setRewards((prev) => prev.filter((r) => r.id !== rewardId))
+    } else {
+      alert(result.error || 'Errore durante l\'eliminazione del premio.')
+    }
+  }
+
+  const handleMarkFulfilled = async (redemptionId: string) => {
+    const result = await markRewardFulfilled(redemptionId)
+    if (result.success) {
+      setRewardRedemptions((prev) =>
+        prev.map((r) => (r.id === redemptionId ? { ...r, fulfilled_at: new Date().toISOString() } : r))
+      )
+    } else {
+      alert(result.error || 'Errore durante l\'aggiornamento.')
+    }
+  }
+
   const toggleToolEnabled = async (toolName: string, currentStatus: boolean) => {
     setSavingTool(toolName)
     const { error } = await supabase.from('marketplace_settings').update({ is_enabled: !currentStatus, updated_at: new Date().toISOString() }).eq('tool_name', toolName)
@@ -357,6 +472,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
         referral_code: data.referral_code || '',
         daily_points: data.daily_points || 0,
         subscription_status: data.subscription_status || 'free',
+        subscription_expires_at: data.subscription_expires_at ? data.subscription_expires_at.slice(0, 10) : '',
         is_admin: data.is_admin || false
       })
     }
@@ -367,7 +483,14 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     setSavingProfile(true)
     const result = await adminUpdateProfile(profileEditUser.id, {
       ...profileForm,
-      date_of_birth: profileForm.date_of_birth || '2000-01-01'
+      date_of_birth: profileForm.date_of_birth || '2000-01-01',
+      // Un abbonamento "Active" senza scadenza resta attivo per sempre
+      // (isActiveSubscription tratta null come "nessuna scadenza") — qui
+      // convertiamo la data scelta in ISO, o null se lasciata vuota
+      // intenzionalmente (es. account interni/di staff).
+      subscription_expires_at: profileForm.subscription_expires_at
+        ? new Date(profileForm.subscription_expires_at).toISOString()
+        : null
     })
     if (result.success) {
       alert('✅ Profilo aggiornato con successo!')
@@ -410,6 +533,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   { id: 'matrix', label: 'Matrice', Icon: GitBranch, permission: 'matrix.read' as Permission },
   { id: 'marketplace', label: 'Marketplace', Icon: ShoppingBag, permission: 'marketplace.read' as Permission },
   { id: 'coupons', label: 'Coupon', Icon: Ticket, permission: 'coupons.read' as Permission },
+  { id: 'vouchers', label: 'Voucher', Icon: BadgeCheck, permission: 'vouchers.read' as Permission },
+  { id: 'rewards', label: 'Premi', Icon: Gift, permission: 'rewards.read' as Permission },
   { id: 'settings', label: 'Impostazioni', Icon: Settings, permission: 'settings.read' as Permission },
 ]
 
@@ -419,7 +544,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg">
         <h2 className="text-3xl font-bold mb-2">Benvenuto, {userName.split(' ')[0]}!</h2>
-        <p className="text-indigo-100">Ecco lo stato attuale del tuo Network Marketing Program.</p>
+        <p className="text-indigo-100">Ecco lo stato attuale della tua piattaforma Kumani.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -790,6 +915,287 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     )
   }
 
+  const renderVouchers = () => {
+    const statusOf = (v: any) => {
+      if (v.status === 'redeemed') return { label: 'Riscattato', className: 'bg-gray-100 text-gray-600' }
+      if (v.status === 'revoked') return { label: 'Revocato', className: 'bg-red-100 text-red-700' }
+      return { label: 'Disponibile', className: 'bg-green-100 text-green-700' }
+    }
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <BadgeCheck className="w-7 h-7" />
+            Voucher Abbonamento
+          </h2>
+          <p className="text-gray-600 mt-1">
+            I Kumani creano questi voucher spendendo 49 punti; solo lettura e revoca qui — la creazione e il riscatto
+            avvengono dal My Wallet di ciascun utente.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Codice</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Creato da</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Riscattato da</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Creato il</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Stato</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingVouchers ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Caricamento...</td></tr>
+              ) : vouchers.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Nessun voucher creato ancora</td></tr>
+              ) : (
+                vouchers.map((v) => {
+                  const status = statusOf(v)
+                  return (
+                    <tr key={v.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-700">{v.code}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {v.creator?.first_name} {v.creator?.last_name}
+                        <div className="text-xs text-gray-400">{v.creator?.email}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {v.redeemed_by ? (
+                          <>
+                            {v.redeemer?.first_name} {v.redeemer?.last_name}
+                            <div className="text-xs text-gray-400">{v.redeemer?.email}</div>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {new Date(v.created_at).toLocaleDateString('it-IT')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${status.className}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {v.status === 'active' && (
+                          <button
+                            onClick={() => handleRevokeVoucher(v.id)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                            title="Revoca voucher"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  const renderRewards = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Gift className="w-7 h-7" />
+            Catalogo Premi
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Premi riscattabili dai Kumani con i Punti Rete. Un premio già riscattato non può più essere eliminato,
+            solo nascosto (disattiva &quot;Visibile&quot;).
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+          <h3 className="font-bold text-gray-900">{editingRewardId ? 'Modifica premio' : 'Nuovo premio'}</h3>
+          {rewardError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">{rewardError}</div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tipo di Regalo</label>
+              <input
+                type="text"
+                placeholder="Es. Buono Amazon 20€"
+                value={rewardForm.title}
+                onChange={(e) => setRewardForm({ ...rewardForm, title: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Punti Rete necessari</label>
+              <input
+                type="number"
+                min="1"
+                placeholder="Es. 294"
+                value={rewardForm.pointsCost}
+                onChange={(e) => setRewardForm({ ...rewardForm, pointsCost: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Foto (URL)</label>
+              <input
+                type="text"
+                placeholder="https://..."
+                value={rewardForm.imageUrl}
+                onChange={(e) => setRewardForm({ ...rewardForm, imageUrl: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+              <textarea
+                placeholder="Descrizione del premio"
+                value={rewardForm.description}
+                onChange={(e) => setRewardForm({ ...rewardForm, description: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none h-20"
+              />
+            </div>
+            <div className="flex items-center gap-2 md:col-span-2">
+              <input
+                type="checkbox"
+                id="reward-visible"
+                checked={rewardForm.isVisible}
+                onChange={(e) => setRewardForm({ ...rewardForm, isVisible: e.target.checked })}
+                className="h-4 w-4"
+              />
+              <label htmlFor="reward-visible" className="text-sm font-medium text-gray-700">
+                Visibile nel Catalogo Premi dei Kumani
+              </label>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveReward}
+              disabled={savingReward}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+            >
+              <Gift className="w-4 h-4" />
+              {savingReward ? 'Salvataggio...' : editingRewardId ? 'Salva modifiche' : 'Crea premio'}
+            </button>
+            {editingRewardId && (
+              <button onClick={resetRewardForm} className="px-5 py-2.5 text-gray-600 hover:text-gray-900 font-medium">
+                Annulla
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Premio</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Punti Rete</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Visibile</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingRewards ? (
+                <tr><td colSpan={4} className="text-center py-8 text-gray-400">Caricamento...</td></tr>
+              ) : rewards.length === 0 ? (
+                <tr><td colSpan={4} className="text-center py-8 text-gray-400">Nessun premio creato ancora</td></tr>
+              ) : (
+                rewards.map((r) => (
+                  <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{r.title}</div>
+                      {r.description && <div className="text-xs text-gray-500">{r.description}</div>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 font-semibold">{r.points_cost}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          r.is_visible ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {r.is_visible ? 'Visibile' : 'Nascosto'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={() => handleEditReward(r)} className="text-indigo-500 hover:text-indigo-700 p-1" title="Modifica">
+                        <Pencil className="w-4 h-4 inline" />
+                      </button>
+                      <button onClick={() => handleDeleteReward(r.id)} className="text-red-500 hover:text-red-700 p-1 ml-1" title="Elimina">
+                        <Trash2 className="w-4 h-4 inline" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h3 className="font-bold text-gray-900 mb-3">Riscatti da evadere</h3>
+          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Premio</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Kumano</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Punti spesi</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Richiesto il</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Stato</th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rewardRedemptions.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-8 text-gray-400">Nessun riscatto ancora</td></tr>
+                ) : (
+                  rewardRedemptions.map((r) => (
+                    <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-900">{r.reward_catalog?.title}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {r.redeemer?.first_name} {r.redeemer?.last_name}
+                        <div className="text-xs text-gray-400">{r.redeemer?.email}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{r.points_spent}</td>
+                      <td className="px-4 py-3 text-gray-500">{new Date(r.redeemed_at).toLocaleDateString('it-IT')}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            r.fulfilled_at ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                          }`}
+                        >
+                          {r.fulfilled_at ? 'Evaso' : 'Da evadere'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {!r.fulfilled_at && (
+                          <button
+                            onClick={() => handleMarkFulfilled(r.id)}
+                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                          >
+                            Segna come evaso
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const renderSettings = () => (
     <div className="space-y-6">
       <div>
@@ -802,43 +1208,32 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Nome del Sito</label>
-          <input
-            type="text"
-            value={systemSettings.site_name || ''}
-            onChange={(e) => setSystemSettings({...systemSettings, site_name: e.target.value})}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Profondità Massima Matrice</label>
-          <input
-            type="number"
-            min="1"
-            max="10"
-            value={systemSettings.max_matrix_depth || 5}
-            onChange={(e) => setSystemSettings({...systemSettings, max_matrix_depth: parseInt(e.target.value)})}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          />
-          <p className="text-xs text-gray-500 mt-1">Numero massimo di livelli visibili nella matrice</p>
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div>
-            <div className="font-medium text-gray-900">Bonus Referral Attivo</div>
-            <div className="text-sm text-gray-500">Abilita il sistema di bonus per i referral</div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            Tipo di Dashboard
+          </label>
+          <p className="text-xs text-gray-500 mb-3">Scegli quale versione della dashboard vedono tutti gli utenti.</p>
+          <div className="space-y-2">
+            {DASHBOARD_LAYOUTS.map((layoutOption) => {
+              const isSelected = (systemSettings.dashboard_layout || DEFAULT_DASHBOARD_LAYOUT) === layoutOption.id
+              return (
+                <button
+                  key={layoutOption.id}
+                  type="button"
+                  onClick={() => setSystemSettings({ ...systemSettings, dashboard_layout: layoutOption.id })}
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                    isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`font-medium ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}>{layoutOption.name}</span>
+                    {isSelected && <span className="text-xs font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Attivo</span>}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">{layoutOption.description}</p>
+                </button>
+              )
+            })}
           </div>
-          <button
-            onClick={() => setSystemSettings({...systemSettings, referral_bonus_enabled: !systemSettings.referral_bonus_enabled})}
-            className="focus:outline-none"
-          >
-            {systemSettings.referral_bonus_enabled ? (
-              <ToggleRight className="w-14 h-8 text-green-500" />
-            ) : (
-              <ToggleLeft className="w-14 h-8 text-gray-400" />
-            )}
-          </button>
         </div>
 
         <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
@@ -954,11 +1349,41 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Punti giornalieri</label>
               <input type="number" value={profileForm.daily_points || 0} onChange={(e) => setProfileForm({...profileForm, daily_points: parseInt(e.target.value) || 0})} className="w-full p-2 border rounded-lg" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Abbonamento</label>
-              <select value={profileForm.subscription_status || 'free'} onChange={(e) => setProfileForm({...profileForm, subscription_status: e.target.value})} className="w-full p-2 border rounded-lg">
+              <select
+                value={profileForm.subscription_status || 'free'}
+                onChange={(e) => {
+                  const newStatus = e.target.value
+                  // Passando ad "Active" senza una scadenza già impostata,
+                  // suggerisce +1 anno da oggi (stessa durata del pagamento
+                  // reale via Stripe) invece di lasciare l'abbonamento
+                  // attivo a vita per errore — l'admin può comunque
+                  // cancellare la data se vuole davvero nessuna scadenza.
+                  const shouldSuggestExpiry = newStatus === 'active' && !profileForm.subscription_expires_at
+                  const suggested = new Date()
+                  suggested.setFullYear(suggested.getFullYear() + 1)
+                  setProfileForm({
+                    ...profileForm,
+                    subscription_status: newStatus,
+                    subscription_expires_at: shouldSuggestExpiry
+                      ? suggested.toISOString().slice(0, 10)
+                      : profileForm.subscription_expires_at
+                  })
+                }}
+                className="w-full p-2 border rounded-lg"
+              >
                 <option value="free">Free</option>
                 <option value="active">Active</option>
                 <option value="expired">Expired</option>
               </select></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Scadenza abbonamento</label>
+              <input
+                type="date"
+                value={profileForm.subscription_expires_at || ''}
+                onChange={(e) => setProfileForm({...profileForm, subscription_expires_at: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+              />
+              <p className="text-xs text-gray-400 mt-1">Vuoto = nessuna scadenza (resta attivo per sempre)</p>
+            </div>
             <div className="md:col-span-2 flex items-center gap-2">
               <input type="checkbox" id="is_admin" checked={profileForm.is_admin || false} onChange={(e) => setProfileForm({...profileForm, is_admin: e.target.checked})} className="w-4 h-4" />
               <label htmlFor="is_admin" className="text-sm font-medium text-gray-700">Amministratore</label>
@@ -1002,6 +1427,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
         {activeSection === 'matrix' && renderMatrix()}
         {activeSection === 'marketplace' && renderMarketplace()}
         {activeSection === 'coupons' && renderCoupons()}
+        {activeSection === 'vouchers' && renderVouchers()}
+        {activeSection === 'rewards' && renderRewards()}
         {activeSection === 'settings' && renderSettings()}
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import Link from 'next/link'
+import ToolBackLink from '@/components/ToolBackLink'
 import {
   ShieldCheck,
   Search,
@@ -80,6 +80,7 @@ function BadgeColor({ badge }: { badge: 'green' | 'yellow' | 'red' }) {
 
 export default function SVATPage() {
   const t = useTranslations('svat')
+  const commonT = useTranslations('common')
   const [activeTab, setActiveTab] = useState<'website' | 'qr'>('website')
   const [input, setInput] = useState('')
   const [result, setResult] = useState<SVATResult | null>(null)
@@ -177,13 +178,13 @@ export default function SVATPage() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link
-            href="/marketplace"
+          <ToolBackLink
             className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+            dashboardLabel={<><ShieldCheck className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ShieldCheck className="w-5 h-5" />
             {t('backToMarketplace')}
-          </Link>
+          </ToolBackLink>
           <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
             <ShieldCheck className="h-5 w-5 text-blue-600" />
             {t('title')}

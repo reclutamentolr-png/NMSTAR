@@ -66,7 +66,7 @@ export default async function MarketplacePage({ params }: { params: Promise<{ lo
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12 max-w-2xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-[var(--gold)]">NMP Digital Suite</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-[var(--gold)]">Kumani Digital Suite</p>
           <h2 className="mb-4 text-4xl font-bold tracking-tight text-[var(--ink)] sm:text-5xl">{t('subtitle')}</h2>
           <p className="text-base leading-7 text-[var(--muted)]">{t('description')}</p>
         </div>

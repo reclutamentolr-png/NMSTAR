@@ -2,20 +2,9 @@
 
 import Link from '@/components/LocalizedLink' // ✅ Sostituisci 'next/link'
 import { useTranslations } from 'next-intl'
-import {
-  Smartphone,
-  Link2,
-  MessageCircle,
-  Brain,
-  Waves,
-  ShieldCheck,
-  Wand2,
-  QrCode,
-  CalendarClock,
-  PackageSearch,
-  FileCheck2,
-  type LucideIcon
-} from 'lucide-react'
+import { Smartphone } from 'lucide-react'
+import { marketplaceIconMap } from '@/lib/marketplaceIcons'
+import FavoriteStarButton from '@/components/FavoriteStarButton'
 
 type MarketplaceCardProps = {
   toolName: string
@@ -27,21 +16,8 @@ type MarketplaceCardProps = {
   description: string
   color: string
   disabledReason?: 'offline' | 'subscription'
-}
-
-// Mappa dei nomi delle icone ai componenti Lucide
-const iconMap: Record<string, LucideIcon> = {
-  'Smartphone': Smartphone,
-  'Link2': Link2,
-  'MessageCircle': MessageCircle,
-  'Brain': Brain,
-  'Waves': Waves,
-  'ShieldCheck': ShieldCheck,
-  'Wand2': Wand2,
-  'QrCode': QrCode,
-  'CalendarClock': CalendarClock,
-  'PackageSearch': PackageSearch,
-  'FileCheck2': FileCheck2,
+  isFavorite?: boolean
+  onFavoriteToggle?: (toolName: string, isFavorite: boolean) => void
 }
 
 export default function MarketplaceCard({
@@ -54,9 +30,11 @@ export default function MarketplaceCard({
    description,
    color,
    disabledReason,
+   isFavorite = false,
+   onFavoriteToggle,
 }: MarketplaceCardProps) {
   const t = useTranslations('marketplace')
-  const Icon = iconMap[iconName] || Smartphone
+  const Icon = marketplaceIconMap[iconName] || Smartphone
   
   const handleClick = (e: React.MouseEvent) => {
     if (!isEnabled) {
@@ -81,6 +59,7 @@ export default function MarketplaceCard({
         }`}
       >
         {isEnabled && <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_25%,rgba(231,197,106,0.2),transparent_55%)]" />}
+        {isEnabled && <FavoriteStarButton toolName={toolName} initialIsFavorite={isFavorite} variant="dark" onToggle={onFavoriteToggle} />}
         <Icon className="relative z-10 h-16 w-16 text-[var(--gold-bright)] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.4} />
       </div>
       <div className="relative flex flex-1 flex-col p-6">

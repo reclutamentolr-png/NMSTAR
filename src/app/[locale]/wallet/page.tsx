@@ -14,12 +14,16 @@ import {
   BadgePercent,
   IdCard,
   ArrowRight,
+  BadgeCheck,
+  Network,
 } from 'lucide-react'
 import { fetchDirectSponsored } from '@/lib/directAffiliates'
 import { isActiveSubscription } from '@/lib/subscriptionGate'
 import { getCurrentRank, RANKS } from '@/lib/ranks'
+import { listMyVouchers } from '@/app/actions/vouchers'
 import WalletMembershipCard from '@/components/WalletMembershipCard'
 import WalletCouponsList from '@/components/WalletCouponsList'
+import WalletVoucherSection from '@/components/WalletVoucherSection'
 
 function WalletSection({
   icon,
@@ -85,6 +89,7 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
     .order('created_at', { ascending: false })
 
   const couponsList = coupons || []
+  const myVouchers = await listMyVouchers()
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const referralUrl = `${baseUrl}/${locale}/ref/${profile.referral_code}`
@@ -126,7 +131,7 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
           />
         </WalletSection>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Points / XP */}
           <WalletSection icon={<Sparkles className="h-5 w-5 text-[var(--gold)]" />} title={t('pointsTitle')}>
             <p className="text-4xl font-bold text-[var(--ink)]">{profile.daily_points || 0}</p>
@@ -136,6 +141,21 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
               className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--gold)] hover:text-[var(--ink)]"
             >
               {t('pointsCta')} <ArrowRight className="h-4 w-4" />
+            </Link>
+          </WalletSection>
+
+          {/* Network points — distinti dai punti giornalieri: si ottengono
+              raggiungendo le qualifiche di sponsorizzazione, non dall'uso
+              quotidiano della piattaforma. Spendibili comunque insieme ai
+              punti giornalieri (vedi WalletVoucherSection). */}
+          <WalletSection icon={<Network className="h-5 w-5 text-[var(--gold)]" />} title={t('networkPointsTitle')}>
+            <p className="text-4xl font-bold text-[var(--ink)]">{profile.network_points || 0}</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">{t('networkPointsDisclaimer')}</p>
+            <Link
+              href="/rewards"
+              className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--gold)] hover:text-[var(--ink)]"
+            >
+              {t('networkPointsCta')} <ArrowRight className="h-4 w-4" />
             </Link>
           </WalletSection>
 
@@ -199,6 +219,11 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
           ) : (
             <WalletCouponsList coupons={couponsList} />
           )}
+        </WalletSection>
+
+        {/* Voucher abbonamento */}
+        <WalletSection icon={<BadgeCheck className="h-5 w-5 text-[var(--gold)]" />} title={t('voucherTitle')}>
+          <WalletVoucherSection initialPoints={profile.network_points || 0} initialVouchers={myVouchers} />
         </WalletSection>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

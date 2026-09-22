@@ -140,5 +140,16 @@ export function getMarketplaceTools(t: (key: string) => string): MarketplaceTool
       category: 'wellness',
       requiresSubscription: true,
     },
+    {
+      toolName: 'aureya',
+      href: '/marketplace/aureya',
+      gradient: 'bg-[var(--ink)]',
+      iconName: 'Stethoscope',
+      title: t('aureya'),
+      description: t('aureyaDescription'),
+      color: 'gold',
+      category: 'wellness',
+      requiresSubscription: true,
+    },
   ]
 }

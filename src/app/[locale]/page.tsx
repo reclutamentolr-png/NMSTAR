@@ -92,10 +92,16 @@ export default function LandingPage() {
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <span className="text-lg sm:text-xl font-bold text-white">NMP</span>
+            <span className="text-lg sm:text-xl font-bold text-white">Kumani</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
+            <Link
+              href="/chi-siamo"
+              className="hidden sm:inline-block text-white/80 hover:text-white font-medium transition-colors text-sm sm:text-base"
+            >
+              {t('aboutLink')}
+            </Link>
             <LanguageSwitcher dark />
             <Link
               href="/login"
@@ -455,9 +461,13 @@ export default function LandingPage() {
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <span className="text-base sm:text-xl font-bold text-white">Network Marketing Program</span>
+              <div>
+                <span className="block text-base sm:text-xl font-bold text-white">Kumani</span>
+                <span className="block text-xs text-gray-500">Mani che ti danno una mano.</span>
+              </div>
             </div>
             <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-gray-400 text-sm">
+              <Link href="/chi-siamo" className="hover:text-white transition-colors">{t('aboutLink')}</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link href="/terms" className="hover:text-white transition-colors">{t('terms')}</Link>
               <Link href="/contact" className="hover:text-white transition-colors">{t('contact')}</Link>

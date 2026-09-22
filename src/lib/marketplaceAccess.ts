@@ -10,6 +10,7 @@ export const REQUIRES_SUBSCRIPTION = [
   'life-calendar',
   'findo',
   'digital-receipt',
+  'aureya',
 ]
 
 export interface MarketplaceAccessState {

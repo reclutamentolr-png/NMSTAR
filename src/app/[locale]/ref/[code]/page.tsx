@@ -58,8 +58,8 @@ export default async function ReferralPage({ params }: { params: Promise<{ code:
           Unisciti al team di {sponsorData.first_name} {sponsorData.last_name}
         </h1>
         <p className="text-gray-600 mb-8">
-          Sei stato invitato a far parte del Network Marketing Program. 
-          Registrati ora per entrare nella matrice e iniziare a crescere.
+          Sei stato invitato a entrare nella community Kumani.
+          Registrati ora per scoprire gli strumenti e iniziare a far crescere la tua attività.
         </p>
 
         {/* Box Codice Sponsor */}

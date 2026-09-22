@@ -13,7 +13,7 @@ import {
 export const metadata: Metadata = {
   title: 'Termini di Servizio e Regolamento Programma Vantaggi',
   description:
-    'Termini di servizio della piattaforma NMP e regolamento trasparente del Programma Vantaggi: punti, bonus, coupon e iniziative esclusive.'
+    'Termini di servizio della piattaforma Kumani e regolamento trasparente del Programma Vantaggi: punti, bonus, coupon e iniziative esclusive.'
 }
 
 const LAST_UPDATE = '21 settembre 2026'
@@ -46,7 +46,7 @@ export default function TermsPage() {
             Termini di Servizio e Regolamento Programma Vantaggi
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Questo documento descrive le regole di utilizzo della piattaforma NMP e disciplina in modo trasparente
+            Questo documento descrive le regole di utilizzo della piattaforma Kumani e disciplina in modo trasparente
             il Programma Vantaggi: punti, bonus, coupon e iniziative esclusive.
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function TermsPage() {
             <div className="text-gray-600 space-y-3 text-sm sm:text-base leading-relaxed">
               <p>
                 I presenti Termini di Servizio (di seguito, i &ldquo;Termini&rdquo;) disciplinano l&apos;accesso e l&apos;utilizzo della
-                piattaforma Network Marketing Program (di seguito, &ldquo;NMP&rdquo; o la &ldquo;Piattaforma&rdquo;),
+                piattaforma Kumani (di seguito, &ldquo;Kumani&rdquo; o la &ldquo;Piattaforma&rdquo;),
                 compresi il Marketplace, gli strumenti digitali in esso inclusi e il Programma Vantaggi descritto all&apos;articolo 7.
               </p>
               <p>
@@ -325,7 +325,7 @@ export default function TermsPage() {
       {/* Footer */}
       <footer className="bg-white border-t py-8 mt-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
-          © 2026 Network Marketing Program — Termini di Servizio e Regolamento Programma Vantaggi, aggiornati al {LAST_UPDATE}.
+          © 2026 Kumani — Termini di Servizio e Regolamento Programma Vantaggi, aggiornati al {LAST_UPDATE}.
         </div>
       </footer>
     </div>

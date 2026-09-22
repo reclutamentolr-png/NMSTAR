@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
-import Link from '@/components/LocalizedLink'
+import ToolBackLink from '@/components/ToolBackLink'
 import { ArrowLeft, PackageSearch, Sparkles } from 'lucide-react'
 import { hasActiveFindoAccess } from '@/lib/findo-server'
 import { buildBreadcrumb, type FindoLocation } from '@/lib/findo'
@@ -9,6 +9,7 @@ import FindoDashboard from '@/components/FindoDashboard'
 
 export default async function FindoPage() {
   const t = await getTranslations('findo')
+  const commonT = await getTranslations('common')
 
   const supabase = await createClient()
   const {
@@ -76,13 +77,13 @@ export default async function FindoPage() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link
-            href="/marketplace"
+          <ToolBackLink
             className="flex items-center gap-2 text-gray-600 hover:text-amber-600 font-medium transition-colors"
+            dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {t('backToMarketplace')}
-          </Link>
+          </ToolBackLink>
           <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
             <PackageSearch className="h-5 w-5 text-amber-600" />
             {t('title')}

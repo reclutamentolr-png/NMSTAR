@@ -15,6 +15,11 @@ const ALL_PERMISSIONS: Permission[] = [
   'matrix.read',
   'marketplace.read',
   'coupons.read',
+  'coupons.write',
+  'vouchers.read',
+  'vouchers.write',
+  'rewards.read',
+  'rewards.write',
   'settings.read'
 ]
 

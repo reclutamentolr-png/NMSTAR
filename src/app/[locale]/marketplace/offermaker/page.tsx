@@ -2,12 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import Link from '@/components/LocalizedLink'
+import ToolBackLink from '@/components/ToolBackLink'
 import { Wand2, ArrowLeft, Sparkles, ListChecks } from 'lucide-react'
 import OfferMakerWizard from '@/components/OfferMakerWizard'
 import { hasActiveOfferMakerAccess } from '@/lib/offermaker-server'
 
 export default async function OfferMakerPage() {
   const t = await getTranslations('offermaker')
+  const commonT = await getTranslations('common')
 
   const supabase = await createClient()
   const {
@@ -26,13 +28,13 @@ export default async function OfferMakerPage() {
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link
-            href="/marketplace"
+          <ToolBackLink
             className="flex items-center gap-2 text-gray-600 hover:text-violet-600 font-medium transition-colors"
+            dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {t('backToMarketplace')}
-          </Link>
+          </ToolBackLink>
           <div className="flex items-center gap-4">
             <Link
               href="/marketplace/offermaker/campaigns"

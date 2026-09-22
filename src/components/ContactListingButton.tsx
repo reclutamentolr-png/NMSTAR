@@ -4,15 +4,16 @@ import { MessageCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 
-export default function ContactListingButton({ 
+export default function ContactListingButton({
   listingId,
   listingTitle,
   listingCategory,
   listingPrice,
   listingDescription,
   receiverId,
-  authorName 
-}: { 
+  authorName,
+  compact = false,
+}: {
   listingId: string
   listingTitle: string
   listingCategory: string
@@ -20,6 +21,10 @@ export default function ContactListingButton({
   listingDescription: string
   receiverId: string
   authorName: string
+  // Narrower cards (the dashboard's community preview) need a smaller,
+  // non-wrapping label so this button stays the same height as the
+  // sibling "Il tuo annuncio" badge instead of wrapping to two lines.
+  compact?: boolean
 }) {
   const t = useTranslations('dashboard')
   const handleClick = () => {
@@ -44,9 +49,9 @@ export default function ContactListingButton({
   return (
     <button
       onClick={handleClick}
-      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-1"
+      className={`w-full py-2 bg-[var(--gold-pale)] border border-[var(--gold)]/40 hover:bg-[var(--gold)] text-[var(--ink)] hover:text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 whitespace-nowrap ${compact ? 'text-xs' : 'text-sm'}`}
     >
-      <MessageCircle className="w-4 h-4" />
+      <MessageCircle className="w-4 h-4 shrink-0" />
       {t('contactAuthor')}
     </button>
   )

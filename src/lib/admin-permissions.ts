@@ -4,6 +4,8 @@ export type Permission =
   | 'matrix.read' | 'matrix.write'
   | 'marketplace.read' | 'marketplace.write'
   | 'coupons.read' | 'coupons.write'
+  | 'vouchers.read' | 'vouchers.write'
+  | 'rewards.read' | 'rewards.write'
   | 'stats.read'
   | 'support.read' | 'support.write'
   | 'settings.read' | 'settings.write'

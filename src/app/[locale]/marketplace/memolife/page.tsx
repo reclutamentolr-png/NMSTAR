@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from '@/components/LocalizedLink'
+import ToolBackLink from '@/components/ToolBackLink'
 import MemoLifeDashboard from '@/components/MemoLifeDashboard'
 import { getTranslations } from 'next-intl/server'
 import { 
@@ -17,7 +17,8 @@ export default async function MemoLifePage({ params }: { params: Promise<{ local
   const { locale } = await params
   const t = await getTranslations('memolife')
   const marketplaceT = await getTranslations('marketplace')
-  
+  const commonT = await getTranslations('common')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -34,13 +35,13 @@ export default async function MemoLifePage({ params }: { params: Promise<{ local
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link 
-            href="/marketplace" 
+          <ToolBackLink
             className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors font-medium"
+            dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {marketplaceT('backToMarketplace')}
-          </Link>
+          </ToolBackLink>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
               <Brain className="w-5 h-5 text-white" />

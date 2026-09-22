@@ -2,12 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import Link from '@/components/LocalizedLink'
+import ToolBackLink from '@/components/ToolBackLink'
 import { QrCode, ArrowLeft, PlusCircle, Sparkles } from 'lucide-react'
 import { hasActiveQrProAccess } from '@/lib/qrPro-server'
 import QrProCodeCard from '@/components/QrProCodeCard'
 
 export default async function QrCodeProPage() {
   const t = await getTranslations('qrCodePro')
+  const commonT = await getTranslations('common')
 
   const supabase = await createClient()
   const {
@@ -30,13 +32,13 @@ export default async function QrCodeProPage() {
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-blue-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link
-            href="/marketplace"
+          <ToolBackLink
             className="flex items-center gap-2 text-gray-600 hover:text-cyan-600 font-medium transition-colors"
+            dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {t('backToMarketplace')}
-          </Link>
+          </ToolBackLink>
           <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
             <QrCode className="h-5 w-5 text-cyan-600" />
             {t('title')}

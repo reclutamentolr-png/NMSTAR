@@ -3,30 +3,45 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useLocale } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from '@/components/LocalizedLink'
 import { Lock, AlertCircle, Loader2, Rocket, Home, CheckCircle } from 'lucide-react'
 import MaintenanceGate from '@/components/MaintenanceGate'
 
+// Fallback per chi arriva cliccando il link nell'email di reset (il client
+// Supabase imposta la sessione automaticamente leggendo il token dall'URL).
+// Il percorso "principale" è /forgot-password, che chiede un codice via
+// email da digitare — ma finché il template email non mostra {{ .Token }}
+// (serve piano Supabase Pro o un provider SMTP personalizzato, entrambi non
+// ancora configurati), il link resta l'unico modo con cui il codice arriva
+// davvero all'utente. Chi apre questa pagina senza sessione (link scaduto o
+// visita diretta) viene rimandato a /forgot-password per ricominciare.
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [hasToken, setHasToken] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [hasSession, setHasSession] = useState(false)
   const t = useTranslations('auth')
+  const locale = useLocale()
+  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        setHasToken(true)
+        setHasSession(true)
+        setCheckingSession(false)
+      } else {
+        router.replace(`/${locale}/forgot-password`)
       }
     }
     checkSession()
-  }, [supabase])
+  }, [supabase, router, locale])
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,9 +57,7 @@ export default function ResetPasswordPage() {
     setLoading(true)
     setError(null)
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: password
-    })
+    const { error: updateError } = await supabase.auth.updateUser({ password })
 
     if (updateError) {
       setError(updateError.message)
@@ -56,18 +69,22 @@ export default function ResetPasswordPage() {
     setLoading(false)
   }
 
+  if (checkingSession || !hasSession) {
+    return null
+  }
+
   return (
     <MaintenanceGate>
       <div className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-[var(--background)] py-12 sm:px-6 lg:px-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(199,154,59,0.18),transparent_42%)]" />
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="absolute left-6 top-6 flex items-center gap-2 font-semibold text-[var(--ink-soft)] transition-colors hover:text-[var(--gold)]"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--ink)]">
             <Rocket className="h-5 w-5 text-[var(--gold-bright)]" />
           </div>
-          <span className="text-lg hidden sm:inline">Network Marketing Program</span>
+          <span className="text-lg hidden sm:inline">Kumani</span>
           <Home className="w-4 h-4 sm:hidden" />
         </Link>
 
@@ -75,18 +92,16 @@ export default function ResetPasswordPage() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-[var(--ink)]">
             {t('resetPassword')}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {t('forgotPasswordDescription')}
-          </p>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="relative border border-[var(--gold)]/35 bg-[var(--paper)] px-4 py-8 shadow-[0_20px_55px_rgba(23,23,23,0.14)] sm:rounded-2xl sm:px-10">
             {error && (
               <div className="mb-4 border-l-4 bg-red-50 border-red-400 p-4 rounded-r">
-                <p className="text-sm font-medium text-red-700">
-                  {error}
-                </p>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <p className="text-sm font-medium text-red-700">{error}</p>
+                </div>
               </div>
             )}
 
@@ -96,8 +111,8 @@ export default function ResetPasswordPage() {
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <p className="text-green-700 mb-4">{t('passwordUpdated')}</p>
-                <Link 
-                  href="/login" 
+                <Link
+                  href="/login"
                   className="inline-flex items-center justify-center gap-2 rounded-md border border-transparent bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white transition-all hover:bg-[var(--ink-soft)]"
                 >
                   {t('backToLogin')}
@@ -146,14 +161,6 @@ export default function ResetPasswordPage() {
                   {loading ? t('updating') : t('updatePassword')}
                 </button>
               </form>
-            )}
-
-            {!success && (
-              <div className="mt-6 text-center">
-                <Link href="/login" className="text-sm font-medium text-[var(--gold)] hover:text-[var(--ink)] hover:underline">
-                  {t('backToLogin')}
-                </Link>
-              </div>
             )}
           </div>
         </div>

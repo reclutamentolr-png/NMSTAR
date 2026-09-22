@@ -51,16 +51,16 @@ export default async function ListingsPage({
   const getCategoryLabel = (cat: ListingCategory) => t(CATEGORY_LABELS_MAP[cat] || 'other')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link 
-            href="/dashboard" 
-            className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors font-medium"
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-gray-600 hover:text-[var(--gold)] transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5" />
-            {t('backToMarketplace')}
+            {commonT('backToDashboard')}
           </Link>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-2 rounded-lg">
@@ -107,9 +107,9 @@ export default async function ListingsPage({
           <Link
             href="/marketplace/listings"
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              !category 
-                ? 'bg-indigo-600 text-white shadow-md' 
-                : 'bg-white text-gray-700 border border-gray-200 hover:border-indigo-300'
+              !category
+                ? 'bg-[var(--ink)] text-white shadow-md'
+                : 'bg-white text-gray-700 border border-gray-200 hover:border-[var(--gold)]/50'
             }`}
           >
             {t('allListings', { count: allListings.length })}
@@ -122,8 +122,8 @@ export default async function ListingsPage({
                 href={`/marketplace/listings?category=${cat}`}
                 className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
                   category === cat
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-indigo-300'
+                    ? 'bg-[var(--ink)] text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-[var(--gold)]/50'
                 }`}
               >
                 <span>{CATEGORY_ICONS[cat]}</span>
@@ -137,14 +137,14 @@ export default async function ListingsPage({
         {myListings.length > 0 && (
           <section className="mb-10">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Eye className="w-5 h-5 text-indigo-600" />
+              <Eye className="w-5 h-5 text-[var(--gold)]" />
               {t('myListings', { count: myListings.length })}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {myListings.map((listing: any) => (
-                <div key={listing.id} className="bg-white rounded-xl border-2 border-indigo-200 p-5 shadow-sm">
+                <div key={listing.id} className="bg-white rounded-xl border-2 border-[var(--gold)]/30 p-5 shadow-sm">
                   <div className="flex items-start justify-between mb-2">
-                    <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
+                    <span className="text-xs font-bold bg-[var(--gold-pale)] text-[var(--ink)] px-2 py-1 rounded">
                       {CATEGORY_ICONS[listing.category as ListingCategory]} {getCategoryLabel(listing.category as ListingCategory)}
                     </span>
                     <span className="text-xs text-gray-500">

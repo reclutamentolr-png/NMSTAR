@@ -32,6 +32,10 @@ export default function LoginPage() {
     })
 
     if (authError) {
+      if (authError.code === 'email_not_confirmed') {
+        router.push(`/${locale}/register?verify=${encodeURIComponent(email)}`)
+        return
+      }
       setError(t('invalidCredentials'))
       setLoading(false)
       return
@@ -74,7 +78,7 @@ export default function LoginPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--ink)]">
             <Rocket className="h-5 w-5 text-[var(--gold-bright)]" />
           </div>
-          <span className="text-lg hidden sm:inline">Network Marketing Program</span>
+          <span className="text-lg hidden sm:inline">Kumani</span>
           <Home className="w-4 h-4 sm:hidden" />
         </Link>
 

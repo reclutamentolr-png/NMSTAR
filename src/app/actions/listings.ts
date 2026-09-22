@@ -16,38 +16,36 @@ const getServiceClient = () =>
 
 export async function createListingAction(data: CreateListingData) {
   const supabase = await createClient()
-  
-  // 1. Verifica punti utente
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('daily_points')
-    .eq('id', data.userId)
-    .single()
-  
-  if (profileError || !profile) {
-    return { success: false, message: 'Profilo non trovato' }
-  }
-  
-  if ((profile.daily_points || 0) < LISTING_COST) {
-    return { success: false, message: `Ti servono almeno ${LISTING_COST} punti per pubblicare un annuncio` }
-  }
-  
-  // 2. Scala 10 punti
-  const newPoints = (profile.daily_points || 0) - LISTING_COST
-  const { error: pointsError } = await supabase
-    .from('profiles')
-    .update({ daily_points: newPoints })
-    .eq('id', data.userId)
-  
-  if (pointsError) {
+
+  // The acting user is always the authenticated session, never data.userId
+  // (that field arrives from the client and can't be trusted for
+  // authorization — using it directly here would let anyone drain another
+  // user's points by passing their id).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, message: 'Devi effettuare l\'accesso' }
+
+  // 1+2. Spende atomicamente dal saldo combinato (network_points prima,
+  // poi daily_points) — stesso guard "nella WHERE dell'UPDATE" usato da
+  // create_subscription_voucher, evita la race condition del vecchio
+  // pattern read-then-write.
+  const { data: spendResult, error: spendError } = await supabase
+    .rpc('spend_points', { p_amount: LISTING_COST })
+    .single<{ success: boolean; new_daily_points: number; new_network_points: number }>()
+
+  if (spendError || !spendResult) {
     return { success: false, message: 'Errore nell\'aggiornamento punti' }
   }
-  
+  if (!spendResult.success) {
+    return { success: false, message: `Ti servono almeno ${LISTING_COST} punti per pubblicare un annuncio` }
+  }
+
   // 3. Crea l'annuncio
   const { data: listing, error } = await supabase
     .from('listings')
     .insert({
-      user_id: data.userId,
+      user_id: user.id,
       title: data.title,
       description: data.description,
       category: data.category,
@@ -59,13 +57,14 @@ export async function createListingAction(data: CreateListingData) {
     })
     .select()
     .single()
-  
+
   if (error) {
     // Rollback punti se fallisce
-    await supabase.from('profiles').update({ daily_points: profile.daily_points }).eq('id', data.userId)
+    await supabase.rpc('refund_points', { p_amount: LISTING_COST })
     return { success: false, message: 'Errore nella creazione dell\'annuncio' }
   }
-  
+
+  const newPoints = spendResult.new_daily_points + spendResult.new_network_points
   return { success: true, listing, newPoints }
 }
 

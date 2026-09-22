@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from '@/components/LocalizedLink'
+import ToolBackLink from '@/components/ToolBackLink'
 import { getTranslations } from 'next-intl/server'
 import LinkInBioEditor from '@/components/LinkInBioEditor'
 import CopyLinkButton from '@/components/CopyLinkButton'
@@ -20,7 +21,8 @@ import {
 export default async function LinkInBioPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const t = await getTranslations('marketplace')
-  
+  const commonT = await getTranslations('common')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -38,9 +40,12 @@ export default async function LinkInBioPage({ params }: { params: Promise<{ loca
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/marketplace" className="flex items-center gap-2 text-gray-600 hover:text-pink-600 font-medium">
+            <ToolBackLink
+              className="flex items-center gap-2 text-gray-600 hover:text-pink-600 font-medium"
+              dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
+            >
               <ArrowLeft className="w-5 h-5" /> {t('backToMarketplace')}
-            </Link>
+            </ToolBackLink>
           </div>
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
@@ -70,13 +75,13 @@ export default async function LinkInBioPage({ params }: { params: Promise<{ loca
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-orange-50">
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link 
-            href="/marketplace" 
+          <ToolBackLink
             className="flex items-center gap-2 text-gray-600 hover:text-pink-600 transition-colors font-medium"
+            dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {t('backToMarketplace')}
-          </Link>
+          </ToolBackLink>
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-br from-pink-500 to-orange-400 p-2 rounded-lg">
               <Link2 className="w-5 h-5 text-white" />
