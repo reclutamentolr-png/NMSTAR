@@ -54,7 +54,7 @@ export default function DigitalReceiptCard({ receipt }: { receipt: Receipt }) {
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+      <div className="w-10 h-10 rounded-lg bg-[var(--gold-pale)] text-[var(--gold)] flex items-center justify-center shrink-0">
         <Icon className="w-5 h-5" />
       </div>
 

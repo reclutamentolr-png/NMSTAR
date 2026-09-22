@@ -339,15 +339,15 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
         <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                {type === 'appointment' ? <Calendar className="w-6 h-6 text-indigo-600" /> :
+              <div className="w-12 h-12 rounded-full bg-[var(--gold-pale)] flex items-center justify-center">
+                {type === 'appointment' ? <Calendar className="w-6 h-6 text-[var(--gold)]" /> :
                   type === 'bill' ? <Receipt className="w-6 h-6 text-red-600" /> :
                     <CheckSquare className="w-6 h-6 text-orange-600" />}
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">{item.title}</h3>
                 <span className={`text-xs px-2 py-1 rounded ${
-                  type === 'appointment' ? 'bg-indigo-100 text-indigo-700' :
+                  type === 'appointment' ? 'bg-[var(--gold-pale)] text-[var(--ink)]' :
                     type === 'bill' ? (item.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') :
                       'bg-orange-100 text-orange-700'
                   }`}>
@@ -484,7 +484,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
               <button onClick={() => setCalendarView('month')} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">{t('monthView')}</button>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setWeekOffset(0)} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-sm font-medium">{t('today')}</button>
+              <button onClick={() => setWeekOffset(0)} className="px-3 py-1 bg-[var(--gold-pale)] text-[var(--ink)] rounded hover:bg-[var(--gold-pale)]/70 text-sm font-medium">{t('today')}</button>
               <button onClick={nextWeek} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 font-bold text-sm">{t('nextWeek')} &gt;</button>
             </div>
           </div>
@@ -494,14 +494,14 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
               const isToday = dateStr === todayStr
               const events = getEventsForDate(day)
               return (
-                <div key={idx} className={`min-h-[200px] border border-gray-200 rounded-lg p-2 ${isToday ? 'bg-indigo-50 border-indigo-400' : 'bg-white'}`}>
-                  <div className={`text-center font-semibold mb-2 ${isToday ? 'text-indigo-600' : 'text-gray-700'}`}>
+                <div key={idx} className={`min-h-[200px] border border-gray-200 rounded-lg p-2 ${isToday ? 'bg-[var(--gold-pale)]/40 border-[var(--gold)]' : 'bg-white'}`}>
+                  <div className={`text-center font-semibold mb-2 ${isToday ? 'text-[var(--gold)]' : 'text-gray-700'}`}>
                     <div className="text-xs">{dayNames[day.getDay()]}</div>
                     <div className="text-lg">{day.getDate()}</div>
                   </div>
                   <div className="space-y-1">
                     {events.appts.map(a => (
-                      <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="text-[10px] bg-indigo-100 text-indigo-700 px-1 py-0.5 rounded cursor-pointer hover:bg-indigo-200 truncate flex items-center gap-1">
+                      <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="text-[10px] bg-[var(--gold-pale)] text-[var(--ink)] px-1 py-0.5 rounded cursor-pointer hover:bg-[var(--gold-pale)]/70 truncate flex items-center gap-1">
                         <Calendar className="w-3 h-3 flex-shrink-0" /> {a.title}
                       </div>
                     ))}
@@ -521,7 +521,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
             })}
           </div>
           <div className="mt-4 flex flex-wrap gap-3 text-xs">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-indigo-100 rounded"></span> {t('appointments')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-[var(--gold-pale)] rounded"></span> {t('appointments')}</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> {t('billsToPay')}</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> {t('billsPaid')}</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 bg-orange-100 rounded"></span> {t('tasks')}</span>
@@ -540,11 +540,11 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
       const events = getEventsForDay(day)
       const hasEvents = events.appts.length > 0 || events.bills.length > 0 || events.tasks.length > 0
       days.push(
-        <div key={day} className={`h-24 border border-gray-200 p-1 overflow-hidden ${isToday ? 'bg-indigo-50 border-indigo-400' : 'bg-white'}`}>
-          <div className={`text-xs font-semibold mb-1 ${isToday ? 'text-indigo-600' : 'text-gray-700'}`}>{day}</div>
+        <div key={day} className={`h-24 border border-gray-200 p-1 overflow-hidden ${isToday ? 'bg-[var(--gold-pale)]/40 border-[var(--gold)]' : 'bg-white'}`}>
+          <div className={`text-xs font-semibold mb-1 ${isToday ? 'text-[var(--gold)]' : 'text-gray-700'}`}>{day}</div>
           <div className="space-y-0.5">
             {events.appts.slice(0, 2).map(a => (
-              <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="text-[9px] bg-indigo-100 text-indigo-700 px-1 rounded truncate cursor-pointer hover:bg-indigo-200 flex items-center gap-0.5">
+              <div key={a.id} onClick={() => handleEventClick(a, 'appointment')} className="text-[9px] bg-[var(--gold-pale)] text-[var(--ink)] px-1 rounded truncate cursor-pointer hover:bg-[var(--gold-pale)]/70 flex items-center gap-0.5">
                 <Calendar className="w-2.5 h-2.5 flex-shrink-0" /> {a.title}
               </div>
             ))}
@@ -571,7 +571,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
           <button onClick={prevMonth} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">&lt; {t('previousMonth')}</button>
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-bold text-gray-900">{formatMonthYear(currentMonth, currentYear)}</h3>
-            <button onClick={() => setCalendarView('week')} className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">{t('weekView')}</button>
+            <button onClick={() => setCalendarView('week')} className="px-3 py-1 bg-[var(--ink)] text-white rounded hover:bg-[var(--ink-soft)] text-sm">{t('weekView')}</button>
           </div>
           <button onClick={nextMonth} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">{t('nextMonth')} &gt;</button>
         </div>
@@ -580,7 +580,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
         </div>
         <div className="grid grid-cols-7 gap-1">{days}</div>
         <div className="mt-4 flex flex-wrap gap-3 text-xs">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-indigo-100 rounded"></span> {t('appointments')}</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-[var(--gold-pale)] rounded"></span> {t('appointments')}</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span> {t('billsToPay')}</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span> {t('billsPaid')}</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 bg-orange-100 rounded"></span> {t('tasks')}</span>
@@ -640,7 +640,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
           <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><Calendar className="w-4 h-4" /> {t('appointments')}</div>
-          <div className="text-3xl font-bold text-indigo-600 mt-2">{stats.appointments}</div>
+          <div className="text-3xl font-bold text-[var(--gold)] mt-2">{stats.appointments}</div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
           <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide"><CheckSquare className="w-4 h-4" /> {t('tasks')}</div>
@@ -672,7 +672,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
           <div className="space-y-2">
             {tasks.slice(0, 2).map(t => (
               <div key={t.id} className="bg-white p-3 rounded-lg border border-gray-200 flex items-center gap-3">
-                <input type="checkbox" checked={t.completed} onChange={() => toggleTask(t.id, t.completed)} className="w-4 h-4 text-indigo-600 rounded" />
+                <input type="checkbox" checked={t.completed} onChange={() => toggleTask(t.id, t.completed)} className="w-4 h-4 text-[var(--gold)] rounded" />
                 <span className={`text-sm ${t.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.title}</span>
               </div>
             ))}
@@ -690,7 +690,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
 
   const renderAppointments = () => (
     <div className="space-y-4">
-      <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2">
+      <button onClick={() => { setEditingId(null); setShowAddForm(!showAddForm) }} className="w-full py-3 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] font-medium flex items-center justify-center gap-2">
         <Plus className="w-5 h-5" /> {editingId ? t('cancelEdit') : t('newAppointment')}
       </button>
       {showAddForm && (
@@ -826,7 +826,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
                 type="checkbox" 
                 checked={t.completed} 
                 onChange={() => toggleTask(t.id, t.completed)} 
-                className="w-5 h-5 text-indigo-600 rounded" 
+                className="w-5 h-5 text-[var(--gold)] rounded" 
               />
               <div 
                 onClick={() => handleEventClick(t, 'task')} 
@@ -1127,7 +1127,7 @@ export default function MemoLifeDashboard({ userId, userName, locale }: MemoLife
             <button
               key={item.id}
               onClick={() => setActiveSection(item.id)}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${activeSection === item.id ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 text-gray-700'
+              className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${activeSection === item.id ? 'bg-[var(--ink)] text-white' : 'hover:bg-gray-100 text-gray-700'
                 }`}
             >
               <item.Icon className="w-5 h-5" />

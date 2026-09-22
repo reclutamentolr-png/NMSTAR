@@ -132,7 +132,7 @@ export default function DigitalReceiptForm() {
                 onClick={() => setForm((prev) => ({ ...prev, template }))}
                 className={`flex flex-col items-center gap-1 px-2 py-3 rounded-lg text-xs font-medium border-2 transition-all ${
                   form.template === template
-                    ? 'border-teal-600 bg-teal-50 text-teal-700'
+                    ? 'border-[var(--gold)] bg-[var(--gold-pale)] text-[var(--ink)]'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -147,7 +147,7 @@ export default function DigitalReceiptForm() {
       <div className="flex flex-col items-center gap-3">
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-teal-500 transition-all overflow-hidden bg-gray-50"
+          className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-[var(--gold)] transition-all overflow-hidden bg-gray-50"
         >
           {uploadingPhoto ? (
             <LoaderCircle className="w-6 h-6 text-gray-400 animate-spin" />
@@ -169,7 +169,7 @@ export default function DigitalReceiptForm() {
             e.target.value = ''
           }}
         />
-        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sm font-medium text-teal-600 hover:underline">
+        <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sm font-medium text-[var(--gold)] hover:underline">
           {photoUrl ? t('changePhoto') : t('addPhoto')}
         </button>
       </div>
@@ -182,7 +182,7 @@ export default function DigitalReceiptForm() {
             value={form.objectName}
             onChange={(e) => setForm((prev) => ({ ...prev, objectName: e.target.value }))}
             placeholder={t('objectPlaceholder')}
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
           />
         </div>
         <div>
@@ -191,7 +191,7 @@ export default function DigitalReceiptForm() {
             type="text"
             value={form.serialNumber}
             onChange={(e) => setForm((prev) => ({ ...prev, serialNumber: e.target.value }))}
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
           />
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function DigitalReceiptForm() {
             value={form.recipientName}
             onChange={(e) => setForm((prev) => ({ ...prev, recipientName: e.target.value }))}
             placeholder={t('recipientPlaceholder')}
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
           />
         </div>
         <div>
@@ -213,7 +213,7 @@ export default function DigitalReceiptForm() {
             type="date"
             value={form.deliveryDate}
             onChange={(e) => setForm((prev) => ({ ...prev, deliveryDate: e.target.value }))}
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
           />
         </div>
       </div>
@@ -225,7 +225,7 @@ export default function DigitalReceiptForm() {
           value={form.reason}
           onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
           placeholder={t('reasonPlaceholder')}
-          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
         />
       </div>
 
@@ -237,7 +237,7 @@ export default function DigitalReceiptForm() {
             min={0}
             value={form.quantity ?? ''}
             onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value ? Number(e.target.value) : null }))}
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
           />
         </div>
         <div>
@@ -249,20 +249,20 @@ export default function DigitalReceiptForm() {
             value={form.declaredValue ?? ''}
             onChange={(e) => setForm((prev) => ({ ...prev, declaredValue: e.target.value ? Number(e.target.value) : null }))}
             placeholder="€"
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
           />
         </div>
       </div>
 
       {form.template === 'loan' && (
-        <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-3">
+        <div className="bg-[var(--gold-pale)] border border-[var(--gold)]/30 rounded-xl p-4 space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('expectedReturnField')}</label>
             <input
               type="date"
               value={form.expectedReturnDate}
               onChange={(e) => setForm((prev) => ({ ...prev, expectedReturnDate: e.target.value }))}
-              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm bg-white"
             />
           </div>
           {form.expectedReturnDate && (
@@ -271,7 +271,7 @@ export default function DigitalReceiptForm() {
                 type="checkbox"
                 checked={form.addLifeCalendarReminder}
                 onChange={(e) => setForm((prev) => ({ ...prev, addLifeCalendarReminder: e.target.checked }))}
-                className="rounded text-teal-600 focus:ring-teal-500"
+                className="rounded text-[var(--gold)] focus:ring-[var(--gold)]"
               />
               {t('addLifeCalendarReminder')}
             </label>
@@ -285,7 +285,7 @@ export default function DigitalReceiptForm() {
           value={form.notes}
           onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
           rows={3}
-          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
         />
       </div>
 
@@ -299,7 +299,7 @@ export default function DigitalReceiptForm() {
       <button
         onClick={handleSubmit}
         disabled={!isValid || saving || uploadingPhoto}
-        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-teal-700 hover:to-cyan-700 transition-all disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[var(--ink)] hover:bg-[var(--ink-soft)] text-white rounded-xl font-semibold transition-all disabled:opacity-50"
       >
         {saving ? (
           <>

@@ -38,7 +38,7 @@ export default function DigitalReceiptDashboard({ receipts }: { receipts: Receip
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('searchPlaceholder')}
-            className="w-full pl-9 pr-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full pl-9 pr-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
           />
         </div>
 
@@ -58,7 +58,7 @@ export default function DigitalReceiptDashboard({ receipts }: { receipts: Receip
 
       <Link
         href="/marketplace/digital-receipt/new"
-        className="fixed bottom-6 right-6 flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+        className="fixed bottom-6 right-6 flex items-center gap-2 px-6 py-4 bg-[var(--ink)] hover:bg-[var(--ink-soft)] text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
       >
         <PlusCircle className="w-5 h-5" />
         {t('newReceipt')}

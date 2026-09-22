@@ -63,7 +63,7 @@ export default async function DashboardTipo2({
 
       {/* Scorciatoia ai servizi preferiti */}
       <Link
-        href="/marketplace/preferiti"
+        href="/marketplace/preferiti?from=dashboard"
         className="group flex items-center justify-between gap-3 rounded-xl border border-[var(--gold)]/35 bg-[var(--gold-pale)] px-5 py-4 shadow-sm transition-colors hover:border-[var(--gold)]"
       >
         <div className="flex items-center gap-3">

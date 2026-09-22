@@ -61,17 +61,17 @@ export default async function DigitalReceiptDetailPage({
       : t('statusPending')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
+      <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link
             href="/marketplace/digital-receipt"
-            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 font-medium transition-colors"
+            className="flex items-center gap-2 text-white hover:text-[var(--gold-bright)] font-medium transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             {t('title')}
           </Link>
-          <h1 className="text-lg font-semibold text-gray-800 truncate max-w-xs">{receipt.object_name}</h1>
+          <h1 className="text-lg font-semibold text-white truncate max-w-xs">{receipt.object_name}</h1>
         </div>
       </header>
 
@@ -80,7 +80,7 @@ export default async function DigitalReceiptDetailPage({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
             <div className="sm:col-span-2 space-y-4">
               <div>
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-teal-100 text-teal-700">
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-[var(--gold-pale)] text-[var(--ink)]">
                   {statusLabel}
                 </span>
               </div>
@@ -104,7 +104,7 @@ export default async function DigitalReceiptDetailPage({
                 fileName={`receipt-${receipt.code}`}
                 generatingLabel={t('generatingQr')}
                 downloadLabel={t('downloadQr')}
-                accentClassName="bg-teal-600 hover:bg-teal-700"
+                accentClassName="bg-[var(--ink)] hover:bg-[var(--ink-soft)]"
               />
             </div>
           </div>

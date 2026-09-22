@@ -58,13 +58,13 @@ export default function DigitalReceiptPublicView({ receipt: initial }: { receipt
   return (
     <div className="max-w-lg mx-auto px-4 sm:px-6 py-12">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-teal-600 to-cyan-600 p-6 text-white text-center">
+        <div className="bg-[var(--ink)] p-6 text-white text-center">
           <div className="inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs font-medium mb-3">
             <Icon className="w-3.5 h-3.5" />
             {t(`template_${receipt.template}`)}
           </div>
           <h1 className="text-2xl font-bold">{receipt.object_name}</h1>
-          <p className="text-teal-50 text-sm mt-1">#{receipt.code}</p>
+          <p className="text-[var(--gold-bright)] text-sm mt-1">#{receipt.code}</p>
         </div>
 
         {receipt.photo_url && (
@@ -140,7 +140,7 @@ export default function DigitalReceiptPublicView({ receipt: initial }: { receipt
               <button
                 onClick={handleConfirm}
                 disabled={confirming}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-teal-700 hover:to-cyan-700 transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[var(--ink)] hover:bg-[var(--ink-soft)] text-white rounded-xl font-semibold transition-all disabled:opacity-50"
               >
                 {confirming ? <Clock className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
                 {t('confirmReceipt')}

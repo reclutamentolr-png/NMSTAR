@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
-import { LISTING_COST, type CreateListingData } from '@/lib/listings'
+import { LISTING_COST, type CreateListingData, type UpdateListingData } from '@/lib/listings'
 
 // ✅ Service client per bypassare RLS
 const getServiceClient = () =>
@@ -64,15 +64,144 @@ export async function createListingAction(data: CreateListingData) {
     return { success: false, message: 'Errore nella creazione dell\'annuncio' }
   }
 
+  // Vetrina opzionale scelta in fase di creazione: riusa lo stesso RPC
+  // atomico (feature_listing) di FeatureListingButton, chiamato subito dopo
+  // sull'annuncio appena creato. Se fallisce (es. punti rete insufficienti
+  // per una race condition) l'annuncio resta comunque valido — non si fa
+  // rollback della creazione, si segnala solo l'esito della vetrina a parte.
+  if (data.featureDurationDays) {
+    const { data: featureResult } = await supabase
+      .rpc('feature_listing', { p_listing_id: listing.id, p_duration_days: data.featureDurationDays })
+      .single<{ success: boolean; reason: string | null; featured_until: string | null; new_network_points: number }>()
+
+    if (featureResult?.success) {
+      return {
+        success: true,
+        listing: { ...listing, featured_until: featureResult.featured_until },
+        newPoints: spendResult.new_daily_points,
+        featured: true,
+        newNetworkPoints: featureResult.new_network_points,
+      }
+    }
+    return {
+      success: true,
+      listing,
+      newPoints: spendResult.new_daily_points,
+      featured: false,
+      featureError: featureResult?.reason || 'error',
+    }
+  }
+
   return { success: true, listing, newPoints: spendResult.new_daily_points }
+}
+
+// Same ownership pattern as republishListingAction: session-derived user,
+// filtered .update() relying on the existing RLS UPDATE policy as a second
+// layer. Doesn't touch points/cost — editing is free, only creation costs.
+export async function updateListingAction(listingId: string, data: UpdateListingData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, message: 'Devi effettuare l\'accesso' }
+
+  const { data: listing, error } = await supabase
+    .from('listings')
+    .update({
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      price: data.price,
+      image_url: data.imageUrl,
+      contact_email: data.contactEmail,
+      contact_phone: data.contactPhone,
+    })
+    .eq('id', listingId)
+    .eq('user_id', user.id)
+    .select()
+    .single()
+
+  if (error || !listing) return { success: false, message: 'Errore nella modifica dell\'annuncio' }
+  return { success: true, listing }
+}
+
+// Flags a listing for admin review. report_listing() (SECURITY DEFINER, see
+// supabase/migrations/20260922210000_add_listing_reports.sql) blocks
+// self-reporting and upserts on (listing_id, reporter_id) so re-reporting
+// just refreshes the reason instead of spamming duplicate rows.
+export async function reportListingAction(listingId: string, reason?: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false as const, message: 'notLoggedIn' as const }
+
+  const { data, error } = await supabase
+    .rpc('report_listing', { p_listing_id: listingId, p_reason: reason || null })
+    .single<{ success: boolean; reason: string | null }>()
+
+  if (error || !data) return { success: false as const, message: 'error' as const }
+  if (!data.success) {
+    return { success: false as const, message: (data.reason || 'error') as 'not_found' | 'own_listing' | 'error' }
+  }
+  return { success: true as const }
 }
 
 export async function deleteListingAction(listingId: string, userId: string) {
   const supabase = await createClient()
   const { error } = await supabase.from('listings').delete().eq('id', listingId).eq('user_id', userId)
-  
+
   if (error) return { success: false, message: 'Errore nell\'eliminazione' }
   return { success: true }
+}
+
+// Renews a listing for another 30 days from now. An expired listing (past
+// its expires_at) drops out of getActiveListings' public query on its own —
+// this doesn't need a separate "is_active" flip, just pushing expires_at
+// forward makes it publicly visible again. Ownership is checked via the
+// authenticated session, not a client-supplied userId, same reasoning as
+// createListingAction.
+export async function republishListingAction(listingId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, message: 'Devi effettuare l\'accesso' }
+
+  const { error } = await supabase
+    .from('listings')
+    .update({ expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() })
+    .eq('id', listingId)
+    .eq('user_id', user.id)
+
+  if (error) return { success: false, message: 'Errore durante la ripubblicazione' }
+  return { success: true }
+}
+
+// Spends network_points to feature the caller's own listing for 7 or 15
+// days — the cost check, spend and featured_until update all happen inside
+// one SECURITY DEFINER transaction (feature_listing, see
+// supabase/migrations/20260922190000_add_listing_showcase.sql).
+export async function featureListingAction(listingId: string, durationDays: 7 | 15) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false as const, message: 'notLoggedIn' as const }
+
+  const { data, error } = await supabase
+    .rpc('feature_listing', { p_listing_id: listingId, p_duration_days: durationDays })
+    .single<{ success: boolean; reason: string | null; featured_until: string | null; new_network_points: number }>()
+
+  if (error || !data) return { success: false as const, message: 'error' as const }
+  if (!data.success) {
+    return {
+      success: false as const,
+      message: (data.reason || 'error') as 'invalid_duration' | 'not_found' | 'not_owner' | 'insufficient_points',
+      balance: data.new_network_points,
+    }
+  }
+  return { success: true as const, featuredUntil: data.featured_until as string, balance: data.new_network_points }
 }
 
 export async function markMessagesAsRead(userId: string, otherUserId: string, listingId?: string) {

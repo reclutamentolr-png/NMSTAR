@@ -21,18 +21,18 @@ export default async function NewQrCodePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-blue-50">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
+      <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <Link
             href="/marketplace/qr-code-pro"
-            className="flex items-center gap-2 text-gray-600 hover:text-cyan-600 font-medium transition-colors"
+            className="flex items-center gap-2 text-white hover:text-[var(--gold-bright)] font-medium transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             {t('title')}
           </Link>
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-            <QrCode className="h-5 w-5 text-cyan-600" />
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <QrCode className="h-5 w-5 text-[var(--gold-bright)]" />
             {t('newCode')}
           </h1>
         </div>

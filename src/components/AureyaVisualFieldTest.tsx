@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { AlertTriangle, Eye as EyeIcon, PlayCircle, RotateCcw } from 'lucide-react'
+import { AlertTriangle, Eye as EyeIcon, PlayCircle, RotateCcw, StopCircle } from 'lucide-react'
 import { saveVisualTestResult } from '@/app/actions/aureya'
 import {
   computeEyeVisualScore,
@@ -203,8 +203,8 @@ export default function AureyaVisualFieldTest({
   const currentEye = EYE_ORDER[eyeIndex]
 
   return (
-    <div className="rounded-[1.75rem] border border-teal-100 bg-white shadow-[0_20px_60px_rgba(18,74,68,0.1)]">
-      <div className="border-b border-teal-100 p-6 sm:p-8">
+    <div className="rounded-[1.75rem] border border-[var(--gold)]/20 bg-white shadow-[0_20px_60px_rgba(23,23,23,0.1)]">
+      <div className="border-b border-[var(--gold)]/20 p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">{t('title')}</h1>
         <p className="mt-2 text-slate-600">{t('intro')}</p>
       </div>
@@ -220,7 +220,7 @@ export default function AureyaVisualFieldTest({
           <button
             type="button"
             onClick={() => setPhase('eye-ready')}
-            className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-[var(--ink-soft)]"
           >
             <PlayCircle className="h-5 w-5" /> {t('startButton')}
           </button>
@@ -229,7 +229,7 @@ export default function AureyaVisualFieldTest({
 
       {phase === 'eye-ready' && (
         <div className="p-6 sm:p-8 text-center">
-          <EyeIcon className={`mx-auto mb-4 h-12 w-12 text-teal-600 ${currentEye === 'left' ? '-scale-x-100' : ''}`} />
+          <EyeIcon className={`mx-auto mb-4 h-12 w-12 text-[var(--gold)] ${currentEye === 'left' ? '-scale-x-100' : ''}`} />
           <h2 className="mb-2 font-bold text-slate-900">
             {currentEye === 'left' ? t('coverRightEye') : t('coverLeftEye')}
           </h2>
@@ -237,7 +237,7 @@ export default function AureyaVisualFieldTest({
           <button
             type="button"
             onClick={startEye}
-            className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-[var(--ink-soft)]"
           >
             {currentEye === 'left' ? t('startLeftEye') : t('startRightEye')}
           </button>
@@ -246,18 +246,18 @@ export default function AureyaVisualFieldTest({
 
       {phase === 'testing' && (
         <div className="p-6 sm:p-8">
-          <p className="mb-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-teal-600">
+          <p className="mb-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold)]">
             {currentEye === 'left' ? t('testingLeftEye') : t('testingRightEye')}
           </p>
           <div
             role="button"
             tabIndex={0}
             onPointerDown={respond}
-            className="relative mx-auto aspect-square w-full max-w-md cursor-pointer select-none overflow-hidden rounded-2xl border border-teal-200 bg-slate-950"
+            className="relative mx-auto aspect-square w-full max-w-md cursor-pointer select-none overflow-hidden rounded-2xl border border-[var(--gold)]/40 bg-slate-950"
           >
-            <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-teal-300">
-              <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-teal-300" />
-              <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-teal-300" />
+            <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-[var(--gold-bright)]">
+              <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-[var(--gold-bright)]" />
+              <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-[var(--gold-bright)]" />
             </div>
             {activeTrial?.kind === 'stimulus' && (
               <div
@@ -272,6 +272,21 @@ export default function AureyaVisualFieldTest({
             )}
           </div>
           <p className="mt-4 text-center text-sm text-slate-500">{t('respondHint')}</p>
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current)
+                if (rampTimeoutRef.current) clearTimeout(rampTimeoutRef.current)
+                awaitingRef.current = false
+                setActiveTrial(null)
+                restart()
+              }}
+              className="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors"
+            >
+              <StopCircle className="h-4 w-4" /> {t('stopButton')}
+            </button>
+          </div>
         </div>
       )}
 
@@ -312,7 +327,7 @@ export default function AureyaVisualFieldTest({
           <button
             type="button"
             onClick={restart}
-            className="inline-flex items-center gap-2 rounded-full border border-teal-200 px-5 py-3 font-semibold text-teal-700 transition-colors hover:bg-teal-50"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--gold)]/40 px-5 py-3 font-semibold text-[var(--gold)] transition-colors hover:bg-[var(--gold-pale)]"
           >
             <RotateCcw className="h-4 w-4" /> {t('restartButton')}
           </button>

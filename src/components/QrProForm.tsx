@@ -14,6 +14,7 @@ import {
   type QrDestination,
   type WifiEncryption,
 } from '@/lib/qrPro'
+import { STANDARD_COLORS, ALL_STANDARD_COLOR_KEYS } from '@/lib/standardColorPalette'
 
 type Props =
   | { mode: 'create' }
@@ -28,16 +29,6 @@ const TYPE_ICONS: Record<QrContentType, typeof Link2> = {
   wifi: Wifi,
   vcard: Contact,
 }
-
-const PRESET_COLORS = [
-  { hex: '#16a34a', labelKey: 'colorGreen' },
-  { hex: '#2563eb', labelKey: 'colorBlue' },
-  { hex: '#dc2626', labelKey: 'colorRed' },
-  { hex: '#db2777', labelKey: 'colorPink' },
-  { hex: '#9333ea', labelKey: 'colorPurple' },
-  { hex: '#ea580c', labelKey: 'colorOrange' },
-  { hex: '#78350f', labelKey: 'colorBrown' },
-] as const
 
 function defaultForm(): QrCodeFormData {
   return {
@@ -87,7 +78,9 @@ export default function QrProForm(props: Props) {
           setError(result.message)
           return
         }
-        router.push(`/marketplace/qr-code-pro/${result.data.id}`)
+        // Back to the list, not the new code's own detail page — creating
+        // should close this view, not open another one.
+        router.push('/marketplace/qr-code-pro')
       } else {
         const result = await updateQrCode(props.id, form)
         if (!result.success) {
@@ -112,7 +105,7 @@ export default function QrProForm(props: Props) {
           value={form.label}
           onChange={(e) => setForm((prev) => ({ ...prev, label: e.target.value }))}
           placeholder={t('labelPlaceholder')}
-          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent text-sm"
         />
       </div>
 
@@ -128,7 +121,7 @@ export default function QrProForm(props: Props) {
                 onClick={() => setType(type)}
                 className={`flex flex-col items-center gap-1 px-2 py-3 rounded-lg text-xs font-medium border-2 transition-all ${
                   form.contentType === type
-                    ? 'border-cyan-600 bg-cyan-50 text-cyan-700'
+                    ? 'border-[var(--gold)] bg-[var(--gold-pale)] text-[var(--ink)]'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -149,7 +142,7 @@ export default function QrProForm(props: Props) {
               value={d.url || ''}
               onChange={(e) => setDestField('url', e.target.value)}
               placeholder="https://..."
-              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
             />
           </div>
         )}
@@ -162,7 +155,7 @@ export default function QrProForm(props: Props) {
               value={d.phone || ''}
               onChange={(e) => setDestField('phone', e.target.value)}
               placeholder="+39 333 1234567"
-              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
             />
           </div>
         )}
@@ -174,7 +167,7 @@ export default function QrProForm(props: Props) {
               value={d.message || ''}
               onChange={(e) => setDestField('message', e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
             />
           </div>
         )}
@@ -187,7 +180,7 @@ export default function QrProForm(props: Props) {
                 type="email"
                 value={d.email || ''}
                 onChange={(e) => setDestField('email', e.target.value)}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
               />
             </div>
             <div>
@@ -196,7 +189,7 @@ export default function QrProForm(props: Props) {
                 type="text"
                 value={d.subject || ''}
                 onChange={(e) => setDestField('subject', e.target.value)}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
               />
             </div>
             <div>
@@ -205,7 +198,7 @@ export default function QrProForm(props: Props) {
                 value={d.body || ''}
                 onChange={(e) => setDestField('body', e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
               />
             </div>
           </>
@@ -221,7 +214,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.ssid || ''}
                   onChange={(e) => setDestField('ssid', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -229,7 +222,7 @@ export default function QrProForm(props: Props) {
                 <select
                   value={d.encryption || 'WPA'}
                   onChange={(e) => setDestField('encryption', e.target.value as WifiEncryption)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm bg-white"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm bg-white"
                 >
                   {WIFI_ENCRYPTIONS.map((enc) => (
                     <option key={enc} value={enc}>
@@ -246,7 +239,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.password || ''}
                   onChange={(e) => setDestField('password', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
             )}
@@ -262,7 +255,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.firstName || ''}
                   onChange={(e) => setDestField('firstName', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -271,7 +264,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.lastName || ''}
                   onChange={(e) => setDestField('lastName', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
             </div>
@@ -284,7 +277,7 @@ export default function QrProForm(props: Props) {
                   type="tel"
                   value={d.phone || ''}
                   onChange={(e) => setDestField('phone', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -293,7 +286,7 @@ export default function QrProForm(props: Props) {
                   type="tel"
                   value={d.mobile || ''}
                   onChange={(e) => setDestField('mobile', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -302,7 +295,7 @@ export default function QrProForm(props: Props) {
                   type="email"
                   value={d.email || ''}
                   onChange={(e) => setDestField('email', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -312,7 +305,7 @@ export default function QrProForm(props: Props) {
                   value={d.website || ''}
                   onChange={(e) => setDestField('website', e.target.value)}
                   placeholder="https://..."
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
             </div>
@@ -324,7 +317,7 @@ export default function QrProForm(props: Props) {
                 type="text"
                 value={d.company || ''}
                 onChange={(e) => setDestField('company', e.target.value)}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -334,7 +327,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.jobTitle || ''}
                   onChange={(e) => setDestField('jobTitle', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -343,7 +336,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.fax || ''}
                   onChange={(e) => setDestField('fax', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
             </div>
@@ -355,7 +348,7 @@ export default function QrProForm(props: Props) {
                 type="text"
                 value={d.address || ''}
                 onChange={(e) => setDestField('address', e.target.value)}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -365,7 +358,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.city || ''}
                   onChange={(e) => setDestField('city', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -374,7 +367,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.postalCode || ''}
                   onChange={(e) => setDestField('postalCode', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
               <div>
@@ -383,7 +376,7 @@ export default function QrProForm(props: Props) {
                   type="text"
                   value={d.country || ''}
                   onChange={(e) => setDestField('country', e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] text-sm"
                 />
               </div>
             </div>
@@ -394,18 +387,28 @@ export default function QrProForm(props: Props) {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">{t('quickColorsLabel')}</label>
         <div className="flex flex-wrap gap-2">
-          {PRESET_COLORS.map((preset) => (
-            <button
-              key={preset.hex}
-              type="button"
-              title={t(preset.labelKey)}
-              onClick={() => setForm((prev) => ({ ...prev, fgColor: preset.hex, bgColor: '#ffffff' }))}
-              className={`w-8 h-8 rounded-full border-2 shadow ring-1 ring-gray-200 transition-transform hover:scale-110 ${
-                form.fgColor.toLowerCase() === preset.hex ? 'border-cyan-600' : 'border-white'
-              }`}
-              style={{ backgroundColor: preset.hex }}
-            />
-          ))}
+          {ALL_STANDARD_COLOR_KEYS.map((key) => {
+            const preset = STANDARD_COLORS[key]
+            // Nero/Bianco/Giallo work as the QR's dark side normally, but a
+            // light color (Bianco, Giallo) used as the foreground on a white
+            // background would be unreadable — pair those with an ink
+            // background instead so every swatch stays scannable.
+            const nextFg = preset.isLight ? '#171717' : preset.hex
+            const nextBg = preset.isLight ? preset.hex : '#ffffff'
+            const selected = form.fgColor.toLowerCase() === nextFg.toLowerCase() && form.bgColor.toLowerCase() === nextBg.toLowerCase()
+            return (
+              <button
+                key={key}
+                type="button"
+                title={preset.label}
+                onClick={() => setForm((prev) => ({ ...prev, fgColor: nextFg, bgColor: nextBg }))}
+                className={`w-8 h-8 rounded-full border-2 shadow ring-1 ring-gray-200 transition-transform hover:scale-110 ${
+                  selected ? 'border-[var(--gold)]' : 'border-white'
+                }`}
+                style={{ backgroundColor: preset.hex }}
+              />
+            )
+          })}
         </div>
       </div>
 
@@ -446,7 +449,7 @@ export default function QrProForm(props: Props) {
       <button
         onClick={handleSubmit}
         disabled={!isValid || saving}
-        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[var(--ink)] hover:bg-[var(--ink-soft)] text-white rounded-xl font-semibold transition-all disabled:opacity-50"
       >
         {saving ? (
           <>

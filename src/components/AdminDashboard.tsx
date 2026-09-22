@@ -21,6 +21,10 @@ import {
   createAdminVoucher,
   creditDailyPoints,
   listVoucherUsers,
+  getAdminFinancialSummary,
+  listListingReports,
+  dismissListingReport,
+  deleteReportedListing,
 } from '@/app/actions/admin'
 import { DASHBOARD_LAYOUTS, DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboardLayouts'
 import {
@@ -44,7 +48,9 @@ import {
   Trash2,
   BadgeCheck,
   Gift,
-  Sparkles
+  Sparkles,
+  PiggyBank,
+  Flag
 } from 'lucide-react'
 
 type AdminDashboardProps = {
@@ -104,6 +110,12 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   const [creditError, setCreditError] = useState<string | null>(null)
   const [creditSuccess, setCreditSuccess] = useState<string | null>(null)
 
+  const [financialSummary, setFinancialSummary] = useState<any>(null)
+  const [loadingFinancialSummary, setLoadingFinancialSummary] = useState(false)
+
+  const [listingReports, setListingReports] = useState<any[]>([])
+  const [loadingListingReports, setLoadingListingReports] = useState(false)
+
   const [rewards, setRewards] = useState<any[]>([])
   const [rewardRedemptions, setRewardRedemptions] = useState<any[]>([])
   const [loadingRewards, setLoadingRewards] = useState(false)
@@ -118,7 +130,11 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     maintenance_mode: false,
     maintenance_message: 'Sito in manutenzione. Torna presto!',
     dashboard_layout: DEFAULT_DASHBOARD_LAYOUT,
-    matrix_slot_bonus_points: 5
+    matrix_slot_bonus_points: 5,
+    matrix_spillover_bonus_points: 5,
+    listing_feature_cost_7d: 20,
+    listing_feature_cost_15d: 35,
+    subscription_price_eur: 49
   })
   const [savingSettings, setSavingSettings] = useState(false)
 
@@ -135,6 +151,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     else if (activeSection === 'coupons') loadCouponsData()
     else if (activeSection === 'vouchers') loadVouchersData()
     else if (activeSection === 'rewards') loadRewardsData()
+    else if (activeSection === 'financials') loadFinancialSummary()
+    else if (activeSection === 'listingReports') loadListingReportsData()
     else if (activeSection === 'settings') loadSystemSettings()
   }, [activeSection])
 
@@ -329,6 +347,39 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     setCreditForm({ userId: '', amount: '' })
     setCreditUserSearch('')
     await loadVouchersData()
+  }
+
+  const loadFinancialSummary = async () => {
+    setLoadingFinancialSummary(true)
+    const result = await getAdminFinancialSummary()
+    setFinancialSummary(result)
+    setLoadingFinancialSummary(false)
+  }
+
+  const loadListingReportsData = async () => {
+    setLoadingListingReports(true)
+    const result = await listListingReports()
+    setListingReports(result.reports)
+    setLoadingListingReports(false)
+  }
+
+  const handleDismissReport = async (reportId: string) => {
+    const result = await dismissListingReport(reportId)
+    if (result.success) {
+      setListingReports((prev) => prev.filter((r) => r.id !== reportId))
+    } else {
+      alert(result.error || 'Errore durante la rimozione della segnalazione.')
+    }
+  }
+
+  const handleDeleteReportedListing = async (listingId: string) => {
+    if (!confirm('Eliminare definitivamente questo annuncio? L\'operazione non è reversibile.')) return
+    const result = await deleteReportedListing(listingId)
+    if (result.success) {
+      setListingReports((prev) => prev.filter((r) => r.listing_id !== listingId))
+    } else {
+      alert(result.error || 'Errore durante l\'eliminazione dell\'annuncio.')
+    }
   }
 
   const filteredCreditUsers = (() => {
@@ -631,9 +682,11 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   { id: 'users', label: 'Utenti', Icon: Users, permission: 'users.read' as Permission },
   { id: 'matrix', label: 'Matrice', Icon: GitBranch, permission: 'matrix.read' as Permission },
   { id: 'marketplace', label: 'Marketplace', Icon: ShoppingBag, permission: 'marketplace.read' as Permission },
+  { id: 'listingReports', label: 'Bacheca', Icon: Flag, permission: 'listings.read' as Permission },
   { id: 'coupons', label: 'Coupon', Icon: Ticket, permission: 'coupons.read' as Permission },
   { id: 'vouchers', label: 'Voucher', Icon: BadgeCheck, permission: 'vouchers.read' as Permission },
   { id: 'rewards', label: 'Premi', Icon: Gift, permission: 'rewards.read' as Permission },
+  { id: 'financials', label: 'Amministrazione', Icon: PiggyBank, permission: 'stats.read' as Permission },
   { id: 'settings', label: 'Impostazioni', Icon: Settings, permission: 'settings.read' as Permission },
 ]
 
@@ -641,9 +694,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 
   const renderOverview = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg">
+      <div className="bg-[var(--ink)] rounded-2xl p-8 text-white shadow-lg">
         <h2 className="text-3xl font-bold mb-2">Benvenuto, {userName.split(' ')[0]}!</h2>
-        <p className="text-indigo-100">Ecco lo stato attuale della tua piattaforma Kumani.</p>
+        <p className="text-white/80">Ecco lo stato attuale della tua piattaforma Kumani.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -652,7 +705,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
             <Users className="w-4 h-4" />
             Utenti Totali
           </div>
-          <div className="text-4xl font-bold text-indigo-600 mt-2">{stats.totalUsers}</div>
+          <div className="text-4xl font-bold text-[var(--gold)] mt-2">{stats.totalUsers}</div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 text-sm text-gray-500 uppercase tracking-wide">
@@ -701,7 +754,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
             placeholder="Cerca per nome, email o codice..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)]"
           />
           <Users className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
         </div>
@@ -732,7 +785,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                       {user.is_blocked && <span className="text-xs text-red-600 font-semibold flex items-center gap-1"><Lock className="w-3 h-3" /> BLOCCATO</span>}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                    <td className="px-6 py-4 text-sm font-mono text-indigo-600">{user.referral_code}</td>
+                    <td className="px-6 py-4 text-sm font-mono text-[var(--gold)]">{user.referral_code}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         user.subscription_status === 'active' && !user.is_blocked ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -744,16 +797,16 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                       <button onClick={() => openProfileEdit(user)} className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1">
                         <Pencil className="w-4 h-4" /> Modifica
                       </button>
-                      <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} className="text-purple-600 hover:text-purple-800 text-sm font-medium inline-flex items-center gap-1 disabled:opacity-50">
+                      <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} className="text-[var(--gold)] hover:text-[var(--ink)] text-sm font-medium inline-flex items-center gap-1 disabled:opacity-50">
                         <UserCog className="w-4 h-4" /> {impersonatingId === user.id ? '...' : 'Impersonifica'}
                       </button>
-                      <button onClick={() => viewUserMatrix(user)} className="text-purple-600 hover:text-purple-800 text-sm font-medium inline-flex items-center gap-1">
+                      <button onClick={() => viewUserMatrix(user)} className="text-[var(--gold)] hover:text-[var(--ink)] text-sm font-medium inline-flex items-center gap-1">
                         <Eye className="w-4 h-4" /> Matrice
                       </button>
                       <button onClick={() => handleToggleBlock(user)} className={`text-sm font-medium inline-flex items-center gap-1 ${user.is_blocked ? 'text-green-600' : 'text-red-600'}`}>
                         {user.is_blocked ? <><Lock className="w-4 h-4" /> Sblocca</> : <><Lock className="w-4 h-4" /> Blocca</>}
                       </button>
-                      <button onClick={() => openManageModal(user)} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Ruolo</button>
+                      <button onClick={() => openManageModal(user)} className="text-[var(--gold)] hover:text-[var(--ink)] text-sm font-medium">Ruolo</button>
                     </td>
                   </tr>
                 ))}
@@ -790,21 +843,21 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
         </div>
       ) : (
         <>
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="bg-[var(--ink)] rounded-2xl p-6 text-white shadow-lg">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <p className="text-purple-100 text-sm">Matrice di</p>
+                <p className="text-white/80 text-sm">Matrice di</p>
                 <h3 className="text-2xl font-bold">{matrixData.first_name} {matrixData.last_name}</h3>
-                <p className="text-purple-100 text-sm mt-1">Codice: <span className="font-mono font-bold text-white">{matrixData.referral_code}</span></p>
+                <p className="text-white/80 text-sm mt-1">Codice: <span className="font-mono font-bold text-white">{matrixData.referral_code}</span></p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Totale</div><div className="text-2xl font-bold text-indigo-600">{matrixStats.total}</div></div>
+            <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Totale</div><div className="text-2xl font-bold text-[var(--gold)]">{matrixStats.total}</div></div>
             <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Livello 1</div><div className="text-2xl font-bold text-green-600">{matrixStats.level1}</div></div>
             <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Livello 2</div><div className="text-2xl font-bold text-blue-600">{matrixStats.level2}</div></div>
-            <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Livello 3</div><div className="text-2xl font-bold text-purple-600">{matrixStats.level3}</div></div>
+            <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Livello 3</div><div className="text-2xl font-bold text-[var(--gold)]">{matrixStats.level3}</div></div>
             <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Livello 4</div><div className="text-2xl font-bold text-orange-600">{matrixStats.level4}</div></div>
             <div className="bg-white p-4 rounded-xl border text-center"><div className="text-xs text-gray-500 uppercase">Livello 5</div><div className="text-2xl font-bold text-red-600">{matrixStats.level5}</div></div>
           </div>
@@ -861,17 +914,109 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div>
                   <div className="text-xs text-gray-500 uppercase">Utilizzi Totali</div>
-                  <div className="text-2xl font-bold text-indigo-600">{tool.usage_count}</div>
+                  <div className="text-2xl font-bold text-[var(--gold)]">{tool.usage_count}</div>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-semibold ${tool.is_enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {tool.is_enabled ? 'ATTIVO' : 'DISATTIVO'}
                 </div>
               </div>
               {savingTool === tool.tool_name && (
-                <div className="mt-3 text-xs text-indigo-600">💾 Salvataggio...</div>
+                <div className="mt-3 text-xs text-[var(--gold)]">💾 Salvataggio...</div>
               )}
             </div>
           ))}
+        </div>
+      </div>
+    )
+  }
+
+  const renderListingReports = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Flag className="w-7 h-7" />
+            Bacheca — Annunci segnalati
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Annunci del marketplace segnalati dai Kumani perché non in linea con le regole. Puoi ignorare la
+            segnalazione o eliminare direttamente l'annuncio.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Annuncio</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Proprietario</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Segnalato da</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Motivo</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Data</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingListingReports ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Caricamento...</td></tr>
+              ) : listingReports.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Nessuna segnalazione al momento</td></tr>
+              ) : (
+                listingReports.map((r) => (
+                  <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50 align-top">
+                    <td className="px-4 py-3">
+                      {r.listings ? (
+                        <>
+                          <div className="font-medium text-gray-900">{r.listings.title}</div>
+                          <div className="text-xs text-gray-500 line-clamp-2 max-w-xs">{r.listings.description}</div>
+                          {r.listings.price != null && (
+                            <div className="text-xs text-green-600 font-semibold mt-0.5">{'€'}{r.listings.price}</div>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">Annuncio già eliminato</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {/* Dati completi (nome + cognome + email) del proprietario, a differenza
+                          della card pubblica che mostra solo il nome per privacy — qui servono
+                          per identificare con certezza chi bannare. */}
+                      {r.owner ? (
+                        <>
+                          {r.owner.first_name} {r.owner.last_name}
+                          <div className="text-xs text-gray-400">{r.owner.email}</div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {r.reporter?.first_name} {r.reporter?.last_name}
+                      <div className="text-xs text-gray-400">{r.reporter?.email}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 max-w-xs">{r.reason || <span className="text-gray-400 italic">—</span>}</td>
+                    <td className="px-4 py-3 text-gray-500">{new Date(r.created_at).toLocaleDateString('it-IT')}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => handleDismissReport(r.id)}
+                        className="text-gray-500 hover:text-gray-700 text-xs font-medium mr-3"
+                      >
+                        Ignora
+                      </button>
+                      {r.listings && (
+                        <button
+                          onClick={() => handleDeleteReportedListing(r.listing_id)}
+                          className="text-red-500 hover:text-red-700 text-xs font-medium inline-flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Elimina annuncio
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     )
@@ -906,7 +1051,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
               <select
                 value={couponForm.userId}
                 onChange={(e) => setCouponForm({ ...couponForm, userId: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               >
                 <option value="">Seleziona un utente...</option>
                 {couponUsers.map((u) => (
@@ -922,7 +1067,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 type="date"
                 value={couponForm.expiresAt}
                 onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
             </div>
             <div className="md:col-span-2">
@@ -932,7 +1077,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 placeholder="Es. Spedizione gratuita"
                 value={couponForm.title}
                 onChange={(e) => setCouponForm({ ...couponForm, title: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
             </div>
             <div className="md:col-span-2">
@@ -941,14 +1086,14 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 placeholder="Es. Valido su un ordine dal Marketplace"
                 value={couponForm.description}
                 onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none h-20"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none h-20"
               />
             </div>
           </div>
           <button
             onClick={handleCreateCoupon}
             disabled={savingCoupon}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] disabled:opacity-50 font-medium"
           >
             <Ticket className="w-4 h-4" />
             {savingCoupon ? 'Creazione...' : 'Crea e assegna coupon'}
@@ -1045,13 +1190,13 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
             <button
               onClick={handleGenerateAdminVoucher}
               disabled={generatingAdminVoucher}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] disabled:opacity-50 font-medium"
             >
               <BadgeCheck className="w-4 h-4" />
               {generatingAdminVoucher ? 'Generazione...' : 'Genera codice'}
             </button>
             {lastAdminVoucherCode && (
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+              <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold-pale)] p-3">
                 <p className="text-xs text-gray-500 mb-1">Codice generato — invialo al Kumano:</p>
                 <code className="font-mono text-base font-bold text-gray-900">{lastAdminVoucherCode}</code>
               </div>
@@ -1081,7 +1226,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                     setCreditUserSearch(e.target.value)
                     if (creditForm.userId) setCreditForm({ ...creditForm, userId: '' })
                   }}
-                  className={`w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
+                  className={`w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none ${
                     creditForm.userId ? 'border-green-400 bg-green-50 pr-8' : 'border-gray-300'
                   }`}
                 />
@@ -1102,7 +1247,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                         key={u.id}
                         type="button"
                         onClick={() => selectCreditUser(u)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b last:border-0 border-gray-100"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--gold-pale)] border-b last:border-0 border-gray-100"
                       >
                         <div className="font-medium text-gray-900">{u.first_name} {u.last_name}</div>
                         <div className="text-xs text-gray-500">{u.referral_code} · {u.daily_points || 0} KU Points</div>
@@ -1122,13 +1267,13 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 placeholder="Punti da caricare"
                 value={creditForm.amount}
                 onChange={(e) => setCreditForm({ ...creditForm, amount: e.target.value })}
-                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
             </div>
             <button
               onClick={handleCreditPoints}
               disabled={creditingPoints}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] disabled:opacity-50 font-medium"
             >
               <Sparkles className="w-4 h-4" />
               {creditingPoints ? 'Caricamento...' : 'Carica punti'}
@@ -1230,7 +1375,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 placeholder="Es. Buono Amazon 20€"
                 value={rewardForm.title}
                 onChange={(e) => setRewardForm({ ...rewardForm, title: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
             </div>
             <div>
@@ -1241,7 +1386,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 placeholder="Es. 294"
                 value={rewardForm.pointsCost}
                 onChange={(e) => setRewardForm({ ...rewardForm, pointsCost: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
             </div>
             <div className="md:col-span-2">
@@ -1251,7 +1396,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 placeholder="https://..."
                 value={rewardForm.imageUrl}
                 onChange={(e) => setRewardForm({ ...rewardForm, imageUrl: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
             </div>
             <div className="md:col-span-2">
@@ -1260,7 +1405,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 placeholder="Descrizione del premio"
                 value={rewardForm.description}
                 onChange={(e) => setRewardForm({ ...rewardForm, description: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none h-20"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none h-20"
               />
             </div>
             <div className="flex items-center gap-2 md:col-span-2">
@@ -1280,7 +1425,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
             <button
               onClick={handleSaveReward}
               disabled={savingReward}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] disabled:opacity-50 font-medium"
             >
               <Gift className="w-4 h-4" />
               {savingReward ? 'Salvataggio...' : editingRewardId ? 'Salva modifiche' : 'Crea premio'}
@@ -1326,7 +1471,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button onClick={() => handleEditReward(r)} className="text-indigo-500 hover:text-indigo-700 p-1" title="Modifica">
+                      <button onClick={() => handleEditReward(r)} className="text-[var(--gold)] hover:text-[var(--ink)] p-1" title="Modifica">
                         <Pencil className="w-4 h-4 inline" />
                       </button>
                       <button onClick={() => handleDeleteReward(r.id)} className="text-red-500 hover:text-red-700 p-1 ml-1" title="Elimina">
@@ -1386,12 +1531,12 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                               placeholder="Codice (es. Amazon)"
                               value={fulfillCodeInputs[r.id] || ''}
                               onChange={(e) => setFulfillCodeInputs({ ...fulfillCodeInputs, [r.id]: e.target.value })}
-                              className="w-40 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="w-40 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--gold)]"
                             />
                             <button
                               onClick={() => handleFulfillRedemption(r.id)}
                               disabled={fulfillingId === r.id}
-                              className="whitespace-nowrap text-xs font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+                              className="whitespace-nowrap text-xs font-semibold text-[var(--gold)] hover:text-[var(--ink)] disabled:opacity-50"
                             >
                               {fulfillingId === r.id ? 'Invio...' : 'Evadi con codice'}
                             </button>
@@ -1404,6 +1549,99 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderFinancials = () => {
+    const f = financialSummary
+    if (loadingFinancialSummary || !f) {
+      return (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <PiggyBank className="w-7 h-7" />
+              Amministrazione
+            </h2>
+          </div>
+          <p className="text-gray-400 text-center py-12">Caricamento...</p>
+        </div>
+      )
+    }
+    if (!f.success) {
+      return (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <PiggyBank className="w-7 h-7" />
+            Amministrazione
+          </h2>
+          <p className="text-red-600">{f.error}</p>
+        </div>
+      )
+    }
+
+    const fmtEur = (n: number) => `€${n.toLocaleString('it-IT')}`
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <PiggyBank className="w-7 h-7" />
+            Amministrazione
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Stime basate su {f.subscriptionPrice}€/anno per abbonamento e 1 Punto Rete ≈ 1€. Non sostituisce i dati
+            reali di Stripe, che restano l'unica fonte per la contabilità.
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-50 to-white p-6 rounded-xl border-2 border-green-200 shadow-sm">
+          <p className="text-sm font-medium text-green-800 mb-1">Ricavi reali da abbonamenti Stripe attivi</p>
+          <p className="text-3xl font-bold text-green-700">{fmtEur(f.realRevenue)}</p>
+          <p className="text-xs text-green-600 mt-1">{f.activeStripeCount} abbonati attivi realmente paganti</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Voucher Kumani attivati</p>
+            <p className="text-2xl font-bold text-gray-900">{fmtEur(f.kumanoVouchersValue)}</p>
+            <p className="text-xs text-gray-400 mt-1">{f.kumanoVouchersRedeemed} voucher riscattati</p>
+          </div>
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Voucher Admin regalati</p>
+            <p className="text-2xl font-bold text-gray-900">{fmtEur(f.adminVouchersValue)}</p>
+            <p className="text-xs text-gray-400 mt-1">{f.adminVouchersRedeemed} voucher riscattati</p>
+          </div>
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Premi riscattati</p>
+            <p className="text-2xl font-bold text-gray-900">{fmtEur(f.rewardsValue)}</p>
+            <p className="text-xs text-gray-400 mt-1">{f.rewardsRedeemedCount} premi riscattati</p>
+          </div>
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bonus Qualifiche assegnati</p>
+            <p className="text-2xl font-bold text-gray-900">{fmtEur(f.rankBonusValue)}</p>
+            <p className="text-xs text-gray-400 mt-1">Rising/Shining/Diamond Star</p>
+          </div>
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bonus Struttura assegnati</p>
+            <p className="text-2xl font-bold text-gray-900">{fmtEur(f.matrixBonusValue)}</p>
+            <p className="text-xs text-gray-400 mt-1">Posti matrice riempiti</p>
+          </div>
+          <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm">
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Totale restituito alla rete</p>
+            <p className="text-2xl font-bold text-amber-800">{fmtEur(f.totalReturnedToNetwork)}</p>
+          </div>
+        </div>
+
+        <div className="bg-[var(--gold-pale)] p-6 rounded-xl border-2 border-[var(--gold)]/40 shadow-sm">
+          <p className="text-sm font-medium text-[var(--ink)] mb-1">% restituita alla rete sui ricavi reali</p>
+          <p className="text-4xl font-bold text-[var(--gold)]">
+            {f.realRevenue > 0 ? f.returnedPercent.toFixed(1) : '—'}%
+          </p>
+          <p className="text-xs text-[var(--gold)] mt-1">
+            {fmtEur(f.totalReturnedToNetwork)} restituiti su {fmtEur(f.realRevenue)} di ricavi reali
+          </p>
         </div>
       </div>
     )
@@ -1435,12 +1673,12 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                   type="button"
                   onClick={() => setSystemSettings({ ...systemSettings, dashboard_layout: layoutOption.id })}
                   className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
-                    isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                    isSelected ? 'border-[var(--gold)] bg-[var(--gold-pale)]' : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={`font-medium ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}>{layoutOption.name}</span>
-                    {isSelected && <span className="text-xs font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Attivo</span>}
+                    <span className={`font-medium ${isSelected ? 'text-[var(--ink)]' : 'text-gray-900'}`}>{layoutOption.name}</span>
+                    {isSelected && <span className="text-xs font-bold text-[var(--gold)] bg-[var(--gold-pale)] px-2 py-0.5 rounded-full">Attivo</span>}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">{layoutOption.description}</p>
                 </button>
@@ -1451,23 +1689,89 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <GitBranch className="w-4 h-4" />
-            Bonus Struttura Matrice
+            <BadgeCheck className="w-4 h-4" />
+            Prezzo Abbonamento
           </label>
           <p className="text-xs text-gray-500 mb-3">
-            Punti Rete assegnati una tantum ogni volta che uno dei 5 posti diretti in matrice di un Kumano si riempie
-            con un abbonato realmente attivo (pagante Stripe) — sia esso un suo sponsorizzato diretto, sia arrivato
-            per spillover. Fino a 5 posti per persona.
+            Valore in euro di un abbonamento annuale — usato per calcolare il valore reale di voucher e per il
+            riepilogo finanziario in Amministrazione. Non cambia il prezzo su Stripe: quello si aggiorna a parte.
           </p>
           <div className="flex items-center gap-2 max-w-xs">
             <input
               type="number"
               min="0"
-              value={systemSettings.matrix_slot_bonus_points ?? 5}
-              onChange={(e) => setSystemSettings({ ...systemSettings, matrix_slot_bonus_points: parseInt(e.target.value, 10) || 0 })}
-              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              value={systemSettings.subscription_price_eur ?? 49}
+              onChange={(e) => setSystemSettings({ ...systemSettings, subscription_price_eur: parseInt(e.target.value, 10) || 0 })}
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
             />
-            <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / posto</span>
+            <span className="text-sm text-gray-500 whitespace-nowrap">€ / anno</span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <GitBranch className="w-4 h-4" />
+            Bonus Struttura Matrice
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Punti Rete assegnati una tantum ogni volta che uno dei 5 posti diretti in matrice di un Kumano si riempie
+            con un abbonato realmente attivo (pagante Stripe). Il tasso applicato dipende da come quel posto si è
+            riempito: sponsorizzazione diretta o spillover di qualcun altro. Fino a 5 posti per persona.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={systemSettings.matrix_slot_bonus_points ?? 5}
+                onChange={(e) => setSystemSettings({ ...systemSettings, matrix_slot_bonus_points: parseInt(e.target.value, 10) || 0 })}
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+              />
+              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / posto</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={systemSettings.matrix_spillover_bonus_points ?? 5}
+                onChange={(e) => setSystemSettings({ ...systemSettings, matrix_spillover_bonus_points: parseInt(e.target.value, 10) || 0 })}
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+              />
+              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / Spillover</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            Annunci in Vetrina
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Punti Rete richiesti a un Kumano per mettere in evidenza un proprio annuncio nella sezione "In Vetrina"
+            della bacheca, per 7 o 15 giorni.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={systemSettings.listing_feature_cost_7d ?? 20}
+                onChange={(e) => setSystemSettings({ ...systemSettings, listing_feature_cost_7d: parseInt(e.target.value, 10) || 0 })}
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+              />
+              <span className="text-sm text-gray-500 whitespace-nowrap">/ 7gg</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={systemSettings.listing_feature_cost_15d ?? 35}
+                onChange={(e) => setSystemSettings({ ...systemSettings, listing_feature_cost_15d: parseInt(e.target.value, 10) || 0 })}
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+              />
+              <span className="text-sm text-gray-500 whitespace-nowrap">/ 15gg</span>
+            </div>
           </div>
         </div>
 
@@ -1504,7 +1808,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
           <button
             onClick={saveSystemSettings}
             disabled={savingSettings}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium disabled:bg-gray-400 flex items-center gap-2"
+            className="px-6 py-3 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] font-medium disabled:bg-gray-400 flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
             {savingSettings ? 'Salvataggio...' : 'Salva Impostazioni'}
@@ -1541,7 +1845,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
           </div>
           <div className="flex gap-3 justify-end">
             <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium" disabled={isSaving}>Annulla</button>
-            <button onClick={handleSaveUserManagement} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2" disabled={isSaving}>
+            <button onClick={handleSaveUserManagement} className="px-4 py-2 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] font-medium flex items-center gap-2" disabled={isSaving}>
               <Save className="w-4 h-4" />
               {isSaving ? 'Salvataggio...' : 'Salva'}
             </button>
@@ -1627,7 +1931,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 
           <div className="flex gap-3 justify-end p-6 border-t border-gray-200">
             <button onClick={() => setProfileEditUser(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium" disabled={savingProfile}>Annulla</button>
-            <button onClick={handleSaveProfile} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2" disabled={savingProfile}>
+            <button onClick={handleSaveProfile} className="px-4 py-2 bg-[var(--ink)] text-white rounded-lg hover:bg-[var(--ink-soft)] font-medium flex items-center gap-2" disabled={savingProfile}>
               <Save className="w-4 h-4" />
               {savingProfile ? 'Salvataggio...' : 'Salva Modifiche'}
             </button>
@@ -1646,7 +1950,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
               key={item.id} 
               onClick={() => setActiveSection(item.id)} 
               className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
-                activeSection === item.id ? 'bg-red-600 text-white shadow-md' : 'hover:bg-gray-100 text-gray-700'
+                activeSection === item.id ? 'bg-[var(--ink)] text-white shadow-md' : 'hover:bg-gray-100 text-gray-700'
               }`}
             >
               <item.Icon className="w-5 h-5" />
@@ -1664,6 +1968,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
         {activeSection === 'coupons' && renderCoupons()}
         {activeSection === 'vouchers' && renderVouchers()}
         {activeSection === 'rewards' && renderRewards()}
+        {activeSection === 'financials' && renderFinancials()}
+        {activeSection === 'listingReports' && renderListingReports()}
         {activeSection === 'settings' && renderSettings()}
       </div>
 

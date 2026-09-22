@@ -27,18 +27,18 @@ export default async function DigitalReceiptPage() {
     .eq('user_id', user.id)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
+      <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <ToolBackLink
-            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 font-medium transition-colors"
+            className="flex items-center gap-2 text-white hover:text-[var(--gold-bright)] font-medium transition-colors"
             dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {t('backToMarketplace')}
           </ToolBackLink>
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-            <FileCheck2 className="h-5 w-5 text-teal-600" />
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <FileCheck2 className="h-5 w-5 text-[var(--gold-bright)]" />
             {t('title')}
           </h1>
         </div>
@@ -46,8 +46,8 @@ export default async function DigitalReceiptPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
-            <Sparkles className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 bg-[var(--gold-pale)] text-[var(--ink)] px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+            <Sparkles className="w-4 h-4 text-[var(--gold)]" />
             {t('badge')}
           </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-3">{t('heroTitle')}</h2>

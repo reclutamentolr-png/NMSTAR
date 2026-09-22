@@ -2,13 +2,15 @@
 import { createClient } from '@/lib/supabase/server'
 import type { ListingCategory } from '@/lib/listings'
 
-export async function getActiveListings(options?: { 
+export async function getActiveListings(options?: {
   category?: ListingCategory
   limit?: number
   excludeUserId?: string
+  excludeFeatured?: boolean
 }) {
   const supabase = await createClient()
-  
+  const nowIso = new Date().toISOString()
+
   let query = supabase
     .from('listings')
     .select(`
@@ -16,13 +18,39 @@ export async function getActiveListings(options?: {
       profiles:user_id (first_name, last_name, referral_code, username)
     `)
     .eq('is_active', true)
-    .gte('expires_at', new Date().toISOString())
+    .gte('expires_at', nowIso)
     .order('created_at', { ascending: false })
-  
+
   if (options?.category) query = query.eq('category', options.category)
   if (options?.limit) query = query.limit(options.limit)
   if (options?.excludeUserId) query = query.neq('user_id', options.excludeUserId)
-  
+  // Currently-showcased listings get their own section above the grid —
+  // excluded here so they don't also clutter the regular listing (they
+  // still count for category filters/totals via the separate query).
+  if (options?.excludeFeatured) query = query.or(`featured_until.is.null,featured_until.lt.${nowIso}`)
+
+  const { data, error } = await query
+  return error ? [] : (data || [])
+}
+
+/** Currently-showcased ("In Vetrina") listings, most-recently-featured first. */
+export async function getFeaturedListings(options?: { category?: ListingCategory }) {
+  const supabase = await createClient()
+  const nowIso = new Date().toISOString()
+
+  let query = supabase
+    .from('listings')
+    .select(`
+      *,
+      profiles:user_id (first_name, last_name, referral_code, username)
+    `)
+    .eq('is_active', true)
+    .gte('expires_at', nowIso)
+    .gt('featured_until', nowIso)
+    .order('featured_until', { ascending: false })
+
+  if (options?.category) query = query.eq('category', options.category)
+
   const { data, error } = await query
   return error ? [] : (data || [])
 }

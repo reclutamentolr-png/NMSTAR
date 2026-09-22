@@ -6,8 +6,12 @@ export type DeviceConfirmation = 'headphones' | 'speaker'
 // inaudible for many adults (age-related high-frequency loss, or simply
 // device/speaker rolloff), which is the intended source of difficulty.
 // Not a clinical audiogram — see the in-app disclaimer.
+// Frequencies above 10 kHz were dropped — they push into a range most
+// adults can barely perceive even with healthy hearing (and playback
+// hardware struggles to reproduce cleanly), making them more a test of
+// speaker/headphone quality than of hearing.
 export const ACOUSTIC_FREQUENCIES = [
-  250, 500, 1000, 2000, 4000, 8000, 10000, 12000, 14000, 16000, 17500,
+  250, 500, 1000, 2000, 4000, 8000,
 ] as const
 export type AcousticFrequency = (typeof ACOUSTIC_FREQUENCIES)[number]
 

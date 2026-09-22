@@ -4,7 +4,16 @@ import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-export default function CopyLinkButton({ url }: { url: string }) {
+export default function CopyLinkButton({
+  url,
+  colorClassName = 'bg-pink-600 hover:bg-pink-700 text-white',
+}: {
+  url: string
+  // Lets a specific tool page override the accent color (this component is
+  // shared across several tools with their own individual color schemes);
+  // defaults to the original pink so those other pages are unaffected.
+  colorClassName?: string
+}) {
   const t = useTranslations('marketplace')
   const [copied, setCopied] = useState(false)
 
@@ -36,7 +45,7 @@ export default function CopyLinkButton({ url }: { url: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-2 px-4 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-medium transition-colors"
+      className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${colorClassName}`}
     >
       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       {copied ? t('copied') : t('copy')}

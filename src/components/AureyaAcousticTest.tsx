@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { AlertTriangle, Ear, Headphones, PlayCircle, RotateCcw, Volume2 } from 'lucide-react'
+import { AlertTriangle, Ear, Headphones, PlayCircle, RotateCcw, StopCircle, Volume2 } from 'lucide-react'
 import { saveAcousticTestResult } from '@/app/actions/aureya'
 import {
   ACOUSTIC_FREQUENCIES,
@@ -162,8 +162,8 @@ export default function AureyaAcousticTest({
   const currentStep = STEPS[stepIndex]
 
   return (
-    <div className="rounded-[1.75rem] border border-indigo-100 bg-white shadow-[0_20px_60px_rgba(42,38,91,0.12)]">
-      <div className="border-b border-indigo-100 p-6 sm:p-8">
+    <div className="rounded-[1.75rem] border border-[var(--gold)]/20 bg-white shadow-[0_20px_60px_rgba(23,23,23,0.12)]">
+      <div className="border-b border-[var(--gold)]/20 p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">{t('title')}</h1>
         <p className="mt-2 text-slate-600">{t('intro')}</p>
       </div>
@@ -184,17 +184,17 @@ export default function AureyaAcousticTest({
             <button
               type="button"
               onClick={() => setDevice('headphones')}
-              className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${device === 'headphones' ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:border-indigo-200'}`}
+              className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${device === 'headphones' ? 'border-[var(--gold)] bg-[var(--gold-pale)] shadow-sm' : 'border-slate-200 hover:border-[var(--gold)]/40'}`}
             >
-              <Headphones className="h-6 w-6 text-indigo-600" />
+              <Headphones className="h-6 w-6 text-[var(--gold)]" />
               <span className="font-semibold text-slate-900">{t('deviceHeadphones')}</span>
             </button>
             <button
               type="button"
               onClick={() => setDevice('speaker')}
-              className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${device === 'speaker' ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:border-indigo-200'}`}
+              className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${device === 'speaker' ? 'border-[var(--gold)] bg-[var(--gold-pale)] shadow-sm' : 'border-slate-200 hover:border-[var(--gold)]/40'}`}
             >
-              <Volume2 className="h-6 w-6 text-indigo-600" />
+              <Volume2 className="h-6 w-6 text-[var(--gold)]" />
               <span className="font-semibold text-slate-900">{t('deviceSpeaker')}</span>
             </button>
           </div>
@@ -203,7 +203,7 @@ export default function AureyaAcousticTest({
             type="button"
             disabled={!device}
             onClick={() => setPhase('instructions')}
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--ink)] px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-[var(--ink-soft)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {t('continueButton')}
           </button>
@@ -217,7 +217,7 @@ export default function AureyaAcousticTest({
           <button
             type="button"
             onClick={startTest}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-[var(--ink-soft)]"
           >
             <PlayCircle className="h-5 w-5" /> {t('startButton')}
           </button>
@@ -226,11 +226,11 @@ export default function AureyaAcousticTest({
 
       {phase === 'testing' && currentStep && (
         <div className="p-6 sm:p-8 text-center">
-          <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold)]">
             {t('progressLabel', { current: stepIndex + 1, total: STEPS.length })}
           </p>
           <div className="my-8 flex flex-col items-center gap-3">
-            <Ear className={`h-12 w-12 text-indigo-600 ${currentStep.ear === 'left' ? '-scale-x-100' : ''}`} />
+            <Ear className={`h-12 w-12 text-[var(--gold)] ${currentStep.ear === 'left' ? '-scale-x-100' : ''}`} />
             <p className="text-lg font-bold text-slate-900">
               {currentStep.ear === 'left' ? t('earLeft') : t('earRight')}
             </p>
@@ -239,11 +239,21 @@ export default function AureyaAcousticTest({
           <button
             type="button"
             onClick={handleHeard}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-8 py-4 text-lg font-bold text-white shadow-lg transition-transform hover:scale-[1.03]"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] px-8 py-4 text-lg font-bold text-white shadow-lg transition-transform hover:scale-[1.03]"
           >
             {t('hearButton')}
           </button>
           <p className="mt-4 text-xs text-slate-500">{t('autoAdvanceHint')}</p>
+          <button
+            type="button"
+            onClick={() => {
+              stopTone()
+              restart()
+            }}
+            className="mt-6 inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors"
+          >
+            <StopCircle className="h-4 w-4" /> {t('stopButton')}
+          </button>
         </div>
       )}
 
@@ -272,7 +282,7 @@ export default function AureyaAcousticTest({
           <button
             type="button"
             onClick={restart}
-            className="inline-flex items-center gap-2 rounded-full border border-indigo-200 px-5 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--gold)]/40 px-5 py-3 font-semibold text-[var(--gold)] transition-colors hover:bg-[var(--gold-pale)]"
           >
             <RotateCcw className="h-4 w-4" /> {t('restartButton')}
           </button>

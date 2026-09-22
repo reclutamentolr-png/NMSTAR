@@ -30,15 +30,18 @@ export default async function AureyaVisualPage() {
     .maybeSingle()
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_10%_0%,#e7fff5,transparent_32%),linear-gradient(135deg,#f7fffb,#eef3f5)]">
-      <header className="sticky top-0 z-10 border-b border-teal-900/10 bg-[#123331]/95 text-white shadow-lg backdrop-blur">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
+      <header className="sticky top-0 z-10 border-b border-[var(--gold)]/25 bg-[var(--ink)] text-white shadow-lg backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/marketplace/aureya" className="flex items-center gap-2 text-sm font-medium text-teal-100 transition-colors hover:text-white">
+          <Link
+            href="/marketplace/aureya"
+            className="flex items-center gap-2 text-sm font-medium text-white transition-colors hover:text-[var(--gold-bright)]"
+          >
             <ArrowLeft className="h-5 w-5" /> {t('backToAureya')}
           </Link>
           <div className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-cyan-200" />
-            <span className="font-semibold tracking-wide">AUREYA</span>
+            <Eye className="h-5 w-5 text-[var(--gold-bright)]" />
+            <span className="font-semibold tracking-wide">Aureya</span>
           </div>
         </div>
       </header>

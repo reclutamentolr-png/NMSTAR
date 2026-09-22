@@ -47,7 +47,7 @@ export default function QrProCodeCard({ qrCode }: { qrCode: QrCode }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-4">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="shrink-0 w-10 h-10 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+        <div className="shrink-0 w-10 h-10 rounded-lg bg-[var(--gold-pale)] text-[var(--gold)] flex items-center justify-center">
           <Icon className="w-5 h-5" />
         </div>
         <div className="min-w-0">
@@ -66,7 +66,7 @@ export default function QrProCodeCard({ qrCode }: { qrCode: QrCode }) {
       <div className="flex items-center gap-2 shrink-0">
         <Link
           href={`/marketplace/qr-code-pro/${qrCode.id}`}
-          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition-all"
+          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--gold-pale)] text-[var(--ink)] hover:bg-[var(--gold-pale)]/70 transition-all"
         >
           <Pencil className="w-4 h-4" />
           {t('edit')}

@@ -14,6 +14,8 @@ const ALL_PERMISSIONS: Permission[] = [
   'users.read',
   'matrix.read',
   'marketplace.read',
+  'listings.read',
+  'listings.write',
   'coupons.read',
   'coupons.write',
   'vouchers.read',
@@ -64,18 +66,16 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const userName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
+      <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-medium">
+          <Link href="/dashboard" className="flex items-center gap-2 text-white hover:text-[var(--gold-bright)] font-medium transition-colors">
             <ArrowLeft className="w-5 h-5" />
             Torna alla Dashboard
           </Link>
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-gray-800">Pannello Amministratore</h1>
+            <Shield className="w-5 h-5 text-[var(--gold-bright)]" />
+            <h1 className="text-xl font-bold text-white">Pannello Amministratore</h1>
           </div>
         </div>
       </header>

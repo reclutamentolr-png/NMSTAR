@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import Link from '@/components/LocalizedLink'
-import ToolBackLink from '@/components/ToolBackLink'
 import { QrCode, ArrowLeft, PlusCircle, Sparkles } from 'lucide-react'
 import { hasActiveQrProAccess } from '@/lib/qrPro-server'
 import QrProCodeCard from '@/components/QrProCodeCard'
@@ -29,18 +28,18 @@ export default async function QrCodeProPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-blue-50">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
+      <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <ToolBackLink
-            className="flex items-center gap-2 text-gray-600 hover:text-cyan-600 font-medium transition-colors"
-            dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-white hover:text-[var(--gold-bright)] font-medium transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            {t('backToMarketplace')}
-          </ToolBackLink>
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-            <QrCode className="h-5 w-5 text-cyan-600" />
+            {commonT('backToDashboard')}
+          </Link>
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <QrCode className="h-5 w-5 text-[var(--gold-bright)]" />
             {t('title')}
           </h1>
         </div>
@@ -48,8 +47,8 @@ export default async function QrCodeProPage() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-cyan-100 text-cyan-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
-            <Sparkles className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 bg-[var(--gold-pale)] text-[var(--ink)] px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+            <Sparkles className="w-4 h-4 text-[var(--gold)]" />
             {t('badge')}
           </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-3">{t('heroTitle')}</h2>
@@ -60,7 +59,7 @@ export default async function QrCodeProPage() {
           <h3 className="text-xl font-bold text-gray-900">{t('myCodes')}</h3>
           <Link
             href="/marketplace/qr-code-pro/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--ink)] hover:bg-[var(--ink-soft)] text-white rounded-xl font-semibold transition-all"
           >
             <PlusCircle className="w-5 h-5" />
             {t('newCode')}

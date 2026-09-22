@@ -174,19 +174,19 @@ export default function SVATPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[var(--gold-pale)]">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <ToolBackLink
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors"
+            className="flex items-center gap-2 text-white hover:text-[var(--gold-bright)] font-medium transition-colors"
             dashboardLabel={<><ShieldCheck className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ShieldCheck className="w-5 h-5" />
             {t('backToMarketplace')}
           </ToolBackLink>
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-            <ShieldCheck className="h-5 w-5 text-blue-600" />
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <ShieldCheck className="h-5 w-5 text-[var(--gold-bright)]" />
             {t('title')}
           </h1>
         </div>
@@ -195,8 +195,8 @@ export default function SVATPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 bg-[var(--gold-pale)] text-[var(--ink)] px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+            <ShieldCheck className="w-4 h-4 text-[var(--gold)]" />
             {t('badge')}
           </div>
           <h2 className="text-4xl font-bold text-gray-900 mb-3">{t('heroTitle')}</h2>
@@ -209,7 +209,7 @@ export default function SVATPage() {
             onClick={() => setActiveTab('website')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
               activeTab === 'website'
-                ? 'bg-blue-600 text-white shadow'
+                ? 'bg-[var(--ink)] text-white shadow'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -220,7 +220,7 @@ export default function SVATPage() {
             onClick={() => setActiveTab('qr')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
               activeTab === 'qr'
-                ? 'bg-blue-600 text-white shadow'
+                ? 'bg-[var(--ink)] text-white shadow'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -241,13 +241,13 @@ export default function SVATPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={t('inputPlaceholder')}
-              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base"
+              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent transition-all text-base"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="px-6 py-3 bg-[var(--ink)] hover:bg-[var(--ink-soft)] text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -273,7 +273,7 @@ export default function SVATPage() {
 
         {loading && (
           <div className="text-center py-12">
-            <LoaderCircle className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <LoaderCircle className="w-12 h-12 text-[var(--gold)] mx-auto mb-4 animate-spin" />
             <p className="text-gray-600">{t('checksInProgress')}</p>
           </div>
         )}
@@ -339,7 +339,7 @@ export default function SVATPage() {
                             {c.source && (
                               <p className="text-xs text-gray-500 mt-1">
                                 {c.sourceUrl ? (
-                                  <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                  <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--gold)] hover:underline">
                                     {c.source} <ExternalLink className="w-3 h-3 inline" />
                                   </a>
                                 ) : (
@@ -381,7 +381,7 @@ export default function SVATPage() {
                             {c.source && (
                               <p className="text-xs text-gray-500 mt-1">
                                 {c.sourceUrl ? (
-                                  <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                  <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--gold)] hover:underline">
                                     {c.source} <ExternalLink className="w-3 h-3 inline" />
                                   </a>
                                 ) : (
@@ -583,7 +583,7 @@ export default function SVATPage() {
                   setResult(null)
                   setInput('')
                 }}
-                className="flex items-center gap-2 px-5 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl font-medium transition-all"
+                className="flex items-center gap-2 px-5 py-3 bg-[var(--gold-pale)] hover:bg-[var(--gold-pale)]/70 text-[var(--ink)] rounded-xl font-medium transition-all"
               >
                 <RefreshCw className="w-5 h-5" />
                 {t('backToMarketplace')}

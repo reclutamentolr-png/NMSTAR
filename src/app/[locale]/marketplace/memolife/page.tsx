@@ -33,27 +33,25 @@ export default async function MemoLifePage({ params }: { params: Promise<{ local
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <ToolBackLink
-            className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors font-medium"
+            className="flex items-center gap-2 text-white hover:text-[var(--gold-bright)] transition-colors font-medium"
             dashboardLabel={<><ArrowLeft className="w-5 h-5" /> {commonT('backToDashboard')}</>}
           >
             <ArrowLeft className="w-5 h-5" />
             {marketplaceT('backToMarketplace')}
           </ToolBackLink>
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-gray-800">{t('memolife')}</h1>
+            <Brain className="w-5 h-5 text-[var(--gold-bright)]" />
+            <h1 className="text-xl font-bold text-white">{t('memolife')}</h1>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Intro Banner */}
-        <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-red-500 rounded-2xl p-6 text-white mb-8 shadow-lg">
+        <div className="bg-[var(--ink)] rounded-2xl p-6 text-white mb-8 shadow-lg">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-xs font-medium mb-3">

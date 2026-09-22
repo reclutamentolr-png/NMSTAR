@@ -488,3 +488,163 @@ export async function fulfillRewardRedemption(redemptionId: string, code: string
   if (updateError) return { success: false, error: updateError.message }
   return { success: true }
 }
+
+// ── Financial summary ───────────────────────────────────────────────────
+// Read-only reporting for the "Amministrazione" admin section: real Stripe
+// revenue vs. everything given back to the network (vouchers, rewards,
+// rank/structure bonuses). Every euro figure here is an estimate derived
+// from subscription_price_eur (1 point ≈ 1 euro, the symbolism this whole
+// points system was built on — see the voucher cost / subscription price
+// match) — it is not pulled from Stripe's own ledger, only from what the
+// app itself tracks.
+//
+// Kumano-issued vs admin-issued vouchers are told apart by code prefix
+// ("KV-" vs "KVA-", see createAdminVoucher above) — a code starting with
+// "KVA-" never matches the LIKE 'KV-%' pattern because its 3rd character
+// is 'A', not '-', so the two counts never overlap (verified live before
+// relying on it here).
+export async function getAdminFinancialSummary() {
+  const admin = await verifyAdmin('stats.read')
+  if (!admin) return { success: false as const, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+
+  const readNumberSetting = async (key: string, fallback: number) => {
+    const { data } = await supabaseAdmin.from('system_settings').select('value').eq('key', key).maybeSingle()
+    if (!data) return fallback
+    const parsed = parseInt(JSON.parse(data.value), 10)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  const subscriptionPrice = await readNumberSetting('subscription_price_eur', 49)
+  const matrixBonusPerSlot = await readNumberSetting('matrix_slot_bonus_points', 5)
+  const matrixSpilloverBonusPerSlot = await readNumberSetting('matrix_spillover_bonus_points', 5)
+
+  const { count: activeStripeCount } = await supabaseAdmin
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('subscription_status', 'active')
+    .eq('subscription_source', 'stripe')
+
+  const { count: kumanoVouchersRedeemed } = await supabaseAdmin
+    .from('subscription_vouchers')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'redeemed')
+    .like('code', 'KV-%')
+
+  const { count: adminVouchersRedeemed } = await supabaseAdmin
+    .from('subscription_vouchers')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'redeemed')
+    .like('code', 'KVA-%')
+
+  const { data: rewardRows, count: rewardsRedeemedCount } = await supabaseAdmin
+    .from('reward_redemptions')
+    .select('points_spent', { count: 'exact' })
+  const rewardsValue = (rewardRows || []).reduce((sum, r) => sum + (r.points_spent || 0), 0)
+
+  const RANK_BONUS_VALUES: Record<string, number> = { rising_star: 49, shining_star: 294, diamond_star: 900 }
+  const { data: profilesWithRanks } = await supabaseAdmin.from('profiles').select('rank_bonuses_claimed')
+  let rankBonusValue = 0
+  for (const p of profilesWithRanks || []) {
+    for (const key of p.rank_bonuses_claimed || []) {
+      rankBonusValue += RANK_BONUS_VALUES[key] || 0
+    }
+  }
+
+  const { data: profilesWithSlots } = await supabaseAdmin
+    .from('profiles')
+    .select('matrix_bonus_direct_slots_paid, matrix_bonus_spillover_slots_paid')
+  const matrixBonusValue = (profilesWithSlots || []).reduce(
+    (sum, p) =>
+      sum +
+      (p.matrix_bonus_direct_slots_paid || 0) * matrixBonusPerSlot +
+      (p.matrix_bonus_spillover_slots_paid || 0) * matrixSpilloverBonusPerSlot,
+    0
+  )
+
+  const realRevenue = (activeStripeCount || 0) * subscriptionPrice
+  const kumanoVouchersValue = (kumanoVouchersRedeemed || 0) * subscriptionPrice
+  const adminVouchersValue = (adminVouchersRedeemed || 0) * subscriptionPrice
+  const totalReturnedToNetwork = kumanoVouchersValue + adminVouchersValue + rewardsValue + rankBonusValue + matrixBonusValue
+  const returnedPercent = realRevenue > 0 ? (totalReturnedToNetwork / realRevenue) * 100 : 0
+
+  return {
+    success: true as const,
+    subscriptionPrice,
+    activeStripeCount: activeStripeCount || 0,
+    realRevenue,
+    kumanoVouchersRedeemed: kumanoVouchersRedeemed || 0,
+    kumanoVouchersValue,
+    adminVouchersRedeemed: adminVouchersRedeemed || 0,
+    adminVouchersValue,
+    rewardsRedeemedCount: rewardsRedeemedCount || 0,
+    rewardsValue,
+    rankBonusValue,
+    matrixBonusValue,
+    totalReturnedToNetwork,
+    returnedPercent,
+  }
+}
+
+// "Bacheca" moderation queue — one row per report, listing embedded via its
+// public FK (works fine through PostgREST, unlike reporter_id → auth.users
+// below, which needs a separate profiles lookup, same workaround as
+// listRewardRedemptions).
+export async function listListingReports() {
+  const admin = await verifyAdmin('listings.read')
+  if (!admin) return { reports: [], error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { data, error } = await supabaseAdmin
+    .from('listing_reports')
+    .select('id, listing_id, reporter_id, reason, created_at, listings(id, title, description, category, price, image_url, user_id, created_at)')
+    .order('created_at', { ascending: false })
+    .limit(200)
+
+  if (error) return { reports: [], error: error.message }
+  const rows = data || []
+
+  // Reporter (auth.users FK, needs a separate lookup) and listing owner (full
+  // name only shown here in the admin queue — public listing/user-facing
+  // views only ever get first_name, see ListingDetailModal/page.tsx/
+  // CommunityPreview.tsx) share one batched profiles query.
+  const ownerIds = rows.map((r: any) => r.listings?.user_id).filter(Boolean)
+  const profileIds = Array.from(new Set([...rows.map((r) => r.reporter_id), ...ownerIds].filter(Boolean)))
+  const profiles = profileIds.length
+    ? (await supabaseAdmin.from('profiles').select('id, first_name, last_name, email').in('id', profileIds)).data
+    : []
+  const byId = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+
+  const reports = rows.map((r: any) => ({
+    ...r,
+    reporter: byId[r.reporter_id] || null,
+    owner: r.listings?.user_id ? byId[r.listings.user_id] || null : null,
+  }))
+  return { reports, error: null }
+}
+
+// Dismisses a single report without touching the listing (e.g. it turned out
+// to be unfounded) — other reports on the same listing, if any, are untouched.
+export async function dismissListingReport(reportId: string) {
+  const admin = await verifyAdmin('listings.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { error } = await supabaseAdmin.from('listing_reports').delete().eq('id', reportId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+// Deletes the reported listing outright ("ban"). listing_reports.listing_id
+// is ON DELETE CASCADE, so every report on it (from any reporter) is cleaned
+// up automatically — no separate cleanup needed here.
+export async function deleteReportedListing(listingId: string) {
+  const admin = await verifyAdmin('listings.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { error } = await supabaseAdmin.from('listings').delete().eq('id', listingId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}

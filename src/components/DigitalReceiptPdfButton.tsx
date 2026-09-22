@@ -75,7 +75,7 @@ export default function DigitalReceiptPdfButton({ receipt, receiptUrl, photoUrl,
 
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(20)
-      doc.setTextColor(15, 118, 110)
+      doc.setTextColor(23, 23, 23) // --ink
       doc.text(t('pdfDocumentTitle'), margin, y)
 
       doc.setFont('helvetica', 'normal')
@@ -174,7 +174,7 @@ export default function DigitalReceiptPdfButton({ receipt, receiptUrl, photoUrl,
     <button
       onClick={handleDownload}
       disabled={generating}
-      className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all disabled:opacity-50"
+      className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm bg-[var(--gold-pale)] text-[var(--ink)] hover:bg-[var(--gold-pale)]/70 transition-all disabled:opacity-50"
     >
       {generating ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
       {generating ? t('generatingPdf') : t('downloadPdf')}
