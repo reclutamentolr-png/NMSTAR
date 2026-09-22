@@ -35,7 +35,9 @@ export default async function CommunityPreview({ recentListings, userId }: { rec
         <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-dashed border-yellow-300 rounded-xl p-8 text-center">
           <Tag className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('noListings')}</h3>
-          <p className="text-gray-600 text-sm mb-4" dangerouslySetInnerHTML={{ __html: t('beFirst') }}></p>
+          <p className="text-gray-600 text-sm mb-4">
+            {t.rich('beFirst', { strong: (chunks) => <strong>{chunks}</strong> })}
+          </p>
           <Link
             href="/marketplace/listings?showForm=true"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"

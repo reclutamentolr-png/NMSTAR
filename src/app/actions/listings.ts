@@ -26,13 +26,13 @@ export async function createListingAction(data: CreateListingData) {
   } = await supabase.auth.getUser()
   if (!user) return { success: false, message: 'Devi effettuare l\'accesso' }
 
-  // 1+2. Spende atomicamente dal saldo combinato (network_points prima,
-  // poi daily_points) — stesso guard "nella WHERE dell'UPDATE" usato da
-  // create_subscription_voucher, evita la race condition del vecchio
-  // pattern read-then-write.
+  // 1+2. Spende atomicamente da daily_points (mai network_points, che è
+  // riservato a voucher/premi) — stesso guard "nella WHERE dell'UPDATE"
+  // usato da create_subscription_voucher, evita la race condition del
+  // vecchio pattern read-then-write.
   const { data: spendResult, error: spendError } = await supabase
-    .rpc('spend_points', { p_amount: LISTING_COST })
-    .single<{ success: boolean; new_daily_points: number; new_network_points: number }>()
+    .rpc('spend_daily_points', { p_amount: LISTING_COST })
+    .single<{ success: boolean; new_daily_points: number }>()
 
   if (spendError || !spendResult) {
     return { success: false, message: 'Errore nell\'aggiornamento punti' }
@@ -64,8 +64,7 @@ export async function createListingAction(data: CreateListingData) {
     return { success: false, message: 'Errore nella creazione dell\'annuncio' }
   }
 
-  const newPoints = spendResult.new_daily_points + spendResult.new_network_points
-  return { success: true, listing, newPoints }
+  return { success: true, listing, newPoints: spendResult.new_daily_points }
 }
 
 export async function deleteListingAction(listingId: string, userId: string) {

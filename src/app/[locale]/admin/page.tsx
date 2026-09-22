@@ -55,15 +55,12 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
     ? (roles?.[0]?.permissions || [])
     : (roles?.permissions || [])
 
-  console.log('🔐 [ADMIN PAGE] Permessi grezzi:', rawPermissions)
-
   // ✅ WILDCARD: se il ruolo ha ["*"], espandi in tutti i permessi
   const permissions: Permission[] = rawPermissions.includes('*')
     ? ALL_PERMISSIONS
     : (rawPermissions as Permission[])
 
-  console.log('🔐 [ADMIN PAGE] Permessi finali:', permissions)
-  
+
   const userName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
 
   return (

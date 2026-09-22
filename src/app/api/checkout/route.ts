@@ -7,20 +7,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 export async function POST() {
-  console.log('🔍 DEBUG CHECKOUT INIZIATO')
-  console.log('STRIPE_PRICE_ID:', process.env.STRIPE_PRICE_ID)
-  console.log('STRIPE_SECRET_KEY presente:', !!process.env.STRIPE_SECRET_KEY)
-  
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
       return NextResponse.redirect(new URL('/register', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'))
     }
-
-    console.log('👤 Utente loggato:', user.id)
-    console.log('📦 Creazione sessione con PRICE_ID:', process.env.STRIPE_PRICE_ID)
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -39,9 +32,7 @@ export async function POST() {
       customer_email: user.email,
     })
 
-    console.log('✅ Sessione creata con successo:', session.id)
-    
-    // ✅ FIX: Controllo esplicito per evitare l'errore "string | null" di TypeScript
+    // Controllo esplicito per evitare l'errore "string | null" di TypeScript
     if (!session.url) {
       throw new Error('Impossibile ottenere l\'URL di reindirizzamento da Stripe')
     }

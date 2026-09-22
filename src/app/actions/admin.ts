@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { randomBytes } from 'crypto'
 import type { Permission } from '@/lib/admin-permissions'
 import { generateShortCode } from '@/lib/shortLink'
 
@@ -113,37 +114,6 @@ export async function impersonateUser(userId: string) {
   }
 }
 
-export async function getAllUsers() {
-  const admin = await verifyAdmin('users.read')
-  if (!admin) return { users: [], error: 'Non autorizzato' }
-
-  const supabaseAdmin = getServiceClient()
-  const supabase = await createClient()
-
-  const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers()
-  if (error) return { users: [], error: error.message }
-
-  const enrichedUsers = await Promise.all(
-    users.map(async (u) => {
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', u.id)
-        .single()
-
-      return {
-        id: u.id,
-        email: u.email,
-        created_at: u.created_at,
-        last_sign_in_at: u.last_sign_in_at,
-        ...prof
-      }
-    })
-  )
-
-  return { users: enrichedUsers, error: null }
-}
-
 // ── Wallet coupons ──────────────────────────────────────────────────────
 // Manual coupon issuance: an admin assigns a coupon directly to one user,
 // who then sees and self-redeems it from their My Wallet. See
@@ -234,7 +204,7 @@ export async function listVouchers() {
 
   // created_by/redeemed_by reference auth.users, not profiles, so PostgREST
   // can't embed profiles automatically here — fetch the involved profiles
-  // separately and merge (same pattern as getAllUsers() above).
+  // separately and merge instead.
   const userIds = Array.from(new Set(rows.flatMap((v) => [v.created_by, v.redeemed_by].filter(Boolean))))
   const profiles = userIds.length
     ? (await supabaseAdmin.from('profiles').select('id, first_name, last_name, email').in('id', userIds)).data
@@ -266,6 +236,92 @@ export async function revokeVoucher(voucherId: string) {
 
   if (error) return { success: false, error: error.message }
   return { success: true }
+}
+
+// Admin-issued codes are visually distinct from Kumano-issued ones ("KVA-"
+// vs "KV-") purely for audit clarity in the table below — functionally
+// they redeem through the exact same, already-hardened
+// redeem_subscription_voucher() RPC (single-use, self-redemption blocked).
+// Unlike a Kumano's voucher, this one costs no points: admin.id becomes
+// created_by, so an admin can never redeem their own issued code either.
+const ADMIN_VOUCHER_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // unambiguous, no 0/O/1/I
+const ADMIN_VOUCHER_LENGTH = 14 // 32^14 keyspace — brute-forcing a valid code is infeasible
+
+function generateSecureVoucherCode(): string {
+  // crypto.randomBytes is a CSPRNG (unlike Math.random), so a generated
+  // code can't be predicted or reproduced by anyone outside this server,
+  // including by the admin issuing it. 256 is an exact multiple of the
+  // 32-character alphabet, so byte % 32 has zero modulo bias.
+  const bytes = randomBytes(ADMIN_VOUCHER_LENGTH)
+  let code = ''
+  for (let i = 0; i < ADMIN_VOUCHER_LENGTH; i++) {
+    code += ADMIN_VOUCHER_ALPHABET[bytes[i] % ADMIN_VOUCHER_ALPHABET.length]
+  }
+  return code
+}
+
+export async function createAdminVoucher(): Promise<{ success: true; code: string } | { success: false; error: string }> {
+  const admin = await verifyAdmin('vouchers.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = 'KVA-' + generateSecureVoucherCode()
+    const { error } = await supabaseAdmin.from('subscription_vouchers').insert({
+      code,
+      created_by: admin.id,
+      status: 'active',
+    })
+    if (!error) return { success: true, code }
+    if (error.code !== '23505') return { success: false, error: error.message }
+  }
+
+  return { success: false, error: 'Impossibile generare un codice univoco. Riprova.' }
+}
+
+// Credits daily_points (KU Points) directly to a user — separate from
+// network_points on purpose, per product decision: an admin top-up should
+// only unlock listings, never let someone mint vouchers/rewards for free.
+export async function creditDailyPoints(userId: string, amount: number) {
+  const admin = await verifyAdmin('vouchers.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  if (!userId || !Number.isInteger(amount) || amount <= 0) {
+    return { success: false, error: 'Seleziona un utente e un numero di punti valido (> 0).' }
+  }
+
+  const supabaseAdmin = getServiceClient()
+  const { data: profile, error: fetchError } = await supabaseAdmin
+    .from('profiles')
+    .select('daily_points')
+    .eq('id', userId)
+    .single()
+
+  if (fetchError || !profile) return { success: false, error: 'Utente non trovato.' }
+
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ daily_points: (profile.daily_points || 0) + amount })
+    .eq('id', userId)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function listVoucherUsers() {
+  const admin = await verifyAdmin('vouchers.read')
+  if (!admin) return { users: [], error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id, first_name, last_name, referral_code, daily_points')
+    .order('first_name')
+    .limit(500)
+
+  if (error) return { users: [], error: error.message }
+  return { users: data || [], error: null }
 }
 
 // ── Reward catalog ──────────────────────────────────────────────────────

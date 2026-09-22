@@ -18,6 +18,9 @@ import {
   deleteReward,
   listRewardRedemptions,
   fulfillRewardRedemption,
+  createAdminVoucher,
+  creditDailyPoints,
+  listVoucherUsers,
 } from '@/app/actions/admin'
 import { DASHBOARD_LAYOUTS, DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboardLayouts'
 import {
@@ -40,7 +43,8 @@ import {
   Ticket,
   Trash2,
   BadgeCheck,
-  Gift
+  Gift,
+  Sparkles
 } from 'lucide-react'
 
 type AdminDashboardProps = {
@@ -91,6 +95,14 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 
   const [vouchers, setVouchers] = useState<any[]>([])
   const [loadingVouchers, setLoadingVouchers] = useState(false)
+  const [voucherUsers, setVoucherUsers] = useState<any[]>([])
+  const [generatingAdminVoucher, setGeneratingAdminVoucher] = useState(false)
+  const [lastAdminVoucherCode, setLastAdminVoucherCode] = useState<string | null>(null)
+  const [creditForm, setCreditForm] = useState({ userId: '', amount: '' })
+  const [creditUserSearch, setCreditUserSearch] = useState('')
+  const [creditingPoints, setCreditingPoints] = useState(false)
+  const [creditError, setCreditError] = useState<string | null>(null)
+  const [creditSuccess, setCreditSuccess] = useState<string | null>(null)
 
   const [rewards, setRewards] = useState<any[]>([])
   const [rewardRedemptions, setRewardRedemptions] = useState<any[]>([])
@@ -105,7 +117,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({
     maintenance_mode: false,
     maintenance_message: 'Sito in manutenzione. Torna presto!',
-    dashboard_layout: DEFAULT_DASHBOARD_LAYOUT
+    dashboard_layout: DEFAULT_DASHBOARD_LAYOUT,
+    matrix_slot_bonus_points: 5
   })
   const [savingSettings, setSavingSettings] = useState(false)
 
@@ -278,9 +291,65 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 
   const loadVouchersData = async () => {
     setLoadingVouchers(true)
-    const result = await listVouchers()
-    setVouchers(result.vouchers)
+    const [voucherResult, usersResult] = await Promise.all([listVouchers(), listVoucherUsers()])
+    setVouchers(voucherResult.vouchers)
+    setVoucherUsers(usersResult.users)
     setLoadingVouchers(false)
+  }
+
+  const handleGenerateAdminVoucher = async () => {
+    setGeneratingAdminVoucher(true)
+    setLastAdminVoucherCode(null)
+    const result = await createAdminVoucher()
+    setGeneratingAdminVoucher(false)
+    if (!result.success) {
+      alert(result.error || 'Errore durante la generazione del codice.')
+      return
+    }
+    setLastAdminVoucherCode(result.code)
+    await loadVouchersData()
+  }
+
+  const handleCreditPoints = async () => {
+    setCreditError(null)
+    setCreditSuccess(null)
+    const amount = parseInt(creditForm.amount, 10)
+    if (!creditForm.userId || !amount || amount <= 0) {
+      setCreditError('Seleziona un utente e un numero di punti valido.')
+      return
+    }
+    setCreditingPoints(true)
+    const result = await creditDailyPoints(creditForm.userId, amount)
+    setCreditingPoints(false)
+    if (!result.success) {
+      setCreditError(result.error || 'Errore durante la ricarica punti.')
+      return
+    }
+    setCreditSuccess(`+${amount} KU Points accreditati.`)
+    setCreditForm({ userId: '', amount: '' })
+    setCreditUserSearch('')
+    await loadVouchersData()
+  }
+
+  const filteredCreditUsers = (() => {
+    const q = creditUserSearch.trim().toLowerCase()
+    if (!q) return []
+    return voucherUsers
+      .filter((u) => {
+        const fullName = `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase()
+        return fullName.includes(q) || (u.referral_code || '').toLowerCase().includes(q)
+      })
+      .slice(0, 8)
+  })()
+
+  const selectCreditUser = (u: any) => {
+    setCreditForm({ ...creditForm, userId: u.id })
+    setCreditUserSearch(`${u.first_name || ''} ${u.last_name || ''} — ${u.referral_code}`)
+  }
+
+  const clearCreditUser = () => {
+    setCreditForm({ ...creditForm, userId: '' })
+    setCreditUserSearch('')
   }
 
   const handleRevokeVoucher = async (voucherId: string) => {
@@ -960,9 +1029,111 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
             Voucher Abbonamento
           </h2>
           <p className="text-gray-600 mt-1">
-            I Kumani creano questi voucher spendendo 49 punti; solo lettura e revoca qui — la creazione e il riscatto
-            avvengono dal My Wallet di ciascun utente.
+            I Kumani creano questi voucher spendendo 49 Punti Rete; qui puoi anche generarne direttamente in qualità di
+            amministratore (gratis, nessun punto scalato) o caricare KU Points a un utente.
           </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+            <h3 className="font-bold text-gray-900">Genera Codice Abbonamento</h3>
+            <p className="text-sm text-gray-600">
+              Crea un voucher di attivazione senza costo in punti. Il codice è generato con un algoritmo
+              crittograficamente sicuro (CSPRNG), non prevedibile e non riproducibile da nessuno, e una volta
+              attivato non potrà più essere riutilizzato.
+            </p>
+            <button
+              onClick={handleGenerateAdminVoucher}
+              disabled={generatingAdminVoucher}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+            >
+              <BadgeCheck className="w-4 h-4" />
+              {generatingAdminVoucher ? 'Generazione...' : 'Genera codice'}
+            </button>
+            {lastAdminVoucherCode && (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                <p className="text-xs text-gray-500 mb-1">Codice generato — invialo al Kumano:</p>
+                <code className="font-mono text-base font-bold text-gray-900">{lastAdminVoucherCode}</code>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+            <h3 className="font-bold text-gray-900">Carica KU Points</h3>
+            <p className="text-sm text-gray-600">
+              Accredita punti giornalieri direttamente a un utente. Questi punti abilitano solo la pubblicazione di
+              annunci in bacheca — non i voucher né il Catalogo Premi, che restano legati solo ai Punti Rete guadagnati
+              realmente.
+            </p>
+            {creditError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{creditError}</div>
+            )}
+            {creditSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm">{creditSuccess}</div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Cerca per nome o codice..."
+                  value={creditUserSearch}
+                  onChange={(e) => {
+                    setCreditUserSearch(e.target.value)
+                    if (creditForm.userId) setCreditForm({ ...creditForm, userId: '' })
+                  }}
+                  className={`w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
+                    creditForm.userId ? 'border-green-400 bg-green-50 pr-8' : 'border-gray-300'
+                  }`}
+                />
+                {creditForm.userId && (
+                  <button
+                    type="button"
+                    onClick={clearCreditUser}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    title="Cambia utente"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                {!creditForm.userId && filteredCreditUsers.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+                    {filteredCreditUsers.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => selectCreditUser(u)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b last:border-0 border-gray-100"
+                      >
+                        <div className="font-medium text-gray-900">{u.first_name} {u.last_name}</div>
+                        <div className="text-xs text-gray-500">{u.referral_code} · {u.daily_points || 0} KU Points</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!creditForm.userId && creditUserSearch.trim() && filteredCreditUsers.length === 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-sm text-gray-400">
+                    Nessun utente trovato
+                  </div>
+                )}
+              </div>
+              <input
+                type="number"
+                min="1"
+                placeholder="Punti da caricare"
+                value={creditForm.amount}
+                onChange={(e) => setCreditForm({ ...creditForm, amount: e.target.value })}
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+            <button
+              onClick={handleCreditPoints}
+              disabled={creditingPoints}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+            >
+              <Sparkles className="w-4 h-4" />
+              {creditingPoints ? 'Caricamento...' : 'Carica punti'}
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
@@ -1275,6 +1446,28 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                 </button>
               )
             })}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <GitBranch className="w-4 h-4" />
+            Bonus Struttura Matrice
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Punti Rete assegnati una tantum ogni volta che uno dei 5 posti diretti in matrice di un Kumano si riempie
+            con un abbonato realmente attivo (pagante Stripe) — sia esso un suo sponsorizzato diretto, sia arrivato
+            per spillover. Fino a 5 posti per persona.
+          </p>
+          <div className="flex items-center gap-2 max-w-xs">
+            <input
+              type="number"
+              min="0"
+              value={systemSettings.matrix_slot_bonus_points ?? 5}
+              onChange={(e) => setSystemSettings({ ...systemSettings, matrix_slot_bonus_points: parseInt(e.target.value, 10) || 0 })}
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+            <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / posto</span>
           </div>
         </div>
 

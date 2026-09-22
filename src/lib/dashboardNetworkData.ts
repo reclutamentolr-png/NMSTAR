@@ -168,6 +168,14 @@ export async function getDashboardNetworkData(
     await supabase.rpc('claim_rank_bonus', { p_rank_key: rank.key })
   }
 
+  // "Bonus Struttura": pays out for matrix slots filled since the last
+  // check, whether by personal sponsorship or by someone else's spillover
+  // landing in one of this Kumano's 5 direct positions — see
+  // claim_matrix_slot_bonus() for why spillover recipients otherwise get
+  // nothing from the compensation plan. Idempotent and self-verifying, same
+  // pattern as claim_rank_bonus above, safe to call on every dashboard load.
+  await supabase.rpc('claim_matrix_slot_bonus')
+
   const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/${locale}/login`
 
   return {

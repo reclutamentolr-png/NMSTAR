@@ -35,6 +35,8 @@ const specialSounds: SpecialSound[] = [
   { id: 'innalzare-vibrazioni', frequency: 963, name: 'Innalzare le vibrazioni', description: 'Una frequenza acuta da ascoltare a volume basso e confortevole.' },
 ]
 
+const MIN_LISTEN_SECONDS_FOR_POINT = 10 * 60
+
 const guidedMeditationAudioByLocale: Record<string, string> = {
   it: '/audio/meditazione_it.mp3',
   en: '/audio/meditazione_en.mp3',
@@ -60,6 +62,12 @@ export default function NeurobalancePlayer() {
   const oscillatorsRef = useRef<OscillatorNode[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const guidedAudioRef = useRef<HTMLAudioElement | null>(null)
+  // The KU Point for this tool must reflect a real listening session, not a
+  // click — listenedSecondsRef accumulates actual playback time across both
+  // players (and across pause/resume), and the point only fires once it
+  // crosses the threshold, at most once per page load.
+  const listenedSecondsRef = useRef(0)
+  const pointAwardedRef = useRef(false)
 
   const selected = presets.find((preset) => preset.id === selectedId) ?? presets[0]
   const presetName = (id: string) => t(`presets.${id}.name`)
@@ -88,6 +96,19 @@ export default function NeurobalancePlayer() {
   useEffect(() => {
     if (gainRef.current) gainRef.current.gain.value = volume
   }, [volume])
+
+  useEffect(() => {
+    const anyPlaying = isPlaying || isGuidedPlaying
+    if (!anyPlaying || pointAwardedRef.current) return
+    const interval = setInterval(() => {
+      listenedSecondsRef.current += 1
+      if (listenedSecondsRef.current >= MIN_LISTEN_SECONDS_FOR_POINT && !pointAwardedRef.current) {
+        pointAwardedRef.current = true
+        awardNeurobalancePoint()
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isPlaying, isGuidedPlaying])
 
   useEffect(() => {
     return () => {
@@ -131,7 +152,6 @@ export default function NeurobalancePlayer() {
     oscillatorsRef.current = [left, right]
     setRemaining(selected.duration * 60)
     setIsPlaying(true)
-    await awardNeurobalancePoint()
   }
 
   const selectPreset = (preset: Preset) => {
@@ -164,7 +184,6 @@ export default function NeurobalancePlayer() {
 
     await audio.play()
     setIsGuidedPlaying(true)
-    await awardNeurobalancePoint()
   }
 
   const minutes = Math.floor(remaining / 60).toString().padStart(2, '0')

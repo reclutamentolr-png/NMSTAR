@@ -12,21 +12,13 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(req: NextRequest) {
-  // QUESTO LOG DEVE APPARIRE PER FORZA SE LA RICHIESTA ARRIVA
-  console.log('🚨🚨🚨 WEBHOOK POST CHIAMATO 🚨🚨🚨')
-  console.log('URL richiesta:', req.url)
-  
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')
-
-  console.log('📏 Lunghezza body:', body.length)
-  console.log('🔑 Firma presente:', !!sig)
 
   let event: Stripe.Event
 
   try {
     event = stripe.webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET!)
-    console.log('✅ Evento verificato:', event.type)
   } catch (err: any) {
     console.error('❌ Errore verifica webhook (firma sbagliata?):', err.message)
     return NextResponse.json({ error: err.message }, { status: 400 })
@@ -34,11 +26,7 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
-    console.log('💳 checkout.session.completed rilevato!')
-    console.log('📦 Metadata:', JSON.stringify(session.metadata))
-    
     const userId = session.metadata?.userId
-    console.log('👤 userId estratto:', userId)
 
     // Calculate subscription expiry: 1 year from activation (annual plan,
     // 49€/anno). This is an immediate estimate shown right after checkout;
@@ -60,12 +48,8 @@ export async function POST(req: NextRequest) {
       
       if (error) {
         console.error('❌ Errore Supabase:', error.message)
-      } else {
-        if (data && data.length > 0) {
-          console.log('✅ SUCCESSO! Righe aggiornate:', data.length)
-        } else {
-          console.error('⚠️ NESSUNA RIGA AGGIORNATA! UserId non trovato.')
-        }
+      } else if (!data || data.length === 0) {
+        console.error('⚠️ NESSUNA RIGA AGGIORNATA! UserId non trovato.')
       }
     }
   }
@@ -73,8 +57,6 @@ export async function POST(req: NextRequest) {
   // Handle subscription deletion/cancellation
   if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
     const subscription = event.data.object as any
-    console.log('🔄 Subscription event:', event.type, 'status:', subscription.status)
-
     const userId = subscription.metadata?.userId
     if (userId) {
       const newStatus = subscription.status === 'active' ? 'active' : 'inactive'

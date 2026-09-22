@@ -169,7 +169,7 @@ export default async function LinkInBioPage({ params }: { params: Promise<{ loca
             <ExternalLink className="w-5 h-5" />
             {t('visitBio')}
           </a>
-          <p className="text-sm text-gray-500 mt-3" dangerouslySetInnerHTML={{ __html: t('savePrompt') }}></p>
+          <p className="text-sm text-gray-500 mt-3">{t('savePrompt')}</p>
         </div>
       </main>
     </div>

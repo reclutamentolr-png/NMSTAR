@@ -110,7 +110,7 @@ export default function InstallAppPrompt() {
             </div>
           ) : (
             /* ✅ Android/Desktop: testo + pulsante nativo */
-            <p className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: t('installPrompt') }}></p>
+            <p className="text-sm text-gray-600">{t('installPrompt')}</p>
           )}
 
           <div className="flex gap-3 mt-5">
