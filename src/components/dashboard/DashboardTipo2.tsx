@@ -9,7 +9,7 @@ import type { MarketplaceTool } from '@/lib/marketplaceTools'
 import { MARKETPLACE_CATEGORIES, type MarketplaceCategory } from '@/lib/marketplaceTools'
 import type { DashboardNetworkData } from '@/lib/dashboardNetworkData'
 import { RANKS } from '@/lib/ranks'
-import { Users, ArrowRight, Star } from 'lucide-react'
+import { Users, ArrowRight, Star, CheckCircle2 } from 'lucide-react'
 import CopyButton from '@/components/CopyButton'
 import VoucherActivationButton from '@/components/VoucherActivationButton'
 
@@ -24,6 +24,7 @@ export default async function DashboardTipo2({
   recentListings,
   unreadMessagesCount,
   visibleTools,
+  lockedToolNames,
   favoriteToolNames,
   network,
   userId,
@@ -33,6 +34,7 @@ export default async function DashboardTipo2({
   recentListings: any[]
   unreadMessagesCount: number
   visibleTools: MarketplaceTool[]
+  lockedToolNames: string[]
   favoriteToolNames: string[]
   network: DashboardNetworkData
   userId: string
@@ -78,6 +80,7 @@ export default async function DashboardTipo2({
         <div className="rounded-xl border border-[var(--gold)]/25 bg-[var(--paper)] px-5 py-4 shadow-sm">
           <p className="text-xs text-[var(--muted)] font-medium mb-1.5">{t('pointsCardLabel')}</p>
           <span className="text-2xl font-bold text-[var(--ink)]">{profile?.daily_points || 0}</span>
+          <span className="ml-1.5 text-sm font-semibold text-[var(--gold)]">{t('kuPointsLabel')}</span>
           <div className="mt-1.5">
             <InfoPopover label={t('howPointsWorkLabel')}>{t('howPointsWorkBody')}</InfoPopover>
           </div>
@@ -85,29 +88,36 @@ export default async function DashboardTipo2({
 
         <div className="rounded-xl border border-[var(--gold)]/25 bg-[var(--paper)] px-5 py-4 shadow-sm">
           <p className="text-xs text-[var(--muted)] font-medium mb-1.5">{t('subscriptionStatus')}</p>
-          <div className="flex items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${profile?.subscription_status === 'active' ? 'bg-emerald-500' : 'bg-orange-400'}`} />
-            {profile?.subscription_status === 'active' ? (
-              <span className="text-sm font-semibold text-[var(--ink)]">{t('subscriptionActive')}</span>
-            ) : (
-              <span className="text-sm font-semibold text-[var(--ink)]">{t('freePlan')}</span>
-            )}
-          </div>
-          {profile?.subscription_status === 'active' && profile?.subscription_expires_at && (
-            <p className="text-xs text-[var(--muted)] mt-1">
-              {t('expiresAt')}: {new Date(profile.subscription_expires_at).toLocaleDateString('it-IT')}
-            </p>
-          )}
-          {profile?.subscription_status !== 'active' && (
-            <div className="mt-2 space-y-1.5">
-              <Link
-                href="/billing"
-                className="block text-center rounded-lg bg-[var(--ink)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--ink-soft)]"
-              >
-                {t('subscribeNow')}
-              </Link>
-              <VoucherActivationButton />
+          {profile?.subscription_status === 'active' ? (
+            <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                <CheckCircle2 className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-emerald-700">{t('subscriptionActive')}</p>
+                {profile?.subscription_expires_at && (
+                  <p className="text-xs text-emerald-600">
+                    {t('expiresAt')}: {new Date(profile.subscription_expires_at).toLocaleDateString('it-IT')}
+                  </p>
+                )}
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0 bg-orange-400" />
+                <span className="text-sm font-semibold text-[var(--ink)]">{t('freePlan')}</span>
+              </div>
+              <div className="mt-2 space-y-1.5">
+                <Link
+                  href="/billing"
+                  className="block text-center rounded-lg bg-[var(--ink)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--ink-soft)]"
+                >
+                  {t('subscribeNow')}
+                </Link>
+                <VoucherActivationButton />
+              </div>
+            </>
           )}
         </div>
 
@@ -131,6 +141,7 @@ export default async function DashboardTipo2({
               label={categoryLabels[category]}
               toolsLabel={marketplaceT('categoryToolCount', { count: tools.length })}
               tools={tools}
+              lockedToolNames={lockedToolNames}
               favoriteToolNames={favoriteToolNames}
             />
           ))}

@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, LoaderCircle } from 'lucide-react'
 import { redeemCoupon } from '@/app/actions/coupons'
+import CouponPdfButton from '@/components/CouponPdfButton'
 
 type Coupon = {
   id: string
@@ -13,6 +14,7 @@ type Coupon = {
   description: string | null
   expires_at: string | null
   redeemed_at: string | null
+  created_at: string
 }
 
 export default function WalletCouponsList({ coupons }: { coupons: Coupon[] }) {
@@ -64,20 +66,23 @@ export default function WalletCouponsList({ coupons }: { coupons: Coupon[] }) {
                 {statusLabel}
               </span>
             </div>
-            {status === 'available' && (
-              <button
-                onClick={() => handleRedeem(coupon.code)}
-                disabled={redeemingCode === coupon.code}
-                className="mt-3 flex items-center gap-2 rounded-lg bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--ink-soft)] disabled:opacity-50"
-              >
-                {redeemingCode === coupon.code ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                {t('couponMarkUsed')}
-              </button>
-            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <CouponPdfButton coupon={coupon} />
+              {status === 'available' && (
+                <button
+                  onClick={() => handleRedeem(coupon.code)}
+                  disabled={redeemingCode === coupon.code}
+                  className="flex items-center gap-2 rounded-lg border border-[var(--gold)]/50 bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--gold-pale)] disabled:opacity-50"
+                >
+                  {redeemingCode === coupon.code ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  {t('couponMarkUsed')}
+                </button>
+              )}
+            </div>
           </div>
         )
       })}

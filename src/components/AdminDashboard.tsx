@@ -17,7 +17,7 @@ import {
   listRewards,
   deleteReward,
   listRewardRedemptions,
-  markRewardFulfilled,
+  fulfillRewardRedemption,
 } from '@/app/actions/admin'
 import { DASHBOARD_LAYOUTS, DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboardLayouts'
 import {
@@ -99,6 +99,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   const [editingRewardId, setEditingRewardId] = useState<string | null>(null)
   const [savingReward, setSavingReward] = useState(false)
   const [rewardError, setRewardError] = useState<string | null>(null)
+  const [fulfillCodeInputs, setFulfillCodeInputs] = useState<Record<string, string>>({})
+  const [fulfillingId, setFulfillingId] = useState<string | null>(null)
 
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({
     maintenance_mode: false,
@@ -350,14 +352,28 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     }
   }
 
-  const handleMarkFulfilled = async (redemptionId: string) => {
-    const result = await markRewardFulfilled(redemptionId)
+  const handleFulfillRedemption = async (redemptionId: string) => {
+    const code = (fulfillCodeInputs[redemptionId] || '').trim()
+    if (!code) {
+      alert('Inserisci il codice da inviare al Kumano.')
+      return
+    }
+    setFulfillingId(redemptionId)
+    const result = await fulfillRewardRedemption(redemptionId, code)
+    setFulfillingId(null)
     if (result.success) {
       setRewardRedemptions((prev) =>
-        prev.map((r) => (r.id === redemptionId ? { ...r, fulfilled_at: new Date().toISOString() } : r))
+        prev.map((r) =>
+          r.id === redemptionId ? { ...r, fulfilled_at: new Date().toISOString(), fulfillment_code: code } : r
+        )
       )
+      setFulfillCodeInputs((prev) => {
+        const next = { ...prev }
+        delete next[redemptionId]
+        return next
+      })
     } else {
-      alert(result.error || 'Errore durante l\'aggiornamento.')
+      alert(result.error || 'Errore durante l\'evasione del riscatto.')
     }
   }
 
@@ -481,8 +497,22 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   const handleSaveProfile = async () => {
     if (!profileEditUser) return
     setSavingProfile(true)
+
+    // subscription_source traccia CHI ha attivato l'abbonamento (stripe /
+    // voucher / admin): claim_rank_bonus conta solo i downline attivati via
+    // Stripe per i Punti Rete, quindi un'attivazione manuale da qui non deve
+    // mai valere come pagamento reale. Lo tocchiamo solo quando lo stato
+    // sta effettivamente cambiando — se era già "active" (es. pagamento
+    // Stripe reale) e l'admin salva il form per un altro motivo, non
+    // vogliamo silenziosamente riscrivere la provenienza a "admin".
+    const statusChanged = profileForm.subscription_status !== profileEditUser.subscription_status
+    const subscriptionSourcePatch = statusChanged
+      ? { subscription_source: profileForm.subscription_status === 'active' ? 'admin' : null }
+      : {}
+
     const result = await adminUpdateProfile(profileEditUser.id, {
       ...profileForm,
+      ...subscriptionSourcePatch,
       date_of_birth: profileForm.date_of_birth || '2000-01-01',
       // Un abbonamento "Active" senza scadenza resta attivo per sempre
       // (isActiveSubscription tratta null come "nessuna scadenza") — qui
@@ -1176,13 +1206,25 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {!r.fulfilled_at && (
-                          <button
-                            onClick={() => handleMarkFulfilled(r.id)}
-                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                          >
-                            Segna come evaso
-                          </button>
+                        {r.fulfilled_at ? (
+                          <span className="font-mono text-xs text-gray-500">{r.fulfillment_code}</span>
+                        ) : (
+                          <div className="flex items-center justify-end gap-2">
+                            <input
+                              type="text"
+                              placeholder="Codice (es. Amazon)"
+                              value={fulfillCodeInputs[r.id] || ''}
+                              onChange={(e) => setFulfillCodeInputs({ ...fulfillCodeInputs, [r.id]: e.target.value })}
+                              className="w-40 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                            <button
+                              onClick={() => handleFulfillRedemption(r.id)}
+                              disabled={fulfillingId === r.id}
+                              className="whitespace-nowrap text-xs font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+                            >
+                              {fulfillingId === r.id ? 'Invio...' : 'Evadi con codice'}
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

@@ -72,10 +72,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   // 8. Solo Tipo 2 ha bisogno della lista strumenti Marketplace e dei
   //    preferiti in dashboard
   let visibleTools: ReturnType<typeof getMarketplaceTools> = []
+  let lockedToolNames: string[] = []
   let favoriteToolNames: string[] = []
   if (layout === 'tipo2') {
-    const { isSettingEnabled } = await getMarketplaceAccessState(supabase, user.id)
+    const { isSettingEnabled, isToolEnabled } = await getMarketplaceAccessState(supabase, user.id)
     visibleTools = getMarketplaceTools(marketplaceT).filter((tool) => isSettingEnabled(tool.toolName))
+    // Admin-enabled but not usable by THIS user (no active subscription) —
+    // shown locked instead of silently hidden, same distinction the
+    // marketplace category grid already makes via MarketplaceCard.
+    lockedToolNames = visibleTools.filter((tool) => !isToolEnabled(tool.toolName)).map((tool) => tool.toolName)
     favoriteToolNames = await getFavoriteToolNames(supabase, user.id)
   }
 
@@ -121,6 +126,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
             recentListings={recentListings}
             unreadMessagesCount={unreadMessagesCount || 0}
             visibleTools={visibleTools}
+            lockedToolNames={lockedToolNames}
             favoriteToolNames={favoriteToolNames}
             network={network}
             userId={user.id}

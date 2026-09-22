@@ -366,7 +366,7 @@ export async function listRewardRedemptions() {
   const supabaseAdmin = getServiceClient()
   const { data, error } = await supabaseAdmin
     .from('reward_redemptions')
-    .select('id, reward_id, user_id, points_spent, redeemed_at, fulfilled_at, reward_catalog(title)')
+    .select('id, reward_id, user_id, points_spent, redeemed_at, fulfilled_at, fulfillment_code, reward_catalog(title)')
     .order('redeemed_at', { ascending: false })
     .limit(200)
 
@@ -383,16 +383,52 @@ export async function listRewardRedemptions() {
   return { redemptions, error: null }
 }
 
-export async function markRewardFulfilled(redemptionId: string) {
+// Fulfills a reward redemption by entering the real code the admin bought
+// (an Amazon gift card code, etc.): marks the redemption evaso AND copies
+// the code into a new wallet_coupons row for that user, so it shows up
+// where Kumani already know to look for coupons — My Wallet → Coupon —
+// reusing that existing UI (including the coupon PDF) instead of building
+// a parallel "view my prize" screen.
+export async function fulfillRewardRedemption(redemptionId: string, code: string) {
   const admin = await verifyAdmin('rewards.write')
   if (!admin) return { success: false, error: 'Non autorizzato' }
 
+  const trimmedCode = code.trim()
+  if (!trimmedCode) return { success: false, error: 'Inserisci il codice da inviare.' }
+
   const supabaseAdmin = getServiceClient()
-  const { error } = await supabaseAdmin
+
+  const { data: redemption, error: fetchError } = await supabaseAdmin
     .from('reward_redemptions')
-    .update({ fulfilled_at: new Date().toISOString() })
+    .select('id, user_id, fulfilled_at, reward_catalog(title, description)')
+    .eq('id', redemptionId)
+    .single()
+
+  if (fetchError || !redemption) return { success: false, error: 'Riscatto non trovato.' }
+  if (redemption.fulfilled_at) return { success: false, error: 'Questo riscatto è già stato evaso.' }
+
+  const rewardInfo = Array.isArray(redemption.reward_catalog) ? redemption.reward_catalog[0] : redemption.reward_catalog
+
+  const { error: couponError } = await supabaseAdmin.from('wallet_coupons').insert({
+    user_id: redemption.user_id,
+    code: trimmedCode,
+    title: rewardInfo?.title || 'Premio',
+    description: rewardInfo?.description || null,
+    issued_by: admin.id,
+  })
+
+  if (couponError) {
+    if (couponError.code === '23505') {
+      return { success: false, error: 'Questo codice è già stato usato per un altro coupon. Verificalo.' }
+    }
+    return { success: false, error: couponError.message }
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from('reward_redemptions')
+    .update({ fulfilled_at: new Date().toISOString(), fulfillment_code: trimmedCode })
     .eq('id', redemptionId)
 
-  if (error) return { success: false, error: error.message }
+  if (updateError) return { success: false, error: updateError.message }
   return { success: true }
 }

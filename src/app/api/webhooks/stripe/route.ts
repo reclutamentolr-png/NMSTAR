@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
         .update({
           subscription_status: 'active',
           subscription_expires_at: expiresAt.toISOString(),
+          subscription_source: 'stripe',
         })
         .eq('id', userId)
         .select()
@@ -78,7 +79,10 @@ export async function POST(req: NextRequest) {
     if (userId) {
       const newStatus = subscription.status === 'active' ? 'active' : 'inactive'
 
-      const updateData: Record<string, any> = { subscription_status: newStatus }
+      const updateData: Record<string, any> = {
+        subscription_status: newStatus,
+        subscription_source: newStatus === 'active' ? 'stripe' : null,
+      }
 
       // Calculate next billing date
       if (subscription.current_period_end) {

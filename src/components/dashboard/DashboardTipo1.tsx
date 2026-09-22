@@ -22,6 +22,7 @@ import {
   Zap,
   Share2,
   ArrowRight,
+  CheckCircle2,
 } from 'lucide-react'
 import type { DashboardNetworkData } from '@/lib/dashboardNetworkData'
 
@@ -176,7 +177,10 @@ export default async function DashboardTipo1({
               <Trophy className="w-5 h-5 text-yellow-600" />
               {t('points')}
             </h3>
-            <span className="text-3xl font-bold text-yellow-600">{profile?.daily_points || 0}</span>
+            <span>
+              <span className="text-3xl font-bold text-yellow-600">{profile?.daily_points || 0}</span>
+              <span className="ml-1.5 text-sm font-semibold text-yellow-700">{t('kuPointsLabel')}</span>
+            </span>
           </div>
           <div className="mb-3">
             <div className="flex justify-between text-xs text-gray-600 mb-1.5">
@@ -230,15 +234,19 @@ export default async function DashboardTipo1({
               <VoucherActivationButton />
             </>
           ) : (
-            <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
-              <Star className="w-4 h-4" />
-              {t('activePlan')}
+            <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                <CheckCircle2 className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-emerald-700">{t('activePlan')}</p>
+                {profile?.subscription_expires_at && (
+                  <p className="text-xs text-emerald-600">
+                    {t('expiresAt')}: {new Date(profile.subscription_expires_at).toLocaleDateString('it-IT')}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
-          {profile?.subscription_status === 'active' && profile?.subscription_expires_at && (
-            <p className="text-xs text-gray-500 mt-2">
-              {t('expiresAt')}: {new Date(profile.subscription_expires_at).toLocaleDateString('it-IT')}
-            </p>
           )}
         </div>
 
