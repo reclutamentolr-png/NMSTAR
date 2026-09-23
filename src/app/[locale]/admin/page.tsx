@@ -22,6 +22,8 @@ const ALL_PERMISSIONS: Permission[] = [
   'vouchers.write',
   'rewards.read',
   'rewards.write',
+  'messages.read',
+  'messages.write',
   'settings.read'
 ]
 

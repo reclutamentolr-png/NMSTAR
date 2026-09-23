@@ -38,3 +38,4 @@ public/audio/traduzioni/
 .idea/
 *.swp
 *.swo
+.aider*

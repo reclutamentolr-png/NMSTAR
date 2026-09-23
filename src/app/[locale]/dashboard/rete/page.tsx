@@ -10,7 +10,7 @@ import DirectAffiliatesList from '@/components/DirectAffiliatesList'
 import NotYetKumaniList from '@/components/NotYetKumaniList'
 import Leaderboard from '@/components/Leaderboard'
 import { getDashboardNetworkData } from '@/lib/dashboardNetworkData'
-import { ArrowLeft, TreePine, Star, Sparkles, Crown, Trophy } from 'lucide-react'
+import { ArrowLeft, TreePine, Star, Sparkles, Crown, Trophy, Wallet } from 'lucide-react'
 
 // The Tipo 2 dashboard's dedicated network area: everything Tipo 1 shows
 // inline (KUMI, referral share, matrix, KUMANI lists, qualifications) lives
@@ -54,6 +54,13 @@ export default async function DashboardRetePage({ params }: { params: Promise<{ 
             <ArrowLeft className="h-4 w-4" /> {t('backToDashboard')}
           </Link>
           <h1 className="text-lg font-semibold tracking-tight text-white">{t('yourNetwork')}</h1>
+          <Link
+            href="/wallet"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--gold)]/45 bg-black px-3 py-1.5 text-sm font-semibold text-[var(--gold-bright)] shadow-sm transition-colors hover:bg-[var(--gold)]/10"
+          >
+            <Wallet className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('myWallet')}</span>
+          </Link>
         </div>
       </header>
 

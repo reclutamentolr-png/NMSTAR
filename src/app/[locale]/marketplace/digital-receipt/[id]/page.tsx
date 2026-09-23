@@ -47,7 +47,7 @@ export default async function DigitalReceiptDetailPage({
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() || profile?.email || user.email || ''
 
   const photoUrl = receipt.photo_path
-    ? supabase.storage.from('receipt-photos').getPublicUrl(receipt.photo_path).data.publicUrl
+    ? supabase.storage.from('receipt-photos-v2').getPublicUrl(receipt.photo_path).data.publicUrl
     : null
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'

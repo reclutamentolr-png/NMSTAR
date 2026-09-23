@@ -37,7 +37,7 @@ export default async function DigitalReceiptPublicPage({
   }
 
   const photoUrl = data.photo_path
-    ? supabase.storage.from('receipt-photos').getPublicUrl(data.photo_path).data.publicUrl
+    ? supabase.storage.from('receipt-photos-v2').getPublicUrl(data.photo_path).data.publicUrl
     : null
 
   return (

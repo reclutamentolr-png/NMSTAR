@@ -11,6 +11,8 @@ export const REQUIRES_SUBSCRIPTION = [
   'findo',
   'digital-receipt',
   'aureya',
+  'preventivi',
+  'kumani-cv',
 ]
 
 export interface MarketplaceAccessState {

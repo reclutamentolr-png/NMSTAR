@@ -51,6 +51,7 @@ export default async function DashboardTipo2({
     security: marketplaceT('categorySecurity'),
     personal: marketplaceT('categoryPersonal'),
     wellness: marketplaceT('categoryWellness'),
+    lavoro: marketplaceT('categoryLavoro'),
     community: marketplaceT('categoryCommunity'),
   }
   const toolsByCategory = MARKETPLACE_CATEGORIES.filter((category) => category !== 'community')
@@ -185,9 +186,14 @@ export default async function DashboardTipo2({
                 <div className="h-full bg-[var(--gold)]" style={{ width: `${rankProgress}%` }} />
               </div>
               {nextRank && (
-                <p className="text-xs text-[var(--muted)] mt-1.5">
-                  {directSponsorCount}/{nextRank.threshold} {t('affiliates')}
-                </p>
+                <>
+                  <p className="text-xs text-[var(--muted)] mt-1.5">
+                    {directSponsorCount}/{nextRank.threshold} {t('affiliates')}
+                  </p>
+                  <p className="text-xs font-semibold text-[var(--gold)] mt-1">
+                    {t('missingForNextRank', { count: nextRank.threshold - directSponsorCount, rank: t(nextRank.labelKey) })}
+                  </p>
+                </>
               )}
             </div>
           )}

@@ -11,6 +11,7 @@ import InstallAppPrompt from '@/components/InstallAppPrompt'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import RankAchievementModal from '@/components/RankAchievementModal'
 import RenewalReminderModal from '@/components/RenewalReminderModal'
+import AdminMessagePopup from '@/components/AdminMessagePopup'
 import { isAdmin } from '@/lib/admin-auth'
 import { getDashboardNetworkData } from '@/lib/dashboardNetworkData'
 import { getActiveDashboardLayout } from '@/lib/dashboardLayout-server'
@@ -97,9 +98,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
           icon={newlyAchievedRank.icon}
           bonusPoints={newlyAchievedRank.bonusPoints}
         />
+      ) : renewalDaysLeft !== null && profile?.subscription_expires_at ? (
+        <RenewalReminderModal expiresAt={profile.subscription_expires_at} daysLeft={renewalDaysLeft} />
       ) : (
-        renewalDaysLeft !== null &&
-        profile?.subscription_expires_at && <RenewalReminderModal expiresAt={profile.subscription_expires_at} daysLeft={renewalDaysLeft} />
+        <AdminMessagePopup />
       )}
 
       <InstallAppPrompt />

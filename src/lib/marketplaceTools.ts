@@ -1,4 +1,4 @@
-export const MARKETPLACE_CATEGORIES = ['marketing', 'security', 'personal', 'wellness', 'community'] as const
+export const MARKETPLACE_CATEGORIES = ['marketing', 'security', 'personal', 'wellness', 'lavoro', 'community'] as const
 export type MarketplaceCategory = (typeof MARKETPLACE_CATEGORIES)[number]
 
 export interface MarketplaceTool {
@@ -149,6 +149,28 @@ export function getMarketplaceTools(t: (key: string) => string): MarketplaceTool
       description: t('aureyaDescription'),
       color: 'gold',
       category: 'wellness',
+      requiresSubscription: true,
+    },
+    {
+      toolName: 'preventivi',
+      href: '/marketplace/preventivi',
+      gradient: 'bg-[var(--ink)]',
+      iconName: 'FileSpreadsheet',
+      title: t('preventivi'),
+      description: t('preventiviDescription'),
+      color: 'gold',
+      category: 'lavoro',
+      requiresSubscription: true,
+    },
+    {
+      toolName: 'kumani-cv',
+      href: '/marketplace/kumani-cv',
+      gradient: 'bg-[var(--ink)]',
+      iconName: 'FileUser',
+      title: t('kumaniCv'),
+      description: t('kumaniCvDescription'),
+      color: 'gold',
+      category: 'lavoro',
       requiresSubscription: true,
     },
   ]

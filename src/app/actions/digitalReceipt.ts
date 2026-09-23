@@ -168,7 +168,7 @@ export async function deleteReceipt(id: string): Promise<ActionResult<null>> {
   }
 
   if (receipt?.photo_path) {
-    await supabase.storage.from('receipt-photos').remove([receipt.photo_path])
+    await supabase.storage.from('receipt-photos-v2').remove([receipt.photo_path])
   }
 
   return { success: true, data: null }

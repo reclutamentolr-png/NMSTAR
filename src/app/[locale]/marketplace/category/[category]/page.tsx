@@ -33,6 +33,7 @@ export default async function MarketplaceCategoryPage({
     security: t('categorySecurity'),
     personal: t('categoryPersonal'),
     wellness: t('categoryWellness'),
+    lavoro: t('categoryLavoro'),
     community: t('categoryCommunity'),
   }
 

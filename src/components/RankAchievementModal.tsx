@@ -43,7 +43,7 @@ export default function RankAchievementModal({ rankKey, labelKey, descriptionKey
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={handleClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
         className="relative w-full max-w-sm rounded-2xl border border-[var(--gold)]/45 bg-[var(--ink)] p-8 text-center text-white shadow-[0_25px_60px_rgba(0,0,0,0.4)]"
         onClick={(e) => e.stopPropagation()}

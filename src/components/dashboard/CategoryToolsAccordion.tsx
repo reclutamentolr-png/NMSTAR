@@ -6,13 +6,14 @@ import Link from '@/components/LocalizedLink'
 import { marketplaceIconMap } from '@/lib/marketplaceIcons'
 import type { MarketplaceTool, MarketplaceCategory } from '@/lib/marketplaceTools'
 import FavoriteStarButton from '@/components/FavoriteStarButton'
-import { Megaphone, ShieldCheck, CalendarClock, Waves, ChevronDown, ChevronUp, Smartphone, Lock, Zap } from 'lucide-react'
+import { Megaphone, ShieldCheck, CalendarClock, Waves, Briefcase, ChevronDown, ChevronUp, Smartphone, Lock, Zap } from 'lucide-react'
 
 const CATEGORY_ICONS: Record<MarketplaceCategory, typeof Megaphone> = {
   marketing: Megaphone,
   security: ShieldCheck,
   personal: CalendarClock,
   wellness: Waves,
+  lavoro: Briefcase,
   community: Waves,
 }
 

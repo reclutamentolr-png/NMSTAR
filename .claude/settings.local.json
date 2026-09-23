@@ -1,0 +1,10 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:11434/v1",
+    "ANTHROPIC_AUTH_TOKEN": "local-no-token-needed",
+    "ANTHROPIC_API_KEY": "",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen2.5-coder:7b",
+    "CLAUDE_MODEL": "qwen2.5-coder:7b",
+    "ENABLE_TOOL_SEARCH": "false"
+  }
+}

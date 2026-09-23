@@ -7,6 +7,7 @@ export type Permission =
   | 'coupons.read' | 'coupons.write'
   | 'vouchers.read' | 'vouchers.write'
   | 'rewards.read' | 'rewards.write'
+  | 'messages.read' | 'messages.write'
   | 'stats.read'
   | 'support.read' | 'support.write'
   | 'settings.read' | 'settings.write'

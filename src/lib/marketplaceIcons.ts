@@ -11,6 +11,8 @@ import {
   PackageSearch,
   FileCheck2,
   Stethoscope,
+  FileSpreadsheet,
+  FileUser,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -31,4 +33,6 @@ export const marketplaceIconMap: Record<string, LucideIcon> = {
   PackageSearch,
   FileCheck2,
   Stethoscope,
+  FileSpreadsheet,
+  FileUser,
 }

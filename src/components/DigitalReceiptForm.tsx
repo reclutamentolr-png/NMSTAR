@@ -90,7 +90,7 @@ export default function DigitalReceiptForm() {
     }
 
     const path = `${user.id}/${receiptId}.${photoExtension(file)}`
-    const { error: uploadError } = await supabase.storage.from('receipt-photos').upload(path, file, { upsert: true })
+    const { error: uploadError } = await supabase.storage.from('receipt-photos-v2').upload(path, file, { upsert: true })
     setUploadingPhoto(false)
 
     if (uploadError) {
