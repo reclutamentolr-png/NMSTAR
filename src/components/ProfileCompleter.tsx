@@ -4,14 +4,16 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Briefcase, 
-  Save, 
+import {
+  User,
+  Phone,
+  MapPin,
+  Calendar,
+  Briefcase,
+  Home,
+  Building2,
+  MapPinned,
+  Save,
   AlertCircle,
   CheckCircle2,
   X
@@ -32,7 +34,10 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
     phone: initialData?.phone || '',
     country_code: initialData?.country_code || '',
     date_of_birth: initialData?.date_of_birth === '2000-01-01' ? '' : initialData?.date_of_birth || '',
-    occupation: initialData?.occupation || ''
+    occupation: initialData?.occupation || '',
+    address: initialData?.address || '',
+    city: initialData?.city || '',
+    province: initialData?.province || ''
   })
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -95,75 +100,109 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <User className="w-4 h-4" /> {t('firstName')}
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <User className="w-3.5 h-3.5" /> {t('firstName')}
             </label>
             <input
               type="text"
               value={formData.first_name}
               onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <User className="w-4 h-4" /> {t('lastName')}
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <User className="w-3.5 h-3.5" /> {t('lastName')}
             </label>
             <input
               type="text"
               value={formData.last_name}
               onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Phone className="w-4 h-4" /> {t('phone')}
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Phone className="w-3.5 h-3.5" /> {t('phone')}
             </label>
             <input
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <MapPin className="w-4 h-4" /> {t('country')}
-            </label>
-            <input
-              type="text"
-              value={formData.country_code}
-              onChange={(e) => setFormData({...formData, country_code: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              placeholder={t('countryShort')}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Calendar className="w-4 h-4" /> {t('dateOfBirth')}
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" /> {t('dateOfBirth')}
             </label>
             <input
               type="date"
               value={formData.date_of_birth}
               onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Briefcase className="w-4 h-4" /> {t('occupation')}
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Briefcase className="w-3.5 h-3.5" /> {t('occupation')}
             </label>
             <input
               type="text"
               value={formData.occupation}
               onChange={(e) => setFormData({...formData, occupation: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5" /> {t('country')}
+            </label>
+            <input
+              type="text"
+              value={formData.country_code}
+              onChange={(e) => setFormData({...formData, country_code: e.target.value})}
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              placeholder={t('countryShort')}
+            />
+          </div>
+          <div className="col-span-2 sm:col-span-3">
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Home className="w-3.5 h-3.5" /> {t('address')}
+            </label>
+            <input
+              type="text"
+              value={formData.address}
+              onChange={(e) => setFormData({...formData, address: e.target.value})}
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              placeholder={t('addressPlaceholder')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5" /> {t('city')}
+            </label>
+            <input
+              type="text"
+              value={formData.city}
+              onChange={(e) => setFormData({...formData, city: e.target.value})}
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <MapPinned className="w-3.5 h-3.5" /> {t('province')}
+            </label>
+            <input
+              type="text"
+              value={formData.province}
+              onChange={(e) => setFormData({...formData, province: e.target.value})}
+              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
           </div>
         </div>

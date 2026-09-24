@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { NatureSoundsEngine, type NaturePreset } from '@/lib/natureSounds'
 import { LoaderCircle, Pause, Play, Volume2 } from 'lucide-react'
+import { useNeurobalanceAudio } from '@/components/NeurobalanceAudioProvider'
+import type { NaturePreset } from '@/lib/natureSounds'
 
 const PRESETS: { id: NaturePreset; emoji: string }[] = [
   { id: 'rain', emoji: '🌧️' },
@@ -16,41 +16,11 @@ const PRESETS: { id: NaturePreset; emoji: string }[] = [
   { id: 'storm', emoji: '⛈️' },
 ]
 
+// Il motore dei suoni natura vive in NeurobalanceAudioProvider (vedi
+// NeurobalancePlayer) — questo componente è solo la vista.
 export default function NatureMixer() {
   const t = useTranslations('neurobalance')
-  const engineRef = useRef<NatureSoundsEngine | null>(null)
-  const [active, setActive] = useState<NaturePreset | null>(null)
-  const [loading, setLoading] = useState<NaturePreset | null>(null)
-  const [volume, setVolume] = useState(0.6)
-
-  useEffect(() => {
-    engineRef.current = new NatureSoundsEngine()
-    return () => engineRef.current?.stop()
-  }, [])
-
-  const toggle = async (id: NaturePreset) => {
-    const eng = engineRef.current
-    if (!eng || loading) return
-    if (active === id) {
-      eng.fadeStop()
-      setActive(null)
-      return
-    }
-    setLoading(id)
-    try {
-      await eng.start(id, volume)
-      setActive(id)
-    } catch (err) {
-      console.error('[NatureMixer] failed to start sound:', id, err)
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  const onVolume = (v: number) => {
-    setVolume(v)
-    engineRef.current?.setVolume(v)
-  }
+  const { activeNature, natureLoading, natureVolume, toggleNature, setNatureVolume } = useNeurobalanceAudio()
 
   return (
     <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[var(--ink)] via-[#20202a] to-[var(--ink)] p-5 shadow-xl sm:p-6">
@@ -64,8 +34,8 @@ export default function NatureMixer() {
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {PRESETS.map((preset) => {
-            const isActive = active === preset.id
-            const isLoading = loading === preset.id
+            const isActive = activeNature === preset.id
+            const isLoading = natureLoading === preset.id
             return (
               <div
                 key={preset.id}
@@ -77,8 +47,8 @@ export default function NatureMixer() {
               >
                 <button
                   type="button"
-                  onClick={() => toggle(preset.id)}
-                  disabled={loading !== null && !isLoading}
+                  onClick={() => toggleNature(preset.id)}
+                  disabled={natureLoading !== null && !isLoading}
                   className="flex w-full items-start justify-between gap-2 text-left disabled:opacity-40"
                 >
                   <div>
@@ -117,8 +87,8 @@ export default function NatureMixer() {
                         min={0}
                         max={1}
                         step={0.05}
-                        value={volume}
-                        onChange={(event) => onVolume(Number(event.target.value))}
+                        value={natureVolume}
+                        onChange={(event) => setNatureVolume(Number(event.target.value))}
                         className="w-full accent-[var(--gold)]"
                       />
                     </div>

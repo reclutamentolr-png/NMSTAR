@@ -176,6 +176,13 @@ export async function getDashboardNetworkData(
   // pattern as claim_rank_bonus above, safe to call on every dashboard load.
   await supabase.rpc('claim_matrix_slot_bonus')
 
+  // Pays for direct sponsees beyond this Kumano's own 5 matrix slots (see
+  // directSponsorInSpilloverCount above): claim_matrix_slot_bonus only
+  // covers the 5 slots physically under this Kumano's node, so a 6th+
+  // personal referral who spills over elsewhere in the tree otherwise earns
+  // nothing here. Same idempotent, self-verifying pattern.
+  await supabase.rpc('claim_sponsor_overflow_bonus')
+
   const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/${locale}/login`
 
   return {

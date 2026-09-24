@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { NeurobalanceAudioProvider } from '@/components/NeurobalanceAudioProvider';
+import FloatingAudioPlayer from '@/components/FloatingAudioPlayer';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -78,8 +80,12 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg',
+    icon: [
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: '/apple-icon.png',
   },
   manifest: '/manifest.webmanifest',
   appleWebApp: {
@@ -115,7 +121,10 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <html lang={locale} suppressHydrationWarning>
       <body className={`min-h-full flex flex-col bg-gray-50 ${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <NeurobalanceAudioProvider>
+            {children}
+            <FloatingAudioPlayer />
+          </NeurobalanceAudioProvider>
         </NextIntlClientProvider>
       </body>
     </html>

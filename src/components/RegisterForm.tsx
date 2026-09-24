@@ -7,7 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl' // ✅ Aggiungilo qui
 import Link from 'next/link'
 import { europeanCountries } from '@/lib/european-countries'
-import { User, Mail, Lock, MapPin, AlertCircle, Loader2, Rocket, Home, ShieldCheck, CheckCircle } from 'lucide-react'
+import { User, Mail, Lock, MapPin, AlertCircle, Loader2, Home, ShieldCheck, CheckCircle } from 'lucide-react'
+import Logo from '@/components/Logo'
 
 const RESEND_COOLDOWN_SECONDS = 30
 
@@ -296,7 +297,14 @@ export default function RegisterForm() {
           throw new Error(`Errore nel salvataggio del nodo: ${insertError.message}`)
         }
       }
-      // 5. Spillover: distribuisce i nuovi membri in modo equilibrato tra i rami dello sponsor.
+      // 5. Spillover: lo sponsor ha già i 5 slot diretti pieni. Si scende nel
+      // suo sottoalbero scansionando i rami da sinistra (posizione 1) verso
+      // destra (posizione 5) e scegliendo, a ogni livello, quello con MENO
+      // persone in totale (non solo figli diretti, ma l'intero sottoalbero —
+      // così i rami restano bilanciati anche in profondità). A parità di
+      // persone vince il ramo più a sinistra, cioè il primo incontrato
+      // scansionando in ordine di posizione. Si ripete finché non si trova un
+      // nodo con uno slot diretto (1-5) ancora libero.
       else {
         const { data: allNodes, error: allNodesError } = await supabase
           .from('matrix_nodes')
@@ -308,53 +316,47 @@ export default function RegisterForm() {
           node.path.startsWith(`${parentPath}.`)
         )
 
-        const pathOrder = (path: string) =>
-          path.split('.').map((part) => Number(part.replace(/\D/g, '')) || 0)
+        const childrenOf = (nodeId: string) =>
+          nodesInSponsorTree
+            .filter((node) => node.parent_id === nodeId)
+            .sort((a, b) => a.position - b.position)
 
-        const comparePaths = (firstPath: string, secondPath: string) => {
-          const firstParts = pathOrder(firstPath)
-          const secondParts = pathOrder(secondPath)
-          const length = Math.max(firstParts.length, secondParts.length)
+        // Persone totali nel sottoalbero di un nodo (figli, nipoti, ecc.),
+        // usato per bilanciare i rami in base alla popolazione reale e non
+        // solo al numero di figli diretti.
+        const subtreeSize = (nodeId: string): number =>
+          childrenOf(nodeId).reduce((total, child) => total + 1 + subtreeSize(child.id), 0)
 
-          for (let index = 0; index < length; index++) {
-            const difference = (firstParts[index] || 0) - (secondParts[index] || 0)
-            if (difference !== 0) return difference
+        const findTarget = (node: { id: string; path: string; level: number }): { id: string; path: string; level: number } => {
+          const children = childrenOf(node.id)
+          if (children.length < 5) return node
+
+          let best = children[0]
+          let bestSize = subtreeSize(best.id)
+          for (const child of children.slice(1)) {
+            const size = subtreeSize(child.id)
+            if (size < bestSize) {
+              best = child
+              bestSize = size
+            }
           }
-
-          return 0
+          return findTarget(best)
         }
 
-        const candidate = nodesInSponsorTree
-          .map((node) => ({
-            node,
-            children: nodesInSponsorTree.filter((child) => child.parent_id === node.id),
-          }))
-          .filter(({ children }) => children.length < 5)
-          .sort((first, second) => {
-            const levelDifference = first.node.level - second.node.level
-            if (levelDifference !== 0) return levelDifference
+        const target = findTarget({ id: parentNodeId, path: parentPath, level: sponsorNode.level })
+        const targetChildren = childrenOf(target.id)
 
-            const childDifference = first.children.length - second.children.length
-            if (childDifference !== 0) return childDifference
-
-            return comparePaths(first.node.path, second.node.path)
-          })[0]
-
-        if (!candidate) {
-          throw new Error('Non è disponibile alcuna posizione libera nella rete dello sponsor.')
-        }
-
-        const usedPositions = candidate.children.map((child) => child.position)
+        const targetUsedPositions = targetChildren.map((child) => child.position)
         let position = 1
-        while (usedPositions.includes(position) && position <= 5) position++
+        while (targetUsedPositions.includes(position) && position <= 5) position++
 
-        const newNodePath = `${candidate.node.path}.${position}`
-        const newNodeLevel = candidate.node.level + 1
-        const newNodeDepth = candidate.node.path.split('.').length
+        const newNodePath = `${target.path}.${position}`
+        const newNodeLevel = target.level + 1
+        const newNodeDepth = target.path.split('.').length
 
         const { error: spillInsertError } = await supabase.from('matrix_nodes').insert({
           user_id: userId,
-          parent_id: candidate.node.id,
+          parent_id: target.id,
           path: newNodePath,
           level: newNodeLevel,
           position,
@@ -379,10 +381,7 @@ export default function RegisterForm() {
         href="/"
         className="absolute top-6 left-6 flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors font-semibold"
       >
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-          <Rocket className="w-5 h-5 text-white" />
-        </div>
-        <span className="text-lg hidden sm:inline">Kumani</span>
+        <Logo size={32} />
         <Home className="w-4 h-4 sm:hidden" />
       </Link>
 

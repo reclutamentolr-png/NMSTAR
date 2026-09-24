@@ -1,178 +1,37 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { awardNeurobalancePoint } from '@/app/actions/neurobalance'
 import { Headphones, Pause, Play, RotateCcw, Volume2 } from 'lucide-react'
 import NatureMixer from '@/components/NatureMixer'
+import { useNeurobalanceAudio } from '@/components/NeurobalanceAudioProvider'
 
-type Preset = {
-  id: string
-  name: string
-  description: string
-  carrier: number
-  beat: number
-  duration: number
-}
-
-type SpecialSound = {
-  id: string
-  frequency: number
-  name: string
-  description: string
-}
-
-const presets: Preset[] = [
-  { id: 'deep-rest', name: 'Riposo profondo', description: 'Una pulsazione lenta per accompagnare una pausa serale.', carrier: 180, beat: 2, duration: 20 },
-  { id: 'focus-flow', name: 'Focus fluido', description: 'Un ritmo regolare per sessioni di lavoro calme e concentrate.', carrier: 220, beat: 10, duration: 15 },
-  { id: 'reset', name: 'Reset consapevole', description: 'Un invito a rallentare il respiro e tornare al momento presente.', carrier: 160, beat: 6, duration: 10 },
-]
-
-const specialSounds: SpecialSound[] = [
-  { id: 'guarigione', frequency: 285, name: 'Guarigione', description: 'Una frequenza sonora da esplorare durante una pausa rilassante.' },
-  { id: 'ripristina-benessere', frequency: 417, name: 'Ripristina il benessere', description: 'Un ascolto pensato per accompagnare un momento di rinnovamento.' },
-  { id: 'liberare-tensione', frequency: 432, name: 'Liberare la tensione', description: 'Una tonalita morbida per rallentare e lasciare andare.' },
-  { id: 'riparazione-dna', frequency: 528, name: 'Riparazione del DNA', description: "Un ascolto meditativo associato tradizionalmente alla frequenza dell'amore." },
-  { id: 'innalzare-vibrazioni', frequency: 963, name: 'Innalzare le vibrazioni', description: 'Una frequenza acuta da ascoltare a volume basso e confortevole.' },
-]
-
-const MIN_LISTEN_SECONDS_FOR_POINT = 10 * 60
-
+// Il motore audio vive in NeurobalanceAudioProvider (montato nel layout
+// root, sopravvive alla navigazione) — questo componente è solo la vista:
+// legge stato e azioni dal context invece di possedere AudioContext/
+// oscillatori propri, così una sessione avviata qui resta attiva anche
+// dopo aver lasciato questa pagina.
 export default function NeurobalancePlayer() {
   const t = useTranslations('neurobalance')
-  const [selectedId, setSelectedId] = useState(presets[0].id)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [remaining, setRemaining] = useState(presets[0].duration * 60)
-  const [volume, setVolume] = useState(0.18)
-  const [selectedSpecialSound, setSelectedSpecialSound] = useState<SpecialSound | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const gainRef = useRef<GainNode | null>(null)
-  const oscillatorsRef = useRef<OscillatorNode[]>([])
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  // The KU Point for this tool must reflect a real listening session, not a
-  // click — listenedSecondsRef accumulates actual playback time across both
-  // players (and across pause/resume), and the point only fires once it
-  // crosses the threshold, at most once per page load.
-  const listenedSecondsRef = useRef(0)
-  const pointAwardedRef = useRef(false)
+  const {
+    presets,
+    specialSounds,
+    selectedId,
+    isPlaying,
+    remaining,
+    volume,
+    selectedSpecialSound,
+    handlePresetCardClick,
+    handleSpecialSoundCardClick,
+    togglePlayback,
+    resetSession,
+    setVolume,
+  } = useNeurobalanceAudio()
 
   const selected = presets.find((preset) => preset.id === selectedId) ?? presets[0]
   const presetName = (id: string) => t(`presets.${id}.name`)
   const presetDescription = (id: string) => t(`presets.${id}.description`)
   const specialSoundName = (id: string) => t(`specialSounds.${id}.name`)
   const specialSoundDescription = (id: string) => t(`specialSounds.${id}.description`)
-
-  useEffect(() => {
-    if (!isPlaying) return
-    timerRef.current = setInterval(() => {
-      setRemaining((current) => {
-        if (current <= 1) {
-          oscillatorsRef.current.forEach((oscillator) => oscillator.stop())
-          oscillatorsRef.current = []
-          setIsPlaying(false)
-          return 0
-        }
-        return current - 1
-      })
-    }, 1000)
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [isPlaying])
-
-  useEffect(() => {
-    if (gainRef.current) gainRef.current.gain.value = volume
-  }, [volume])
-
-  useEffect(() => {
-    if (!isPlaying || pointAwardedRef.current) return
-    const interval = setInterval(() => {
-      listenedSecondsRef.current += 1
-      if (listenedSecondsRef.current >= MIN_LISTEN_SECONDS_FOR_POINT && !pointAwardedRef.current) {
-        pointAwardedRef.current = true
-        awardNeurobalancePoint()
-      }
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [isPlaying])
-
-  useEffect(() => {
-    return () => {
-      oscillatorsRef.current.forEach((oscillator) => oscillator.stop())
-      void audioContextRef.current?.close()
-    }
-  }, [])
-
-  const stopAudio = () => {
-    oscillatorsRef.current.forEach((oscillator) => oscillator.stop())
-    oscillatorsRef.current = []
-    setIsPlaying(false)
-  }
-
-  // Builds the stereo-panned oscillator pair for a given carrier/beat and
-  // starts it — extracted out of togglePlayback so card clicks can start
-  // playback for a selection that was just made in the same click, instead
-  // of racing the async setSelectedId/setSelectedSpecialSound state update.
-  const playWith = async (carrier: number, beat: number, durationSeconds: number) => {
-    const audioContext = audioContextRef.current ?? new AudioContext()
-    audioContextRef.current = audioContext
-    await audioContext.resume()
-    const gain = audioContext.createGain()
-    gain.gain.value = volume
-    gain.connect(audioContext.destination)
-    gainRef.current = gain
-    const left = audioContext.createOscillator()
-    const right = audioContext.createOscillator()
-    const leftPanner = audioContext.createStereoPanner()
-    const rightPanner = audioContext.createStereoPanner()
-    left.frequency.value = carrier
-    right.frequency.value = carrier + beat
-    leftPanner.pan.value = -1
-    rightPanner.pan.value = 1
-    left.connect(leftPanner).connect(gain)
-    right.connect(rightPanner).connect(gain)
-    left.start()
-    right.start()
-    oscillatorsRef.current = [left, right]
-    setRemaining(durationSeconds)
-    setIsPlaying(true)
-  }
-
-  const togglePlayback = async () => {
-    if (isPlaying) {
-      stopAudio()
-      return
-    }
-    const carrier = selectedSpecialSound?.frequency ?? selected.carrier
-    const beat = selectedSpecialSound ? 4 : selected.beat
-    await playWith(carrier, beat, selectedSpecialSound ? 15 * 60 : selected.duration * 60)
-  }
-
-  // Card click = select AND play/pause in one action, so a Kumano never has
-  // to select a card here then scroll back up to the big button — clicking
-  // the currently-playing card pauses it; clicking any other card switches
-  // straight to it and starts playing.
-  const handlePresetCardClick = async (preset: Preset) => {
-    const isThisPlaying = isPlaying && !selectedSpecialSound && selectedId === preset.id
-    stopAudio()
-    if (isThisPlaying) return
-    setSelectedSpecialSound(null)
-    setSelectedId(preset.id)
-    await playWith(preset.carrier, preset.beat, preset.duration * 60)
-  }
-
-  const handleSpecialSoundCardClick = async (sound: SpecialSound) => {
-    const isThisPlaying = isPlaying && selectedSpecialSound?.id === sound.id
-    stopAudio()
-    if (isThisPlaying) return
-    setSelectedSpecialSound(sound)
-    await playWith(sound.frequency, 4, 15 * 60)
-  }
-
-  const resetSession = () => {
-    stopAudio()
-    setRemaining(selectedSpecialSound ? 15 * 60 : selected.duration * 60)
-  }
 
   const minutes = Math.floor(remaining / 60).toString().padStart(2, '0')
   const seconds = (remaining % 60).toString().padStart(2, '0')

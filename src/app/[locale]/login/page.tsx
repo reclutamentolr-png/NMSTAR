@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import Link from '@/components/LocalizedLink'
-import { Mail, Lock, AlertCircle, Loader2, Rocket, Home } from 'lucide-react'
+import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react'
 import { awardDailyPoint } from '@/app/actions/award-daily-point'
 import MaintenanceGate from '@/components/MaintenanceGate'
+import Logo from '@/components/Logo'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -70,19 +71,12 @@ export default function LoginPage() {
     <MaintenanceGate>
       <div className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-[var(--background)] py-12 sm:px-6 lg:px-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(199,154,59,0.18),transparent_42%)]" />
-        {/* Link per tornare alla Home */}
-        <Link 
-          href="/" 
-          className="absolute left-6 top-6 flex items-center gap-2 font-semibold text-[var(--ink-soft)] transition-colors hover:text-[var(--gold)]"
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--ink)]">
-            <Rocket className="h-5 w-5 text-[var(--gold-bright)]" />
-          </div>
-          <span className="text-lg hidden sm:inline">Kumani</span>
-          <Home className="w-4 h-4 sm:hidden" />
-        </Link>
-
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="flex justify-center mb-4">
+            <Link href="/" className="transition-opacity hover:opacity-80">
+              <Logo size={128} priority />
+            </Link>
+          </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-[var(--ink)]">
             {t('loginTitle')}
           </h2>

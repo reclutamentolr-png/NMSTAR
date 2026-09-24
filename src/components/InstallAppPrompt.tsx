@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { X, Download, Share, PlusSquare, Rocket } from 'lucide-react'
+import { X, Download, Share, PlusSquare } from 'lucide-react'
+import Logo from '@/components/Logo'
 
 export default function InstallAppPrompt() {
   const t = useTranslations('dashboard')
@@ -80,9 +81,7 @@ export default function InstallAppPrompt() {
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-              <Rocket className="w-6 h-6" />
-            </div>
+            <Logo size={48} className="flex-shrink-0" />
             <div>
               <h3 className="font-bold text-lg">{t('installTitle')}</h3>
               <p className="text-indigo-100 text-sm">{t('installDesc')}</p>

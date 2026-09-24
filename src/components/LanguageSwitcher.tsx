@@ -26,6 +26,12 @@ export default function LanguageSwitcher({ dark = false }: { dark?: boolean }) {
     // the unprefixed path — that extra round trip is what left the <select>
     // showing the previous locale. Build the final URL directly instead.
     const target = nextLocale === defaultLocale ? pathWithoutLocale : `/${nextLocale}${pathWithoutLocale}`
+    // When the target URL has no locale prefix (switching back to the
+    // default locale), next-intl's middleware can't read the locale from
+    // the URL, so it falls back to the NEXT_LOCALE cookie — left over from
+    // the previous locale — and silently redirects right back to it. Write
+    // the cookie ourselves first so the fallback already matches.
+    document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`
     router.push(target)
     router.refresh()
   }

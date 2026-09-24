@@ -6,8 +6,9 @@ import { useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from '@/components/LocalizedLink'
-import { Mail, Lock, AlertCircle, Loader2, Rocket, Home, CheckCircle, ShieldCheck } from 'lucide-react'
+import { Mail, Lock, AlertCircle, Loader2, Home, CheckCircle, ShieldCheck } from 'lucide-react'
 import MaintenanceGate from '@/components/MaintenanceGate'
+import Logo from '@/components/Logo'
 
 const RESEND_COOLDOWN_SECONDS = 30
 
@@ -121,10 +122,7 @@ export default function ForgotPasswordPage() {
           href="/"
           className="absolute left-6 top-6 flex items-center gap-2 font-semibold text-[var(--ink-soft)] transition-colors hover:text-[var(--gold)]"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--ink)]">
-            <Rocket className="h-5 w-5 text-[var(--gold-bright)]" />
-          </div>
-          <span className="text-lg hidden sm:inline">Kumani</span>
+          <Logo size={32} priority />
           <Home className="w-4 h-4 sm:hidden" />
         </Link>
 

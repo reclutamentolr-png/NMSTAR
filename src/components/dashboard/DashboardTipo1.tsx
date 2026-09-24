@@ -10,6 +10,7 @@ import DirectAffiliatesList from '@/components/DirectAffiliatesList'
 import NotYetKumaniList from '@/components/NotYetKumaniList'
 import UnreadMessagesBadge from '@/components/UnreadMessagesBadge'
 import CommunityPreview from './CommunityPreview'
+import KumanoDelGiornoPreview from './KumanoDelGiornoPreview'
 import VoucherActivationButton from '@/components/VoucherActivationButton'
 import {
   Rocket,
@@ -272,6 +273,8 @@ export default async function DashboardTipo1({
       </div>
 
       <CommunityPreview recentListings={recentListings} userId={user.id} />
+
+      <KumanoDelGiornoPreview />
 
       {/* SEZIONE 3: MATRICE 5xN */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

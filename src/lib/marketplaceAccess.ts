@@ -13,6 +13,7 @@ export const REQUIRES_SUBSCRIPTION = [
   'aureya',
   'preventivi',
   'kumani-cv',
+  'spendly',
 ]
 
 export interface MarketplaceAccessState {

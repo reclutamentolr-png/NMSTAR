@@ -31,6 +31,7 @@
     "marketplaceAccent": "tools",
     "marketplaceTitleEnd": ", not promises",
     "marketplaceDescription": "Everything you need to promote your business is already inside: every tool you use also earns you points in the Rewards Program.",
+    "clickToSeeServices": "Click to see the services",
     "toolQrTitle": "Dynamic QR Code",
     "toolQrDescription": "Custom QR codes pointing to your link and your listings.",
     "toolLinkBioTitle": "Link in Bio",
@@ -395,8 +396,8 @@
     "myWallet": "My Wallet",
     "logoutLabel": "Logout",
     "myProfile": "My profile",
-    "completeProfile": "Complete your profile",
-    "completeProfileDesc": "Add your information to appear professionally on the platform",
+    "completeProfile": "Just one more step to get started!",
+    "completeProfileDesc": "Fill in your profile and discover everything KUMANI can do for you.",
     "firstName": "First Name",
     "lastName": "Last Name",
     "phone": "Phone",
@@ -404,6 +405,10 @@
     "dateOfBirth": "Date of birth",
     "occupation": "Occupation",
     "countryShort": "e.g. IT",
+    "address": "Address",
+    "addressPlaceholder": "Street and house number",
+    "city": "City",
+    "province": "Province",
     "saveProfile": "Save profile",
     "saving": "Saving...",
     "profileUpdated": "Profile updated successfully!",
@@ -630,6 +635,8 @@
     "neurobalanceDescription": "Binaural frequencies for regeneration and deep balance.",
     "aureya": "Aureya",
     "aureyaDescription": "Acoustic and visual field tests: record and compare results over time.",
+    "mandala": "Mandala KUMANI",
+    "mandalaDescription": "Draw with a finger and the Canvas turns it into a symmetric mandala: active meditation, free for everyone.",
     "listings": "Community Listings",
     "listingsDescription": "Publish services and products or find collaborations in the community. Earn points with daily visits!",
     "points": "{count} Points",
@@ -796,14 +803,38 @@
     "natureSoundsDescription": "Soundscapes generated in real time in your browser: turn one on and mix it into your session.",
     "natureVolumeLabel": "Sound volume",
     "naturePresets": {
-      "rain": { "label": "Rain", "hint": "Deep focus" },
-      "ocean": { "label": "Ocean", "hint": "Calm, slow breathing" },
-      "stream": { "label": "Stream", "hint": "Light, for work" },
-      "forest": { "label": "Forest", "hint": "Gentle wake-up" },
-      "wind": { "label": "Wind", "hint": "Minimal soundscape" },
-      "fire": { "label": "Fire", "hint": "Evening warmth" },
-      "night": { "label": "Night", "hint": "Falling asleep" },
-      "storm": { "label": "Storm", "hint": "Full cocooning" }
+      "rain": {
+        "label": "Rain",
+        "hint": "Deep focus"
+      },
+      "ocean": {
+        "label": "Ocean",
+        "hint": "Calm, slow breathing"
+      },
+      "stream": {
+        "label": "Stream",
+        "hint": "Light, for work"
+      },
+      "forest": {
+        "label": "Forest",
+        "hint": "Gentle wake-up"
+      },
+      "wind": {
+        "label": "Wind",
+        "hint": "Minimal soundscape"
+      },
+      "fire": {
+        "label": "Fire",
+        "hint": "Evening warmth"
+      },
+      "night": {
+        "label": "Night",
+        "hint": "Falling asleep"
+      },
+      "storm": {
+        "label": "Storm",
+        "hint": "Full cocooning"
+      }
     },
     "timeRemaining": "Time remaining",
     "frequencyInfo": "{carrier} Hz carrier · {beat} Hz binaural",
@@ -820,6 +851,10 @@
     "featureSafetyTitle": "Responsible use",
     "featureSafetyDescription": "A daily wellbeing support, not a therapy or diagnosis.",
     "disclaimer": "Neurobalance does not replace medical advice or professional treatment. Consult a qualified professional for health concerns.",
+    "crossLinkMandalaTitle": "Want to meditate actively?",
+    "crossLinkMandalaBody": "Draw a Mandala KUMANI while you listen: the repetitive motion helps the mind slow down.",
+    "crossLinkMandalaButton": "Open the Mandala",
+    "floatingPlayerStop": "Stop the audio session",
     "presets": {
       "deep-rest": {
         "name": "Deep rest",
@@ -856,6 +891,35 @@
         "description": "A high frequency to listen to at a low, comfortable volume."
       }
     }
+  },
+  "mandala": {
+    "eyebrow": "Active meditation",
+    "subtitle": "Draw with a finger: the Canvas turns it into a symmetric mandala. Zero skill required.",
+    "canvasLabel": "Your Mandala",
+    "segmentsLabel": "Symmetry",
+    "backgroundLabel": "Background",
+    "backgroundDark": "Dark",
+    "backgroundIvory": "Ivory",
+    "toolLabel": "Tool",
+    "toolPen": "Pen",
+    "toolEraser": "Eraser",
+    "thicknessLabel": "Thickness",
+    "colorLabel": "Color",
+    "colorCustom": "Custom color",
+    "undo": "Undo",
+    "clear": "Clear",
+    "download": "Download PNG",
+    "share": "Share",
+    "shareText": "I drew this Mandala on KUMANI 🌸 Draw your own, for free:",
+    "shareUnavailable": "Sharing isn't supported on this device: use \"Download PNG\" and attach the image manually.",
+    "crossLinkTitle": "Want to relax even more?",
+    "crossLinkBody": "Turn on Neurobalance's theta waves in the background while you draw.",
+    "crossLinkButton": "Open Neurobalance",
+    "featureFlowTitle": "Active meditation",
+    "featureFlowDescription": "A busy hand quiets the mind: one stroke becomes a symmetric flower in seconds.",
+    "featureShareTitle": "Share your calm",
+    "featureShareDescription": "Export as PNG with the KUMANI watermark and share on WhatsApp in one tap.",
+    "disclaimer": "Mandala KUMANI is a leisure and relaxation tool, not a medical treatment or therapy."
   },
   "aureya": {
     "backToMarketplace": "Back to Marketplace",

@@ -3,6 +3,7 @@ import Link from '@/components/LocalizedLink'
 import ProfileCompleter from '@/components/ProfileCompleter'
 import UnreadMessagesBadge from '@/components/UnreadMessagesBadge'
 import CommunityPreview from './CommunityPreview'
+import KumanoDelGiornoPreview from './KumanoDelGiornoPreview'
 import CategoryToolsAccordion from './CategoryToolsAccordion'
 import InfoPopover from '@/components/InfoPopover'
 import type { MarketplaceTool } from '@/lib/marketplaceTools'
@@ -148,6 +149,8 @@ export default async function DashboardTipo2({
           ))}
         </div>
       </div>
+
+      <KumanoDelGiornoPreview />
 
       {/* Riga secondaria: community + rete */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">

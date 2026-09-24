@@ -13,6 +13,8 @@ import {
   Stethoscope,
   FileSpreadsheet,
   FileUser,
+  PiggyBank,
+  Flower2,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -35,4 +37,6 @@ export const marketplaceIconMap: Record<string, LucideIcon> = {
   Stethoscope,
   FileSpreadsheet,
   FileUser,
+  PiggyBank,
+  Flower2,
 }

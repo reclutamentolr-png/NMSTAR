@@ -1,8 +1,8 @@
 import Link from '@/components/LocalizedLink'
 import { getTranslations } from 'next-intl/server'
-import { Rocket } from 'lucide-react'
 import RegisterForm from '@/components/RegisterForm'
 import MaintenanceGate from '@/components/MaintenanceGate'
+import Logo from '@/components/Logo'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,9 +14,9 @@ export default async function RegisterPage() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(199,154,59,0.18),transparent_42%)]" />
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="flex justify-center mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--ink)]">
-              <Rocket className="h-7 w-7 text-[var(--gold-bright)]" />
-            </div>
+            <Link href="/" className="transition-opacity hover:opacity-80">
+              <Logo size={128} priority />
+            </Link>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-[var(--ink)]">
             {t('registerTitle')}

@@ -3,7 +3,8 @@ import { getTranslations } from 'next-intl/server'
 import { redirect } from 'next/navigation'
 import ToolBackLink from '@/components/ToolBackLink'
 import NeurobalancePlayer from '@/components/NeurobalancePlayer'
-import { ArrowLeft, Brain, Headphones, ShieldCheck, Sparkles, Waves } from 'lucide-react'
+import Link from '@/components/LocalizedLink'
+import { ArrowLeft, ArrowRight, Brain, Flower2, Headphones, ShieldCheck, Sparkles, Waves } from 'lucide-react'
 
 export default async function NeurobalancePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -34,6 +35,21 @@ export default async function NeurobalancePage({ params }: { params: Promise<{ l
           <div className="rounded-2xl border border-[var(--gold)]/20 bg-white/80 p-5"><Waves className="mb-3 h-7 w-7 text-[var(--gold)]" /><h2 className="font-bold text-slate-900">{t('featureAudioTitle')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{t('featureAudioDescription')}</p></div>
           <div className="rounded-2xl border border-[var(--gold)]/20 bg-white/80 p-5"><ShieldCheck className="mb-3 h-7 w-7 text-[var(--gold)]" /><h2 className="font-bold text-slate-900">{t('featureSafetyTitle')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{t('featureSafetyDescription')}</p></div>
         </div>
+        <Link
+          href="/marketplace/mandala"
+          className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl border border-[var(--gold)]/25 bg-[var(--ink)] p-5 text-white sm:flex-row"
+        >
+          <div className="flex items-center gap-3">
+            <Flower2 className="h-7 w-7 shrink-0 text-[var(--gold-bright)]" />
+            <div>
+              <h2 className="font-bold">{t('crossLinkMandalaTitle')}</h2>
+              <p className="mt-1 text-sm leading-6 text-white/70">{t('crossLinkMandalaBody')}</p>
+            </div>
+          </div>
+          <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-4 py-2 text-sm font-bold text-[var(--ink)]">
+            {t('crossLinkMandalaButton')} <ArrowRight className="h-4 w-4" />
+          </span>
+        </Link>
         <p className="mx-auto mt-8 max-w-2xl text-center text-xs leading-5 text-slate-500">{t('disclaimer')}</p>
       </main>
     </div>
