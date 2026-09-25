@@ -5,6 +5,8 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { randomBytes } from 'crypto'
 import type { Permission } from '@/lib/admin-permissions'
 import { generateShortCode } from '@/lib/shortLink'
+import { updateTag } from 'next/cache'
+import { SPOTLIGHT_HOME_CACHE_TAG, type SpotlightModerationStatus } from '@/lib/spotlight'
 
 const getServiceClient = () =>
   createServiceClient(
@@ -646,5 +648,47 @@ export async function deleteReportedListing(listingId: string) {
   const supabaseAdmin = getServiceClient()
   const { error } = await supabaseAdmin.from('listings').delete().eq('id', listingId)
   if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+// Kumano del Giorno — coda di moderazione. Una storia entra in rotazione
+// (dashboard, /spotlight, home) solo da approvata; il trigger DB la rimette
+// pending a ogni modifica del contenuto, quindi qui arrivano sia le nuove
+// sia quelle modificate. Stesso permesso della Bacheca annunci: è
+// moderazione di contenuti della community.
+export async function listSpotlightProfilesForModeration() {
+  const admin = await verifyAdmin('listings.read')
+  if (!admin) return { profiles: [], error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { data, error } = await supabaseAdmin
+    .from('spotlight_profiles')
+    .select('id, user_id, display_name, city, country, profession, story, story_locale, is_opted_in, show_on_home, moderation_status, updated_at')
+    .order('moderation_status', { ascending: true })
+    .order('updated_at', { ascending: false })
+    .limit(300)
+
+  if (error) return { profiles: [], error: error.message }
+  const rows = data || []
+
+  const userIds = Array.from(new Set(rows.map((r) => r.user_id)))
+  const profiles = userIds.length
+    ? (await supabaseAdmin.from('profiles').select('id, first_name, last_name, email').in('id', userIds)).data
+    : []
+  const byId = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+
+  return { profiles: rows.map((r) => ({ ...r, owner: byId[r.user_id] || null })), error: null }
+}
+
+export async function moderateSpotlightProfile(profileId: string, status: SpotlightModerationStatus) {
+  const admin = await verifyAdmin('listings.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const supabaseAdmin = getServiceClient()
+  const { error } = await supabaseAdmin.from('spotlight_profiles').update({ moderation_status: status }).eq('id', profileId)
+  if (error) return { success: false, error: error.message }
+
+  // Un rifiuto deve sparire subito anche dalla landing cachata.
+  updateTag(SPOTLIGHT_HOME_CACHE_TAG)
   return { success: true }
 }

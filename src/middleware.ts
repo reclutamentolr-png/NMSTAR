@@ -26,6 +26,7 @@ const REQUIRES_SUBSCRIPTION = [
   'digital-receipt',
   'aureya',
   'spendly',
+  'fidelity',
 ];
 
 // Extracts the tool name from a path like /marketplace/memolife/new or

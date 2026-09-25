@@ -5,6 +5,7 @@ import Link from '@/components/LocalizedLink'
 import { ArrowLeft, ArrowRight, Sparkles, Star } from 'lucide-react'
 import SpotlightForm from '@/components/spotlight/SpotlightForm'
 import { getMarketplaceTools } from '@/lib/marketplaceTools'
+import { hasActiveToolAccess } from '@/lib/subscriptionGate'
 import { isEmptySpotlightProfile, type SpotlightProfile } from '@/lib/spotlight'
 
 export default async function SpotlightManagePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -22,9 +23,12 @@ export default async function SpotlightManagePage({ params }: { params: Promise<
   // assumono un array salvo generated types; il cast manuale evita il
   // mismatch senza forzare un .single() che qui non serve (la risposta è
   // già un oggetto singolo, mai avvolta in un array).
-  const [{ data: profile }, { data: todaysKumanoRaw }] = await Promise.all([
+  // La pagina resta aperta anche senza abbonamento attivo (per poter
+  // eliminare la propria storia), ma scrivere/modificare è per abbonati.
+  const [{ data: profile }, { data: todaysKumanoRaw }, canEdit] = await Promise.all([
     supabase.from('spotlight_profiles').select('*').eq('user_id', user.id).maybeSingle<SpotlightProfile>(),
     supabase.rpc('get_todays_kumano'),
+    hasActiveToolAccess(supabase, user.id, 'spotlight'),
   ])
   const todaysKumano = todaysKumanoRaw as unknown as SpotlightProfile | null
 
@@ -60,7 +64,7 @@ export default async function SpotlightManagePage({ params }: { params: Promise<
           </div>
         )}
 
-        <SpotlightForm profile={profile ?? null} availableTools={availableTools} />
+        <SpotlightForm profile={profile ?? null} availableTools={availableTools} canEdit={canEdit} />
 
         <p className="mx-auto mt-6 max-w-xl text-center text-xs leading-5 text-[var(--muted)]">{t('candidateNote')}</p>
 

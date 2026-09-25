@@ -32,6 +32,17 @@ export function getMarketplaceTools(t: (key: string) => string): MarketplaceTool
       category: 'marketing',
     },
     {
+      toolName: 'fidelity',
+      href: '/marketplace/fidelity',
+      gradient: 'bg-[var(--ink)]',
+      iconName: 'Stamp',
+      title: t('fidelity'),
+      description: t('fidelityDescription'),
+      color: 'gold',
+      category: 'marketing',
+      requiresSubscription: true,
+    },
+    {
       toolName: 'whatsapp-messages',
       href: '/marketplace/whatsapp-messages',
       gradient: 'bg-[var(--ink)]',

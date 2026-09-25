@@ -14,6 +14,7 @@ export const REQUIRES_SUBSCRIPTION = [
   'preventivi',
   'kumani-cv',
   'spendly',
+  'fidelity',
 ]
 
 export interface MarketplaceAccessState {

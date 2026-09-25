@@ -18,6 +18,7 @@ import {
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import Logo from '@/components/Logo'
 import HomeToolsGrid from '@/components/HomeToolsGrid'
+import HomeKumanoDelGiorno from '@/components/spotlight/HomeKumanoDelGiorno'
 
 export default function LandingPage() {
   const t = useTranslations('landingHome')
@@ -82,7 +83,8 @@ export default function LandingPage() {
           promessa, ti serve una mano". */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--gold)]/10 via-transparent to-transparent"></div>
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-28 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 lg:pt-12 pb-16 sm:pb-24 lg:pb-28 text-center">
+          <p className="text-2xl sm:text-3xl font-bold tracking-[0.3em] text-[var(--gold-bright)] mb-3 sm:mb-4">KUMANI</p>
           <div className="flex justify-center mb-5 sm:mb-7">
             <Logo size={96} priority className="sm:h-28 sm:w-28 h-24 w-24" />
           </div>
@@ -190,6 +192,11 @@ export default function LandingPage() {
           <HomeToolsGrid />
         </div>
       </section>
+
+      {/* ☀️ OGGI IN COMMUNITY — Kumano del Giorno: fascia compatta dopo gli
+          strumenti e prima dei vantaggi. Solo storie approvate e con
+          consenso home esplicito; fallback curato sotto la soglia minima. */}
+      <HomeKumanoDelGiorno />
 
       {/* 🎟️ SEZIONE: PROGRAMMA BONUS & COUPON */}
       <section className="py-12 sm:py-20 bg-black/20">

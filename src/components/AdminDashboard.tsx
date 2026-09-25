@@ -23,6 +23,8 @@ import {
   listVoucherUsers,
   getAdminFinancialSummary,
   listListingReports,
+  listSpotlightProfilesForModeration,
+  moderateSpotlightProfile,
   dismissListingReport,
   deleteReportedListing,
 } from '@/app/actions/admin'
@@ -35,8 +37,10 @@ import {
 } from '@/app/actions/adminMessages'
 import type { LocalizedText, MessageType } from '@/lib/adminMessages'
 import { DASHBOARD_LAYOUTS, DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboardLayouts'
+import { SPOTLIGHT_HOME_MIN_POOL } from '@/lib/spotlight'
 import {
   LayoutDashboard,
+  Star,
   Users,
   GitBranch,
   ShoppingBag,
@@ -71,10 +75,20 @@ type AdminDashboardProps = {
   permissions: Permission[]
   userName: string
   locale: string // ✅ AGGIUNTO: necessario per costruire il redirect URL
+  initialSection?: string // da ?section= nell'URL, vedi admin/page.tsx
 }
 
-export default function AdminDashboard({ userId, permissions, userName, locale }: AdminDashboardProps) {
-  const [activeSection, setActiveSection] = useState('overview')
+export default function AdminDashboard({ userId, permissions, userName, locale, initialSection }: AdminDashboardProps) {
+  const [activeSection, setActiveSection] = useState(initialSection || 'overview')
+
+  // Riflette la sezione attiva nell'URL (senza navigazione né reload), così
+  // aggiornando la pagina si resta nella stessa voce del menu.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (activeSection === 'overview') url.searchParams.delete('section')
+    else url.searchParams.set('section', activeSection)
+    window.history.replaceState(window.history.state, '', url)
+  }, [activeSection])
   const supabase = createClient()
 
   const [stats, setStats] = useState({ totalUsers: 0, activeUsers: 0, totalNodes: 0, blockedUsers: 0 })
@@ -129,6 +143,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   const [listingReports, setListingReports] = useState<any[]>([])
   const [loadingListingReports, setLoadingListingReports] = useState(false)
 
+  const [spotlightProfiles, setSpotlightProfiles] = useState<any[]>([])
+  const [loadingSpotlight, setLoadingSpotlight] = useState(false)
+
   const [rewards, setRewards] = useState<any[]>([])
   const [rewardRedemptions, setRewardRedemptions] = useState<any[]>([])
   const [loadingRewards, setLoadingRewards] = useState(false)
@@ -180,6 +197,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     else if (activeSection === 'rewards') loadRewardsData()
     else if (activeSection === 'financials') loadFinancialSummary()
     else if (activeSection === 'listingReports') loadListingReportsData()
+    else if (activeSection === 'spotlight') loadSpotlightData()
     else if (activeSection === 'settings') loadSystemSettings()
     else if (activeSection === 'messages') loadMessagesData()
   }, [activeSection])
@@ -389,6 +407,22 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
     const result = await listListingReports()
     setListingReports(result.reports)
     setLoadingListingReports(false)
+  }
+
+  const loadSpotlightData = async () => {
+    setLoadingSpotlight(true)
+    const result = await listSpotlightProfilesForModeration()
+    setSpotlightProfiles(result.profiles)
+    setLoadingSpotlight(false)
+  }
+
+  const handleModerateSpotlight = async (profileId: string, status: 'approved' | 'rejected') => {
+    const result = await moderateSpotlightProfile(profileId, status)
+    if (result.success) {
+      setSpotlightProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, moderation_status: status } : p)))
+    } else {
+      alert(result.error || 'Errore durante la moderazione.')
+    }
   }
 
   const handleDismissReport = async (reportId: string) => {
@@ -787,6 +821,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
   { id: 'matrix', label: 'Matrice', Icon: GitBranch, permission: 'matrix.read' as Permission },
   { id: 'marketplace', label: 'Marketplace', Icon: ShoppingBag, permission: 'marketplace.read' as Permission },
   { id: 'listingReports', label: 'Bacheca', Icon: Flag, permission: 'listings.read' as Permission },
+  { id: 'spotlight', label: 'Kumano del Giorno', Icon: Star, permission: 'listings.read' as Permission },
   { id: 'coupons', label: 'Coupon', Icon: Ticket, permission: 'coupons.read' as Permission },
   { id: 'vouchers', label: 'Voucher', Icon: BadgeCheck, permission: 'vouchers.read' as Permission },
   { id: 'rewards', label: 'Premi', Icon: Gift, permission: 'rewards.read' as Permission },
@@ -796,6 +831,13 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
 ]
 
   const availableMenuItems = menuItems.filter(item => hasPermission(permissions, item.permission))
+
+  // ?section= inesistente o non consentito dal ruolo: prima voce disponibile.
+  useEffect(() => {
+    if (!availableMenuItems.some((item) => item.id === activeSection)) {
+      setActiveSection(availableMenuItems[0]?.id ?? 'overview')
+    }
+  }, [activeSection, availableMenuItems])
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -1114,6 +1156,109 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
                           className="text-red-500 hover:text-red-700 text-xs font-medium inline-flex items-center gap-1"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Elimina annuncio
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  const renderSpotlight = () => {
+    const statusBadge: Record<string, { label: string; className: string }> = {
+      pending: { label: 'Da revisionare', className: 'bg-yellow-100 text-yellow-800' },
+      approved: { label: 'Approvata', className: 'bg-green-100 text-green-700' },
+      rejected: { label: 'Rifiutata', className: 'bg-red-100 text-red-700' },
+    }
+    const pendingCount = spotlightProfiles.filter((p) => p.moderation_status === 'pending').length
+    const homePool = spotlightProfiles.filter((p) => p.moderation_status === 'approved' && p.is_opted_in && p.show_on_home).length
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Star className="w-7 h-7" />
+            Kumano del Giorno — Moderazione storie
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Solo le storie approvate entrano in rotazione (dashboard, vetrina pubblica e home). Ogni modifica del
+            testo la rimette in coda. In home compaiono solo con il consenso "home" e quando il pool raggiunge la
+            soglia minima ({SPOTLIGHT_HOME_MIN_POOL}).
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            In coda: <strong>{pendingCount}</strong> · Pool home (approvate + consenso home): <strong>{homePool}</strong>
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Storia</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Utente</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Consensi</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Stato</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingSpotlight ? (
+                <tr><td colSpan={5} className="text-center py-8 text-gray-400">Caricamento...</td></tr>
+              ) : spotlightProfiles.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-8 text-gray-400">Nessuna storia inviata</td></tr>
+              ) : (
+                spotlightProfiles.map((p) => (
+                  <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50 align-top">
+                    <td className="px-4 py-3 max-w-md">
+                      <div className="font-medium text-gray-900">
+                        {p.display_name}
+                        {p.story_locale && <span className="ml-2 text-xs text-gray-400 uppercase">{p.story_locale}</span>}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {[p.profession, [p.city, p.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                      </div>
+                      <div className="text-sm text-gray-700 mt-1 whitespace-pre-line">{p.story}</div>
+                      <div className="text-xs text-gray-400 mt-1">Aggiornata il {new Date(p.updated_at).toLocaleDateString('it-IT')}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {p.owner ? (
+                        <>
+                          {p.owner.first_name} {p.owner.last_name}
+                          <div className="text-xs text-gray-400">{p.owner.email}</div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                      <div>Community: {p.is_opted_in ? 'sì' : 'no'}</div>
+                      <div>Home: {p.show_on_home ? 'sì' : 'no'}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[p.moderation_status]?.className ?? ''}`}>
+                        {statusBadge[p.moderation_status]?.label ?? p.moderation_status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {p.moderation_status !== 'approved' && (
+                        <button
+                          onClick={() => handleModerateSpotlight(p.id, 'approved')}
+                          className="text-green-600 hover:text-green-800 text-xs font-medium mr-3"
+                        >
+                          Approva
+                        </button>
+                      )}
+                      {p.moderation_status !== 'rejected' && (
+                        <button
+                          onClick={() => handleModerateSpotlight(p.id, 'rejected')}
+                          className="text-red-500 hover:text-red-700 text-xs font-medium"
+                        >
+                          Rifiuta
                         </button>
                       )}
                     </td>
@@ -2266,6 +2411,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale }
         {activeSection === 'messages' && renderMessages()}
         {activeSection === 'financials' && renderFinancials()}
         {activeSection === 'listingReports' && renderListingReports()}
+        {activeSection === 'spotlight' && renderSpotlight()}
         {activeSection === 'settings' && renderSettings()}
       </div>
 

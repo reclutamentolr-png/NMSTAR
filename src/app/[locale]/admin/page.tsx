@@ -27,8 +27,18 @@ const ALL_PERMISSIONS: Permission[] = [
   'settings.read'
 ]
 
-export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function AdminPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<{ section?: string | string[] }>
+}) {
   const { locale } = await params
+  // Sezione attiva tenuta nell'URL (?section=...): un refresh riapre la
+  // stessa voce invece di tornare sempre alla Panoramica.
+  const { section } = await searchParams
+  const initialSection = typeof section === 'string' ? section : undefined
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
@@ -88,6 +98,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
           permissions={permissions}
           userName={userName}
           locale={locale}
+          initialSection={initialSection}
         />
       </main>
     </div>

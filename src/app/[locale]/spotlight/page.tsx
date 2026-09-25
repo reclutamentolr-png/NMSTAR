@@ -24,7 +24,8 @@ export default async function SpotlightPage() {
   const t = await getTranslations('spotlight')
   const tm = await getTranslations('marketplace')
   const commonT = await getTranslations('common')
-  const landingT = await getTranslations('landingHome')
+  const aboutT = await getTranslations('aboutPage')
+  const homeT = await getTranslations('spotlightHome')
   const supabase = await createClient()
 
   // Pagina raggiungibile anche da chi non ha sessione (link condiviso), ma
@@ -57,10 +58,20 @@ export default async function SpotlightPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <header className="border-b border-[var(--gold)]/25 bg-[var(--ink)] text-white shadow-lg">
-        <div className="mx-auto max-w-4xl px-4 pt-4 sm:px-6 lg:px-8">
-          <Link href={user ? '/dashboard' : '/login'} className="inline-flex items-center gap-2 text-sm font-medium text-white/70 transition-colors hover:text-[var(--gold-bright)]">
-            <ArrowLeft className="h-4 w-4" /> {user ? commonT('backToDashboard') : landingT('login')}
+        {/* Iscritto: torna alla dashboard. Visitatore arrivato dalla landing:
+            torna alla home a sinistra, registrazione a destra. */}
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 pt-4 sm:px-6 lg:px-8">
+          <Link href={user ? '/dashboard' : '/'} className="inline-flex items-center gap-2 text-sm font-medium text-white/70 transition-colors hover:text-[var(--gold-bright)]">
+            <ArrowLeft className="h-4 w-4" /> {user ? commonT('backToDashboard') : aboutT('backToHome')}
           </Link>
+          {!user && (
+            <Link
+              href="/register"
+              className="rounded-lg bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-4 py-1.5 text-sm font-bold text-[var(--ink)] shadow-lg transition-all hover:brightness-110"
+            >
+              {homeT('register')}
+            </Link>
+          )}
         </div>
         <div className="mx-auto max-w-4xl px-4 pb-8 pt-4 text-center sm:px-6 lg:px-8">
           <div className="mb-3 flex items-center justify-center gap-2">
