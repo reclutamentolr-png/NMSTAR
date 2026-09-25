@@ -64,10 +64,12 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
   } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login`)
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  // Profilo completo (dati personali inclusi) solo tramite get_my_profile():
+  // dal browser/sessione utente le colonne personali non sono più leggibili.
+  const { data: profile } = await supabase.rpc('get_my_profile').maybeSingle<Record<string, any>>()
   if (!profile) redirect(`/${locale}/dashboard`)
 
-  const directSponsored = await fetchDirectSponsored(supabase, user.id)
+  const directSponsored = await fetchDirectSponsored(supabase)
   const directActiveCount = directSponsored.filter(isActiveSubscription).length
   const currentRank = getCurrentRank(directActiveCount)
 

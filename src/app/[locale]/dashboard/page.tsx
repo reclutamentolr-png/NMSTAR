@@ -42,7 +42,9 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const userIsAdmin = await isAdmin()
 
   // 3. Recupera dati profilo
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  // Profilo completo (dati personali inclusi) solo tramite get_my_profile():
+  // dal browser/sessione utente le colonne personali non sono più leggibili.
+  const { data: profile } = await supabase.rpc('get_my_profile').maybeSingle<Record<string, any>>()
 
   // 4. Layout attivo (impostazione admin, "system_settings" key 'dashboard_layout')
   const layout = await getActiveDashboardLayout(supabase)

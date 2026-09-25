@@ -692,3 +692,26 @@ export async function moderateSpotlightProfile(profileId: string, status: Spotli
   updateTag(SPOTLIGHT_HOME_CACHE_TAG)
   return { success: true }
 }
+
+// Elenco utenti per il pannello admin (email inclusa): le colonne personali
+// non sono più leggibili dal browser, nemmeno dagli admin.
+export async function adminListUsers() {
+  const admin = await verifyAdmin('users.read')
+  if (!admin) return { users: [], error: 'Non autorizzato' }
+  const { data, error } = await getServiceClient()
+    .from('profiles')
+    .select('id, first_name, last_name, email, referral_code, subscription_status, is_blocked, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error) return { users: [], error: error.message }
+  return { users: data || [], error: null }
+}
+
+// Profilo completo di un utente per la modifica dal pannello admin.
+export async function adminGetProfile(userId: string) {
+  const admin = await verifyAdmin('users.read')
+  if (!admin) return { profile: null, error: 'Non autorizzato' }
+  const { data, error } = await getServiceClient().from('profiles').select('*').eq('id', userId).maybeSingle()
+  if (error) return { profile: null, error: error.message }
+  return { profile: data, error: null }
+}

@@ -25,7 +25,9 @@ export default async function DashboardRetePage({ params }: { params: Promise<{ 
   } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login`)
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  // Profilo completo (dati personali inclusi) solo tramite get_my_profile():
+  // dal browser/sessione utente le colonne personali non sono più leggibili.
+  const { data: profile } = await supabase.rpc('get_my_profile').maybeSingle<Record<string, any>>()
 
   const network = await getDashboardNetworkData(supabase, user, profile, locale)
   const {

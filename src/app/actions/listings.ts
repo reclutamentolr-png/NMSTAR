@@ -41,8 +41,10 @@ export async function createListingAction(data: CreateListingData) {
     return { success: false, message: `Ti servono almeno ${LISTING_COST} punti per pubblicare un annuncio` }
   }
 
-  // 3. Crea l'annuncio
-  const { data: listing, error } = await supabase
+  // 3. Crea l'annuncio — con service role: l'inserimento diretto dal
+  // browser non è più consentito (si potrebbe saltare il costo in punti).
+  // L'utente è quello della sessione, mai un id arrivato dal client.
+  const { data: listing, error } = await getServiceClient()
     .from('listings')
     .insert({
       user_id: user.id,
@@ -59,8 +61,9 @@ export async function createListingAction(data: CreateListingData) {
     .single()
 
   if (error) {
-    // Rollback punti se fallisce
-    await supabase.rpc('refund_points', { p_amount: LISTING_COST })
+    // Rollback punti se fallisce (solo server: refund_points non è più
+    // chiamabile dal client, accreditava qualsiasi importo a chiunque).
+    await getServiceClient().rpc('add_daily_points_for', { p_user_id: user.id, p_amount: LISTING_COST })
     return { success: false, message: 'Errore nella creazione dell\'annuncio' }
   }
 

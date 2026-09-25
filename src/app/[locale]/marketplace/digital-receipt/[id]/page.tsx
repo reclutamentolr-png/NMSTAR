@@ -39,10 +39,8 @@ export default async function DigitalReceiptDetailPage({
   if (!receipt) notFound()
 
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('first_name, last_name, email')
-    .eq('id', user.id)
-    .single()
+    .rpc('get_my_profile')
+    .maybeSingle<{ first_name: string | null; last_name: string | null; email: string | null }>()
   const issuedByName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() || profile?.email || user.email || ''
 

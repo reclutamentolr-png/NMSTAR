@@ -130,7 +130,7 @@ export async function getDashboardNetworkData(
   // level1Count, che è bloccato a 5 dallo spillover) e non su sponsorizzati
   // non paganti: Rising Star/Diamond misurano un team di persone attive,
   // non solo registrate.
-  const directSponsored = await fetchDirectSponsored(supabase, user.id)
+  const directSponsored = await fetchDirectSponsored(supabase)
   const directActiveSponsored = directSponsored.filter(isActiveSubscription)
   const directSponsorCount = directActiveSponsored.length
   const directSponsoredWithStatus = directSponsored.map((p) => ({ ...p, is_active: isActiveSubscription(p) }))

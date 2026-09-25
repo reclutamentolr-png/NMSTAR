@@ -60,7 +60,7 @@ export default function LoginPage() {
         return
       }
 
-      await awardDailyPoint(authData.user.id)
+      await awardDailyPoint()
     }
 
     router.push(`/${locale}/dashboard`)

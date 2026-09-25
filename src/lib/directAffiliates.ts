@@ -12,28 +12,12 @@ export interface SponsoredProfile {
 }
 
 /**
- * All profiles personally sponsored by `sponsorId` (profiles.sponsor_id),
+ * All profiles personally sponsored by the logged-in user (profiles.sponsor_id),
  * with the fields needed to tell which ones are active subscribers.
- * Falls back to a query without subscription_expires_at if that column
- * doesn't exist yet on this database (same defensive pattern used in
- * marketplace/page.tsx).
+ * Goes through get_my_direct_sponsored(): the phone column of other users is
+ * no longer readable directly, only that of one's own direct sponsees.
  */
-export async function fetchDirectSponsored(
-  supabase: SupabaseClient,
-  sponsorId: string
-): Promise<SponsoredProfile[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, referral_code, phone, created_at, subscription_status, subscription_expires_at')
-    .eq('sponsor_id', sponsorId)
-    .order('created_at', { ascending: true })
-
-  if (!error) return data || []
-
-  const { data: fallbackData } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, referral_code, phone, created_at, subscription_status')
-    .eq('sponsor_id', sponsorId)
-    .order('created_at', { ascending: true })
-  return fallbackData || []
+export async function fetchDirectSponsored(supabase: SupabaseClient): Promise<SponsoredProfile[]> {
+  const { data } = await supabase.rpc('get_my_direct_sponsored')
+  return (data as SponsoredProfile[] | null) || []
 }

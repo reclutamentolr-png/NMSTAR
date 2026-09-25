@@ -22,7 +22,7 @@ export default async function OfferMakerPage() {
     redirect('/marketplace')
   }
 
-  const { data: profile } = await supabase.from('profiles').select('phone').eq('id', user.id).single()
+  const { data: profile } = await supabase.rpc('get_my_profile').maybeSingle<{ phone: string | null }>()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">

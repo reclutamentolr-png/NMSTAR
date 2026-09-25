@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation' // ✅ IMPORT AGGIUNTO PER RISOLVERE TS2304
 import {
   Link2,
@@ -24,8 +25,13 @@ export default async function LinkInBioPublicPage({ params }: { params: Promise<
   
   const supabase = await createClient()
 
-  // 1. Trova il profilo
-  const { data: profile, error } = await supabase
+  // 1. Trova il profilo. I visitatori anonimi non leggono più la tabella
+  // profiles: la pagina bio (pubblica per scelta del titolare) la legge lato
+  // server con service role, solo le colonne che mostra.
+  const service = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data: profile, error } = await service
     .from('profiles')
     .select(`
       id,

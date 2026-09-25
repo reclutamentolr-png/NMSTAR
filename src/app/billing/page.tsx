@@ -15,11 +15,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   const { success, session_id } = await searchParams
 
-  let { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_status, email')
-    .eq('id', user.id)
-    .single()
+  // get_my_profile: l'email non è più leggibile con una select diretta.
+  let { data: profile } = await supabase.rpc('get_my_profile').maybeSingle<{ subscription_status: string | null; email: string | null }>()
 
   // Fallback: l'attivazione "normale" avviene tramite il webhook Stripe
   // (checkout.session.completed), ma quel webhook non può raggiungere

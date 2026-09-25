@@ -57,14 +57,13 @@ export default function RegisterForm() {
     const cleanReferralCode = formData.referral_code.trim().toUpperCase()
 
     try {
-      // 1. VALIDA IL CODICE REFERRAL
-      const { data: sponsorProfile, error: sponsorError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('referral_code', cleanReferralCode)
-        .single()
+      // 1. VALIDA IL CODICE REFERRAL — prima del login la tabella profiles
+      // non è leggibile: si usa la funzione pubblica già usata da /ref/[code].
+      const { data: sponsorMatches, error: sponsorError } = await supabase.rpc('get_public_profile_by_referral', {
+        p_referral_code: cleanReferralCode,
+      })
 
-      if (sponsorError || !sponsorProfile) {
+      if (sponsorError || !sponsorMatches || sponsorMatches.length === 0) {
         throw new Error(t('invalidReferral'))
       }
 
@@ -85,7 +84,6 @@ export default function RegisterForm() {
             last_name: formData.last_name,
             country_code: formData.country_code,
             referral_code: cleanReferralCode,
-            sponsor_id: sponsorProfile.id,
           }
         }
       })
@@ -137,7 +135,13 @@ export default function RegisterForm() {
     const lastName = meta.last_name || formData.last_name
     const countryCode = meta.country_code || formData.country_code
     const referralCode = meta.referral_code || formData.referral_code.trim().toUpperCase()
-    const sponsorId = meta.sponsor_id || ''
+    // Lo sponsor si risolve qui, a utente ormai autenticato (id e
+    // referral_code degli altri profili sono leggibili solo da loggati).
+    let sponsorId = meta.sponsor_id || ''
+    if (!sponsorId && referralCode) {
+      const { data: sponsor } = await supabase.from('profiles').select('id').eq('referral_code', referralCode).maybeSingle()
+      sponsorId = sponsor?.id || ''
+    }
     const email = user.email || formData.email
 
     try {

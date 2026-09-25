@@ -23,6 +23,8 @@ import {
   listVoucherUsers,
   getAdminFinancialSummary,
   listListingReports,
+  adminListUsers,
+  adminGetProfile,
   listSpotlightProfilesForModeration,
   moderateSpotlightProfile,
   dismissListingReport,
@@ -203,17 +205,19 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   }, [activeSection])
 
   const loadStats = async () => {
-    const { count: totalUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-    const { count: activeUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('subscription_status', 'active').eq('is_blocked', false)
-    const { count: totalNodes } = await supabase.from('matrix_nodes').select('*', { count: 'exact', head: true })
-    const { count: blockedUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_blocked', true)
+    // select('id'): con '*' la richiesta includerebbe colonne personali non
+    // più leggibili dal browser e fallirebbe.
+    const { count: totalUsers } = await supabase.from('profiles').select('id', { count: 'exact', head: true })
+    const { count: activeUsers } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('subscription_status', 'active').eq('is_blocked', false)
+    const { count: totalNodes } = await supabase.from('matrix_nodes').select('id', { count: 'exact', head: true })
+    const { count: blockedUsers } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_blocked', true)
     setStats({ totalUsers: totalUsers || 0, activeUsers: activeUsers || 0, totalNodes: totalNodes || 0, blockedUsers: blockedUsers || 0 })
   }
 
   const loadOnlineUsers = async () => {
     try {
       const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-      const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen', fifteenMinutesAgo)
+      const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('last_seen', fifteenMinutesAgo)
       setOnlineUsers(count || 0)
     } catch (error) {
       console.error('Errore caricamento utenti online:', error)
@@ -222,8 +226,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
 
   const loadUsers = async () => {
     setLoadingUsers(true)
-    const { data } = await supabase.from('profiles').select('id, first_name, last_name, email, referral_code, subscription_status, is_blocked, created_at').order('created_at', { ascending: false }).limit(100)
-    if (data) setUsers(data)
+    const { users: data } = await adminListUsers()
+    setUsers(data)
     setLoadingUsers(false)
   }
 
@@ -242,7 +246,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     setLoadingMatrix(true)
     setSelectedMatrixUserId(targetUserId)
     try {
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', targetUserId).single()
+      const { data: profile } = await supabase.from('profiles').select('username, first_name, last_name, referral_code, country_code').eq('id', targetUserId).single()
       const { data: userNode } = await supabase.from('matrix_nodes').select('*').eq('user_id', targetUserId).single()
       const { data: downlineData } = await supabase.rpc('get_user_downline', { p_user_id: targetUserId, p_max_depth: 5 })
 
@@ -722,8 +726,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   const handleToggleBlock = async (user: any) => {
     if (!confirm(`Sei sicuro di voler ${user.is_blocked ? 'SBLOCCARE' : 'BLOCCARE'} l'utente ${user.email}?`)) return
     const newBlockedStatus = !user.is_blocked
-    const { error } = await supabase.from('profiles').update({ is_blocked: newBlockedStatus }).eq('id', user.id)
-    if (!error) {
+    // Lato server: is_blocked non è più scrivibile dal browser.
+    const result = await adminUpdateProfile(user.id, { is_blocked: newBlockedStatus })
+    if (result.success) {
       await loadUsers()
       alert(`✅ Utente ${newBlockedStatus ? 'bloccato' : 'sbloccato'} con successo.`)
     } else {
@@ -732,7 +737,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   }
 
   const openProfileEdit = async (user: any) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    const { profile: data } = await adminGetProfile(user.id)
     if (data) {
       setProfileEditUser(data)
       setProfileForm({
