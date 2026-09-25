@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { getStripe } from '@/lib/stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as any,
-})
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Creato alla richiesta e non al caricamento del modulo: così `next build`
+// non fallisce se le variabili d'ambiente non sono disponibili in build.
+const getSupabaseAdmin = () =>
+  createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 export async function POST(req: NextRequest) {
+  const supabaseAdmin = getSupabaseAdmin()
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')
 
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = getStripe().webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch (err: any) {
     console.error('❌ Errore verifica webhook (firma sbagliata?):', err.message)
     return NextResponse.json({ error: err.message }, { status: 400 })

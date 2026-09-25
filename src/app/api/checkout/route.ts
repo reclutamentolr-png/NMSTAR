@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as any, // ✅ FIX: 'as any' previene errori di versione API
-})
+import { getStripe } from '@/lib/stripe'
 
 export async function POST() {
   try {
@@ -15,7 +11,7 @@ export async function POST() {
       return NextResponse.redirect(new URL('/register', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'))
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [

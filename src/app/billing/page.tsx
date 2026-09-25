@@ -2,11 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation' // ✅ CORRETTO per i Server Component
 import Link from 'next/link' // ✅ Corretto
-import Stripe from 'stripe'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as any,
-})
+import { getStripe } from '@/lib/stripe'
 
 type BillingPageProps = {
   searchParams: Promise<{ success?: string; session_id?: string; canceled?: string; error?: string }>
@@ -35,7 +31,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   // pagamento sia andato a buon fine.
   if (success === 'true' && session_id && profile?.subscription_status !== 'active') {
     try {
-      const session = await stripe.checkout.sessions.retrieve(session_id)
+      const session = await getStripe().checkout.sessions.retrieve(session_id)
       const isPaidForThisUser = session.payment_status === 'paid' && session.metadata?.userId === user.id
 
       if (isPaidForThisUser) {
