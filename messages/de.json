@@ -222,11 +222,11 @@
   },
   "auth": {
     "loginTitle": "Bei deinem Konto anmelden",
-    "loginDescription": "Verwalte dein Abonnement und Netzwerk",
+    "loginDescription": "Um dein Abo und deine Tools zu verwalten",
     "invalidCredentials": "E-Mail oder Passwort falsch.",
     "blockedAccount": "Dein Konto wurde gesperrt. Wende dich an den Support.",
     "loggingIn": "Anmeldung...",
-    "noAccount": "Noch kein Konto? Hier registrieren (nur auf Einladung)",
+    "noAccount": "Noch kein Konto? Hier registrieren",
     "email": "E-Mail",
     "password": "Passwort",
     "login": "Anmelden",
@@ -235,17 +235,17 @@
     "firstName": "Vorname",
     "lastName": "Nachname",
     "country": "Land",
-    "referralCode": "Empfehlungscode",
+    "referralCode": "Einladungscode (optional)",
     "createAccount": "Erstelle dein Konto",
     "selectCountry": "Wähle dein Land",
     "passwordMinChars": "Passwort (mind. 6 Zeichen)",
-    "referralRequired": "Die Registrierung ist nur auf Einladung eines bestehenden Mitglieds möglich.",
+    "referralRequired": "Wenn dich ein Kumano eingeladen hat, gib seinen Code ein: Er erhält ein Dankeschön. Sonst lass das Feld leer.",
     "accountCreated": "Registrierung erfolgreich abgeschlossen! Du wirst zum Login weitergeleitet...",
-    "invalidReferral": "Ungültiger Empfehlungscode. Du musst von einem bestehenden Mitglied eingeladen werden.",
+    "invalidReferral": "Ungültiger Einladungscode. Prüfe ihn oder lass das Feld leer, um dich ohne Einladung zu registrieren.",
     "emailAlreadyRegistered": "Diese E-Mail ist bereits registriert. Versuche dich anzumelden oder verwende eine andere E-Mail.",
     "errorCreatingUser": "Fehler beim Erstellen des Benutzers. Überprüfe deine E-Mail zur Bestätigung.",
     "errorCreatingProfile": "Fehler beim Erstellen des Profils. Kontaktiere den Support.",
-    "errorInMatrix": "Fehler bei der Platzierung in der Matrix.",
+    "errorInMatrix": "Fehler bei der Aktivierung des Kontos. Bitte erneut versuchen.",
     "creatingAccount": "Konto wird erstellt...",
     "networkMarketingProgram": "Kumani",
     "forgotPassword": "Passwort vergessen?",
@@ -274,7 +274,9 @@
     "accountActivated": "Konto erfolgreich aktiviert! Weiterleitung...",
     "backToForm": "Falsche Angaben? Zurück",
     "enterResetCode": "Gib den Code und dein neues Passwort ein",
-    "resetCodeDescription": "Wir haben eine E-Mail an {email} mit Anweisungen gesendet: Klicke auf den enthaltenen Link, oder – falls ein Code enthalten ist – gib ihn zusammen mit deinem neuen Passwort unten ein."
+    "resetCodeDescription": "Wir haben eine E-Mail an {email} mit Anweisungen gesendet: Klicke auf den enthaltenen Link, oder – falls ein Code enthalten ist – gib ihn zusammen mit deinem neuen Passwort unten ein.",
+    "cityOptional": "Stadt (optional)",
+    "directSignupUnavailable": "Derzeit ist die Registrierung nur mit Einladungscode möglich. Frag die Person, die dir von KUMANI erzählt hat."
   },
   "dashboard": {
     "growthTool": "Dein Wachstumswerkzeug",
@@ -2164,5 +2166,16 @@
     "deleteCardText": "{count, plural, =0 {Die Karte wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.} one {Die Karte, 1 Kunde und alle seine Stempel werden endgültig gelöscht: Der Kunde sieht seine Karte nicht mehr. Das kann nicht rückgängig gemacht werden.} other {Die Karte, # Kunden und alle ihre Stempel werden endgültig gelöscht: Die Kunden sehen ihre Karten nicht mehr. Das kann nicht rückgängig gemacht werden.}}",
     "deleteCardConfirm": "Endgültig löschen",
     "deleting": "Wird gelöscht..."
+  },
+  "referralLanding": {
+    "invalidTitle": "Ungültiger Code",
+    "invalidText": "Der Einladungscode „{code}“ existiert nicht oder ist nicht aktiv. Du kannst dich trotzdem ohne Einladung registrieren.",
+    "registerWithoutInvite": "Ohne Einladung registrieren",
+    "title": "{name} lädt dich zu KUMANI ein",
+    "description": "Werde Teil der KUMANI-Community: praktische Tools für Arbeit und Alltag, zu einem fairen Preis.",
+    "invitedBy": "Eingeladen von:",
+    "registerNow": "Jetzt registrieren",
+    "alreadyRegistered": "Schon registriert?",
+    "goToDashboard": "Zum Dashboard"
   }
 }

@@ -1,20 +1,25 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from '@/components/LocalizedLink' // ✅ Usa il nostro link intelligente
+import { getTranslations } from 'next-intl/server'
+import Link from '@/components/LocalizedLink'
 
+type InviterData = { referral_code: string; country_code: string; first_name: string; last_name: string }
+
+const FLAGS: Record<string, string> = { IT: '🇮🇹', US: '🇺🇸', DE: '🇩🇪', FR: '🇫🇷', ES: '🇪🇸', PT: '🇵🇹', BR: '🇧🇷', RU: '🇷🇺', GB: '🇬🇧' }
+
+// Pagina di invito personale (/ref/CODICE): chi arriva qui viene invitato
+// da un Kumano e si registra con il suo codice già compilato.
 export default async function ReferralPage({ params }: { params: Promise<{ code: string }> }) {
-  // 1. Attendi i params (obbligatorio in Next.js 15)
   const { code } = await params
   const normalizedCode = code.toUpperCase()
-  
+  const t = await getTranslations('referralLanding')
+
   const supabase = await createClient()
-
-    // 2. Usa la funzione sicura per cercare lo sponsor
-  const { data: sponsorData, error } = await supabase
+  // Funzione pubblica: restituisce solo nome, paese e codice di chi invita.
+  const { data: inviter, error } = (await supabase
     .rpc('get_public_profile_by_referral', { p_referral_code: normalizedCode })
-    .single() as { data: { referral_code: string; country_code: string; first_name: string; last_name: string } | null, error: any }
+    .single()) as { data: InviterData | null; error: unknown }
 
-  // 3. Se il codice non esiste o c'è un errore, mostra messaggio
-  if (error || !sponsorData) {
+  if (error || !inviter) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-gray-100 max-w-md w-full">
@@ -23,63 +28,49 @@ export default async function ReferralPage({ params }: { params: Promise<{ code:
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Codice Non Valido</h1>
-          <p className="text-gray-600 mb-6">
-            Il codice referral "<span className="font-mono font-bold text-gray-800">{code}</span>" non esiste o non è attivo.
-          </p>
-          <Link 
-            href="/register" 
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('invalidTitle')}</h1>
+          <p className="text-gray-600 mb-6">{t('invalidText', { code })}</p>
+          <Link
+            href="/register"
             className="inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            Torna alla registrazione
+            {t('registerWithoutInvite')}
           </Link>
         </div>
       </div>
     )
   }
 
-  // 4. Se esiste, mostra la landing page (sponsorData contiene ora i 4 campi sicuri)
-  const registerUrl = `/register?sponsor=${encodeURIComponent(sponsorData.referral_code)}`
+  const registerUrl = `/register?sponsor=${encodeURIComponent(inviter.referral_code)}`
+  const inviterName = `${inviter.first_name} ${inviter.last_name}`.trim()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-indigo-100">
-        
-        {/* Bandiera / Icona Nazione */}
         <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-4xl">
-            {sponsorData.country_code === 'IT' ? '🇮🇹' : 
-             sponsorData.country_code === 'US' ? '🇺🇸' : 
-             sponsorData.country_code === 'DE' ? '🇩🇪' : '🌍'}
-          </span>
+          <span className="text-4xl">{FLAGS[inviter.country_code] ?? '🌍'}</span>
         </div>
-        
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Unisciti al team di {sponsorData.first_name} {sponsorData.last_name}
-        </h1>
-        <p className="text-gray-600 mb-8">
-          Sei stato invitato a entrare nella community Kumani.
-          Registrati ora per scoprire gli strumenti e iniziare a far crescere la tua attività.
-        </p>
 
-        {/* Box Codice Sponsor */}
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('title', { name: inviterName })}</h1>
+        <p className="text-gray-600 mb-8">{t('description')}</p>
+
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-8">
-          <p className="text-sm text-gray-500 mb-1">Il tuo sponsor è:</p>
-          <p className="text-2xl font-mono font-bold text-indigo-600 tracking-wider">
-            {sponsorData.referral_code}
-          </p>
+          <p className="text-sm text-gray-500 mb-1">{t('invitedBy')}</p>
+          <p className="text-2xl font-mono font-bold text-indigo-600 tracking-wider">{inviter.referral_code}</p>
         </div>
 
-        {/* Pulsante di azione */}
-        <Link 
+        <Link
           href={registerUrl}
           className="w-full block bg-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
         >
-          Registrati Ora
+          {t('registerNow')}
         </Link>
-        
+
         <p className="text-xs text-gray-400 mt-6">
-          Già registrato? <Link href="/dashboard" className="text-indigo-600 hover:underline font-medium">Accedi alla dashboard</Link>
+          {t('alreadyRegistered')}{' '}
+          <Link href="/dashboard" className="text-indigo-600 hover:underline font-medium">
+            {t('goToDashboard')}
+          </Link>
         </p>
       </div>
     </div>

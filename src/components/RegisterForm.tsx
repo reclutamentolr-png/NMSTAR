@@ -34,6 +34,7 @@ export default function RegisterForm() {
     email: resumeEmail,
     password: '',
     country_code: '',
+    city: '',
     referral_code: initialReferralCode,
   })
   const [loading, setLoading] = useState(false)
@@ -57,14 +58,17 @@ export default function RegisterForm() {
     const cleanReferralCode = formData.referral_code.trim().toUpperCase()
 
     try {
-      // 1. VALIDA IL CODICE REFERRAL — prima del login la tabella profiles
-      // non è leggibile: si usa la funzione pubblica già usata da /ref/[code].
-      const { data: sponsorMatches, error: sponsorError } = await supabase.rpc('get_public_profile_by_referral', {
-        p_referral_code: cleanReferralCode,
-      })
-
-      if (sponsorError || !sponsorMatches || sponsorMatches.length === 0) {
-        throw new Error(t('invalidReferral'))
+      // 1. Codice invito FACOLTATIVO: se c'è lo si verifica subito (prima del
+      // login la tabella profiles non è leggibile, si usa la funzione
+      // pubblica già usata da /ref/[code]); se è vuoto ci si iscrive senza
+      // invito. La verifica definitiva la rifà complete_registration().
+      if (cleanReferralCode) {
+        const { data: sponsorMatches, error: sponsorError } = await supabase.rpc('get_public_profile_by_referral', {
+          p_referral_code: cleanReferralCode,
+        })
+        if (sponsorError || !sponsorMatches || sponsorMatches.length === 0) {
+          throw new Error(t('invalidReferral'))
+        }
       }
 
       // 2. Registra l'utente in Supabase Auth — non ancora confermato: Supabase
@@ -83,6 +87,7 @@ export default function RegisterForm() {
             first_name: formData.first_name,
             last_name: formData.last_name,
             country_code: formData.country_code,
+            city: formData.city.trim(),
             referral_code: cleanReferralCode,
           }
         }
@@ -119,64 +124,38 @@ export default function RegisterForm() {
     }
   }
 
-  // Crea profilo + nodo matrice per l'utente ormai confermato (email già
-  // verificata, o mai richiesta perché autoconfirm è attivo lato Supabase).
-  // Idempotente: se richiamata più volte (es. dopo un fallimento parziale)
-  // non duplica righe già create.
+  // Crea profilo + posto in matrice per l'utente ormai confermato (email
+  // già verificata, o mai richiesta perché autoconfirm è attivo lato
+  // Supabase). Tutto avviene sul server in complete_registration():
+  // verifica del codice invito, account KUMANI per chi non ne ha, posto in
+  // matrice senza conflitti. Idempotente: richiamarla dopo un errore a metà
+  // non duplica nulla.
   const activateAccount = async (user: { id: string; email?: string; user_metadata: Record<string, unknown> }) => {
     const meta = user.user_metadata as {
       first_name?: string
       last_name?: string
       country_code?: string
+      city?: string
       referral_code?: string
-      sponsor_id?: string
     }
-    const firstName = meta.first_name || formData.first_name
-    const lastName = meta.last_name || formData.last_name
-    const countryCode = meta.country_code || formData.country_code
-    const referralCode = meta.referral_code || formData.referral_code.trim().toUpperCase()
-    // Lo sponsor si risolve qui, a utente ormai autenticato (id e
-    // referral_code degli altri profili sono leggibili solo da loggati).
-    let sponsorId = meta.sponsor_id || ''
-    if (!sponsorId && referralCode) {
-      const { data: sponsor } = await supabase.from('profiles').select('id').eq('referral_code', referralCode).maybeSingle()
-      sponsorId = sponsor?.id || ''
-    }
-    const email = user.email || formData.email
 
     try {
-      // Verifica se il profilo esiste già (es. verifica ripetuta dopo un
-      // fallimento nel solo passaggio matrice): in tal caso non ricrearlo.
-      const { data: existingProfile } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle()
+      const { data: status, error: registrationError } = await supabase.rpc('complete_registration', {
+        p_first_name: meta.first_name || formData.first_name,
+        p_last_name: meta.last_name || formData.last_name,
+        p_country: meta.country_code || formData.country_code,
+        p_city: meta.city ?? formData.city.trim(),
+        p_referral_code: meta.referral_code ?? formData.referral_code.trim().toUpperCase(),
+      })
 
-      if (!existingProfile) {
-        const generatedUsername = email.split('@')[0] + '_' + Math.floor(Math.random() * 10000)
-
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email,
-            username: generatedUsername,
-            first_name: firstName,
-            last_name: lastName,
-            country_code: countryCode,
-            referral_code: generateReferralCode(countryCode),
-            subscription_status: 'free',
-            date_of_birth: '2000-01-01',
-            sponsor_id: sponsorId,
-          })
-
-        if (profileError) {
-          console.error('Errore profilo:', profileError)
-          throw new Error(t('errorCreatingProfile'))
-        }
-      }
-
-      // Crea il nodo matrice agganciato allo sponsor (se non già presente)
-      const { data: existingNode } = await supabase.from('matrix_nodes').select('id').eq('user_id', user.id).maybeSingle()
-      if (!existingNode) {
-        await createMatrixNode(user.id, referralCode)
+      if (registrationError || status !== 'ok') {
+        throw new Error(
+          status === 'invalid_referral'
+            ? t('invalidReferral')
+            : status === 'direct_unavailable'
+              ? t('directSignupUnavailable')
+              : t('errorCreatingUser')
+        )
       }
 
       setStep('done')
@@ -222,161 +201,6 @@ export default function RegisterForm() {
     }
     setResendMessage(t('codeResent'))
     setResendCooldown(RESEND_COOLDOWN_SECONDS)
-  }
-
-  // ✅ NUOVA FUNZIONE: Genera codice nel formato PAESE-0000000-X
-  const generateReferralCode = (countryCode: string) => {
-    const country = (countryCode || 'IT').toUpperCase().substring(0, 2)
-
-    let digits = ''
-    for (let i = 0; i < 7; i++) {
-      digits += Math.floor(Math.random() * 10).toString()
-    }
-
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    const letter = letters.charAt(Math.floor(Math.random() * letters.length))
-
-    return `${country}-${digits}-${letter}`
-  }
-
-  // ✅ FUNZIONE CORRETTA: Logica del percorso (path) blindata con controllo errori
-  const createMatrixNode = async (userId: string, sponsorCode: string) => {
-    try {
-      // 1. Trova l'ID dello sponsor
-      const { data: sponsorProfile, error: sponsorError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('referral_code', sponsorCode)
-        .single()
-
-      if (sponsorError || !sponsorProfile) throw new Error('Sponsor non trovato.')
-
-      // 2. Trova il nodo matrice dello sponsor
-      const { data: sponsorNode, error: nodeError } = await supabase
-        .from('matrix_nodes')
-        .select('id, path, level')
-        .eq('user_id', sponsorProfile.id)
-        .single()
-
-      if (nodeError || !sponsorNode) {
-        throw new Error('Impossibile trovare il nodo dello sponsor. Contatta il supporto.')
-      }
-
-      const parentNodeId = sponsorNode.id
-      const parentPath = sponsorNode.path
-      const level = sponsorNode.level + 1
-
-      // 3. Trova la prima posizione libera (1-5) sotto lo sponsor
-      const { data: existingChildren, error: childrenError } = await supabase
-        .from('matrix_nodes')
-        .select('position')
-        .eq('parent_id', parentNodeId)
-        .order('position', { ascending: true })
-
-      if (childrenError) throw childrenError
-
-      const usedPositions = existingChildren?.map((c: any) => c.position) || []
-      let newPosition = 1
-      while (usedPositions.includes(newPosition) && newPosition <= 5) {
-        newPosition++
-      }
-
-      // 4. Inserimento diretto sotto lo sponsor (se c'è spazio)
-      if (newPosition <= 5) {
-        const newPath = `${parentPath}.${newPosition}`
-        const newDepth = parentPath.split('.').length
-
-        // ✅ FIX: Controllo esplicito dell'errore di inserimento
-        const { error: insertError } = await supabase.from('matrix_nodes').insert({
-          user_id: userId,
-          parent_id: parentNodeId,
-          path: newPath,
-          level: level,
-          position: newPosition,
-          depth: newDepth,
-        })
-
-        if (insertError) {
-          console.error('Errore DB insert diretto:', insertError)
-          throw new Error(`Errore nel salvataggio del nodo: ${insertError.message}`)
-        }
-      }
-      // 5. Spillover: lo sponsor ha già i 5 slot diretti pieni. Si scende nel
-      // suo sottoalbero scansionando i rami da sinistra (posizione 1) verso
-      // destra (posizione 5) e scegliendo, a ogni livello, quello con MENO
-      // persone in totale (non solo figli diretti, ma l'intero sottoalbero —
-      // così i rami restano bilanciati anche in profondità). A parità di
-      // persone vince il ramo più a sinistra, cioè il primo incontrato
-      // scansionando in ordine di posizione. Si ripete finché non si trova un
-      // nodo con uno slot diretto (1-5) ancora libero.
-      else {
-        const { data: allNodes, error: allNodesError } = await supabase
-          .from('matrix_nodes')
-          .select('id, parent_id, path, level, position')
-
-        if (allNodesError) throw allNodesError
-
-        const nodesInSponsorTree = (allNodes || []).filter((node) =>
-          node.path.startsWith(`${parentPath}.`)
-        )
-
-        const childrenOf = (nodeId: string) =>
-          nodesInSponsorTree
-            .filter((node) => node.parent_id === nodeId)
-            .sort((a, b) => a.position - b.position)
-
-        // Persone totali nel sottoalbero di un nodo (figli, nipoti, ecc.),
-        // usato per bilanciare i rami in base alla popolazione reale e non
-        // solo al numero di figli diretti.
-        const subtreeSize = (nodeId: string): number =>
-          childrenOf(nodeId).reduce((total, child) => total + 1 + subtreeSize(child.id), 0)
-
-        const findTarget = (node: { id: string; path: string; level: number }): { id: string; path: string; level: number } => {
-          const children = childrenOf(node.id)
-          if (children.length < 5) return node
-
-          let best = children[0]
-          let bestSize = subtreeSize(best.id)
-          for (const child of children.slice(1)) {
-            const size = subtreeSize(child.id)
-            if (size < bestSize) {
-              best = child
-              bestSize = size
-            }
-          }
-          return findTarget(best)
-        }
-
-        const target = findTarget({ id: parentNodeId, path: parentPath, level: sponsorNode.level })
-        const targetChildren = childrenOf(target.id)
-
-        const targetUsedPositions = targetChildren.map((child) => child.position)
-        let position = 1
-        while (targetUsedPositions.includes(position) && position <= 5) position++
-
-        const newNodePath = `${target.path}.${position}`
-        const newNodeLevel = target.level + 1
-        const newNodeDepth = target.path.split('.').length
-
-        const { error: spillInsertError } = await supabase.from('matrix_nodes').insert({
-          user_id: userId,
-          parent_id: target.id,
-          path: newNodePath,
-          level: newNodeLevel,
-          position,
-          depth: newNodeDepth,
-        })
-
-        if (spillInsertError) {
-          console.error('Errore DB insert spillover:', spillInsertError)
-          throw new Error(`Errore nel salvataggio del nodo (spillover): ${spillInsertError.message}`)
-        }
-      }
-    } catch (error: any) {
-      console.error('Errore creazione nodo matrice:', error)
-      // Lancia l'errore in modo che il form lo mostri all'utente e blocchi il redirect
-      throw new Error(error.message || t('errorInMatrix'))
-    }
   }
 
   return (
@@ -447,21 +271,26 @@ export default function RegisterForm() {
           </div>
 
           <div>
+            <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">{t('cityOptional')}</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+              <input id="city" type="text" maxLength={80} value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
             <label htmlFor="referral_code" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('referralCode')} <span className="text-red-500">*</span>
+              {t('referralCode')}
             </label>
             <input
               id="referral_code"
               type="text"
-              required
               value={formData.referral_code}
               onChange={(e) => setFormData({ ...formData, referral_code: e.target.value.toUpperCase() })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono tracking-wider"
               placeholder="ES. IT-10000-Q"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              ⚠️ {t('referralRequired')}
-            </p>
+            <p className="text-xs text-gray-500 mt-1">{t('referralRequired')}</p>
           </div>
 
           <button

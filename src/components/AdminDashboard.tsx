@@ -24,6 +24,8 @@ import {
   getAdminFinancialSummary,
   listListingReports,
   adminListUsers,
+  getHouseAccount,
+  createHouseAccount,
   adminGetProfile,
   listSpotlightProfilesForModeration,
   moderateSpotlightProfile,
@@ -164,11 +166,15 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     dashboard_layout: DEFAULT_DASHBOARD_LAYOUT,
     matrix_slot_bonus_points: 5,
     matrix_spillover_bonus_points: 5,
+    activity_thanks_points: 3,
     listing_feature_cost_7d: 20,
     listing_feature_cost_15d: 35,
     subscription_price_eur: 49
   })
   const [savingSettings, setSavingSettings] = useState(false)
+  const [houseAccount, setHouseAccount] = useState<any>(null)
+  const [houseEmail, setHouseEmail] = useState('')
+  const [creatingHouse, setCreatingHouse] = useState(false)
 
   const [messages, setMessages] = useState<any[]>([])
   const [loadingMessages, setLoadingMessages] = useState(false)
@@ -574,7 +580,26 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     setSavingTool(null)
   }
 
+  const loadHouseAccount = async () => {
+    const { account } = await getHouseAccount()
+    setHouseAccount(account)
+  }
+
+  const handleCreateHouseAccount = async () => {
+    if (!confirm(`Creare l'account KUMANI con l'email ${houseEmail}? Da quel momento chiunque potrà iscriversi senza codice invito.`)) return
+    setCreatingHouse(true)
+    const result = await createHouseAccount(houseEmail)
+    setCreatingHouse(false)
+    if (result.success) {
+      await loadHouseAccount()
+      alert('✅ Account KUMANI creato: la registrazione senza invito è attiva.')
+    } else {
+      alert('❌ ' + (result.error || 'Errore'))
+    }
+  }
+
   const loadSystemSettings = async () => {
+    loadHouseAccount()
     const { data } = await supabase.from('system_settings').select('key, value')
     if (data) {
       const settingsObj: Record<string, any> = { ...systemSettings }
@@ -2150,6 +2175,58 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
             />
             <span className="text-sm text-gray-500 whitespace-nowrap">€ / anno</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Iscrizioni senza invito
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Chi si iscrive senza codice invito entra nella struttura dell'account KUMANI (mai in quella di un Kumano).
+            Un Kumano attivo della stessa zona riceve un &quot;ringraziamento attività&quot; quando il nuovo iscritto
+            paga il primo abbonamento. Il ringraziamento per chi invita è il &quot;Bonus Struttura&quot; qui sotto.
+          </p>
+          {houseAccount ? (
+            <p className="text-sm text-gray-700 mb-3">
+              ✅ Attiva — account <strong>{houseAccount.first_name} {houseAccount.last_name}</strong>{' '}
+              <span className="font-mono">({houseAccount.referral_code})</span> · {houseAccount.email} ·{' '}
+              {houseAccount.directMembers} iscritti senza invito
+            </p>
+          ) : (
+            <div className="mb-3 space-y-2">
+              <p className="text-sm text-amber-700">
+                ⚠️ Non attiva: finché l&apos;account KUMANI non esiste, la registrazione richiede ancora un codice invito.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 max-w-lg">
+                <input
+                  type="email"
+                  value={houseEmail}
+                  onChange={(e) => setHouseEmail(e.target.value)}
+                  placeholder="email dell'account KUMANI (es. community@...)"
+                  className="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateHouseAccount}
+                  disabled={creatingHouse || !houseEmail}
+                  className="px-4 py-2.5 rounded-lg bg-[var(--ink)] text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {creatingHouse ? 'Creazione...' : 'Crea account KUMANI'}
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-2 max-w-xs">
+            <input
+              type="number"
+              min="0"
+              value={systemSettings.activity_thanks_points ?? 3}
+              onChange={(e) => setSystemSettings({ ...systemSettings, activity_thanks_points: parseInt(e.target.value, 10) || 0 })}
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+            />
+            <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / ringraziamento attività</span>
           </div>
         </div>
 

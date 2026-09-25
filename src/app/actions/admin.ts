@@ -715,3 +715,82 @@ export async function adminGetProfile(userId: string) {
   if (error) return { profile: null, error: error.message }
   return { profile: data, error: null }
 }
+
+// ============================================================
+// Account KUMANI: "sponsor" di chi si iscrive senza codice invito
+// ============================================================
+
+const readHouseAccountId = async () => {
+  const { data } = await getServiceClient().from('system_settings').select('value').eq('key', 'house_account_id').maybeSingle()
+  const raw = typeof data?.value === 'string' ? data.value.replace(/^"|"$/g, '') : ''
+  return raw || null
+}
+
+export async function getHouseAccount() {
+  const admin = await verifyAdmin('settings.read')
+  if (!admin) return { account: null }
+  const id = await readHouseAccountId()
+  if (!id) return { account: null }
+  const service = getServiceClient()
+  const [{ data: profile }, { count: members }] = await Promise.all([
+    service.from('profiles').select('id, first_name, last_name, email, referral_code').eq('id', id).maybeSingle(),
+    service.from('profiles').select('id', { count: 'exact', head: true }).eq('signup_source', 'direct'),
+  ])
+  return { account: profile ? { ...profile, directMembers: members ?? 0 } : null }
+}
+
+// Crea l'account KUMANI: utente confermato (non serve che qualcuno ci
+// entri), profilo con codice "KUMANI", radice propria in matrice, e lo
+// imposta come house_account_id. Chi si iscrive senza invito finisce nella
+// SUA struttura, mai in quella di un Kumano.
+export async function createHouseAccount(email: string) {
+  const admin = await verifyAdmin('settings.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+  if (await readHouseAccountId()) return { success: false, error: 'Account KUMANI già configurato' }
+
+  const cleanEmail = email.trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) return { success: false, error: 'Email non valida' }
+
+  const service = getServiceClient()
+  const { data: created, error: authError } = await service.auth.admin.createUser({
+    email: cleanEmail,
+    password: randomBytes(24).toString('base64url'),
+    email_confirm: true,
+    user_metadata: { first_name: 'KUMANI', last_name: 'Community' },
+  })
+  if (authError || !created.user) return { success: false, error: authError?.message || 'Creazione utente non riuscita' }
+  const id = created.user.id
+
+  const { error: profileError } = await service.from('profiles').insert({
+    id,
+    email: cleanEmail,
+    username: 'kumani',
+    first_name: 'KUMANI',
+    last_name: 'Community',
+    country_code: 'IT',
+    referral_code: 'KUMANI',
+    subscription_status: 'free',
+    date_of_birth: '2000-01-01',
+  })
+  if (profileError) {
+    await service.auth.admin.deleteUser(id)
+    return { success: false, error: profileError.message }
+  }
+
+  const { error: nodeError } = await service.from('matrix_nodes').insert({
+    user_id: id,
+    parent_id: null,
+    path: `root.${id.replace(/-/g, '_')}`,
+    level: 1,
+    position: 1,
+    depth: 0,
+  })
+  if (nodeError) return { success: false, error: nodeError.message }
+
+  const { error: settingError } = await service
+    .from('system_settings')
+    .upsert({ key: 'house_account_id', value: JSON.stringify(id) }, { onConflict: 'key' })
+  if (settingError) return { success: false, error: settingError.message }
+
+  return { success: true }
+}

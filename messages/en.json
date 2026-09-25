@@ -207,11 +207,11 @@
   },
   "auth": {
     "loginTitle": "Log in to your account",
-    "loginDescription": "Manage your subscription and network",
+    "loginDescription": "To manage your subscription and your tools",
     "invalidCredentials": "Incorrect email or password.",
     "blockedAccount": "Your account has been blocked by an administrator. Contact support.",
     "loggingIn": "Signing in...",
-    "noAccount": "Don't have an account? Register here (invite only)",
+    "noAccount": "Don't have an account? Sign up here",
     "email": "Email",
     "password": "Password",
     "login": "Log in",
@@ -220,17 +220,17 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "country": "Country",
-    "referralCode": "Referral Code",
+    "referralCode": "Invite code (optional)",
     "createAccount": "Create your account",
     "selectCountry": "Select your country",
     "passwordMinChars": "Password (min. 6 characters)",
-    "referralRequired": "Registration is by invitation only from an existing member.",
+    "referralRequired": "If a Kumano invited you, enter their code: they'll receive a thank-you. Otherwise leave it empty.",
     "accountCreated": "Account created successfully! You will be redirected to login...",
-    "invalidReferral": "Invalid referral code. You must be invited by an existing member.",
+    "invalidReferral": "Invalid invite code. Check it, or leave the field empty to sign up without an invite.",
     "emailAlreadyRegistered": "This email is already registered. Try logging in or use a different email.",
     "errorCreatingUser": "Error creating user. Check your email for confirmation.",
     "errorCreatingProfile": "Error creating profile. Contact support.",
-    "errorInMatrix": "Error in matrix placement.",
+    "errorInMatrix": "Error while activating the account. Please try again.",
     "creatingAccount": "Creating account...",
     "networkMarketingProgram": "Kumani",
     "forgotPassword": "Forgot password?",
@@ -259,7 +259,9 @@
     "accountActivated": "Account activated successfully! Redirecting...",
     "backToForm": "Wrong details? Go back",
     "enterResetCode": "Enter the code and your new password",
-    "resetCodeDescription": "We've sent an email to {email} with instructions: click the link inside, or — if it contains a code — enter it below along with your new password."
+    "resetCodeDescription": "We've sent an email to {email} with instructions: click the link inside, or — if it contains a code — enter it below along with your new password.",
+    "cityOptional": "City (optional)",
+    "directSignupUnavailable": "Right now you can only sign up with an invite code. Ask whoever told you about KUMANI."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2135,5 +2137,16 @@
     "deleteCardText": "{count, plural, =0 {The card will be permanently deleted. This can't be undone.} one {The card, 1 customer and all their stamps will be permanently deleted: the customer won't see their card anymore. This can't be undone.} other {The card, # customers and all their stamps will be permanently deleted: customers won't see their cards anymore. This can't be undone.}}",
     "deleteCardConfirm": "Delete permanently",
     "deleting": "Deleting..."
+  },
+  "referralLanding": {
+    "invalidTitle": "Invalid code",
+    "invalidText": "The invite code \"{code}\" doesn't exist or isn't active. You can still sign up without an invite.",
+    "registerWithoutInvite": "Sign up without an invite",
+    "title": "{name} invites you to KUMANI",
+    "description": "Join the KUMANI community: practical tools for work and everyday life, at an honest price.",
+    "invitedBy": "Invited by:",
+    "registerNow": "Sign up now",
+    "alreadyRegistered": "Already registered?",
+    "goToDashboard": "Go to the dashboard"
   }
 }

@@ -207,11 +207,11 @@
   },
   "auth": {
     "loginTitle": "Accedi al tuo account",
-    "loginDescription": "Per gestire il tuo abbonamento e la tua rete",
+    "loginDescription": "Per gestire il tuo abbonamento e i tuoi strumenti",
     "invalidCredentials": "Email o password non corretti.",
     "blockedAccount": "Il tuo account è stato bloccato dall'amministratore. Contatta il supporto.",
     "loggingIn": "Accesso in corso...",
-    "noAccount": "Non hai un account? Registrati qui (solo su invito)",
+    "noAccount": "Non hai un account? Registrati qui",
     "email": "Email",
     "password": "Password",
     "login": "Accedi",
@@ -220,17 +220,17 @@
     "firstName": "Nome",
     "lastName": "Cognome",
     "country": "Paese",
-    "referralCode": "Codice Referral",
+    "referralCode": "Codice invito (facoltativo)",
     "createAccount": "Crea il tuo account",
     "selectCountry": "Seleziona il tuo paese",
     "passwordMinChars": "Password (min. 6 caratteri)",
-    "referralRequired": "La registrazione è possibile solo su invito di un membro esistente.",
+    "referralRequired": "Se un Kumano ti ha invitato, inserisci il suo codice: riceverà un ringraziamento. Altrimenti lascia vuoto.",
     "accountCreated": "Registrazione completata con successo! Verrai reindirizzato al login...",
-    "invalidReferral": "Codice referral non valido. Devi essere invitato da un membro esistente.",
+    "invalidReferral": "Codice invito non valido. Controllalo, oppure lascia il campo vuoto per iscriverti senza invito.",
     "emailAlreadyRegistered": "Questa email è già registrata. Prova ad accedere o usa un'altra email.",
     "errorCreatingUser": "Errore nella creazione dell'utente. Controlla la tua email per la conferma.",
     "errorCreatingProfile": "Errore durante la creazione del profilo. Contatta il supporto.",
-    "errorInMatrix": "Errore nel posizionamento in matrice.",
+    "errorInMatrix": "Errore durante l'attivazione dell'account. Riprova.",
     "creatingAccount": "Creazione account in corso...",
     "networkMarketingProgram": "Kumani",
     "forgotPassword": "Password dimenticata?",
@@ -259,7 +259,9 @@
     "accountActivated": "Account attivato con successo! Reindirizzamento in corso...",
     "backToForm": "Dati sbagliati? Torna indietro",
     "enterResetCode": "Inserisci il codice e la nuova password",
-    "resetCodeDescription": "Abbiamo inviato un'email a {email} con le istruzioni: clicca il link che contiene, oppure — se contiene un codice — inseriscilo qui sotto insieme alla nuova password."
+    "resetCodeDescription": "Abbiamo inviato un'email a {email} con le istruzioni: clicca il link che contiene, oppure — se contiene un codice — inseriscilo qui sotto insieme alla nuova password.",
+    "cityOptional": "Città (facoltativa)",
+    "directSignupUnavailable": "Al momento la registrazione è possibile solo con un codice invito. Chiedilo a chi ti ha parlato di KUMANI."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2137,5 +2139,16 @@
     "deleteCardText": "{count, plural, =0 {La tessera verrà eliminata definitivamente. L'operazione non è reversibile.} one {Verranno eliminati definitivamente la tessera, 1 cliente e tutti i suoi timbri: il cliente non vedrà più la sua tessera. L'operazione non è reversibile.} other {Verranno eliminati definitivamente la tessera, # clienti e tutti i loro timbri: i clienti non vedranno più le loro tessere. L'operazione non è reversibile.}}",
     "deleteCardConfirm": "Elimina definitivamente",
     "deleting": "Eliminazione..."
+  },
+  "referralLanding": {
+    "invalidTitle": "Codice non valido",
+    "invalidText": "Il codice invito \"{code}\" non esiste o non è attivo. Puoi comunque iscriverti anche senza invito.",
+    "registerWithoutInvite": "Iscriviti senza invito",
+    "title": "{name} ti invita su KUMANI",
+    "description": "Entra nella community KUMANI: strumenti pratici per il lavoro e la vita di tutti i giorni, a un prezzo onesto.",
+    "invitedBy": "Ti ha invitato:",
+    "registerNow": "Registrati ora",
+    "alreadyRegistered": "Già registrato?",
+    "goToDashboard": "Accedi alla dashboard"
   }
 }

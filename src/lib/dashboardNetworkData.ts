@@ -183,6 +183,11 @@ export async function getDashboardNetworkData(
   // nothing here. Same idempotent, self-verifying pattern.
   await supabase.rpc('claim_sponsor_overflow_bonus')
 
+  // "Ringraziamento attività": per chi si è iscritto senza invito ed è stato
+  // abbinato a questo Kumano attivo, quando paga davvero il primo
+  // abbonamento. Idempotente come i claim sopra.
+  await supabase.rpc('claim_activity_thanks')
+
   const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/${locale}/login`
 
   return {

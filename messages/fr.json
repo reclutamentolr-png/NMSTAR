@@ -222,11 +222,11 @@
   },
   "auth": {
     "loginTitle": "Connectez-vous à votre compte",
-    "loginDescription": "Gérez votre abonnement et votre réseau",
+    "loginDescription": "Pour gérer ton abonnement et tes outils",
     "invalidCredentials": "Email ou mot de passe incorrect.",
     "blockedAccount": "Votre compte a été bloqué. Contactez le support.",
     "loggingIn": "Connexion...",
-    "noAccount": "Pas encore de compte ? Inscrivez-vous ici (sur invitation)",
+    "noAccount": "Pas encore de compte ? Inscris-toi ici",
     "email": "Email",
     "password": "Mot de passe",
     "login": "Se connecter",
@@ -235,17 +235,17 @@
     "firstName": "Prénom",
     "lastName": "Nom",
     "country": "Pays",
-    "referralCode": "Code de parrainage",
+    "referralCode": "Code d'invitation (facultatif)",
     "createAccount": "Crée ton compte",
     "selectCountry": "Sélectionne ton pays",
     "passwordMinChars": "Mot de passe (min. 6 caractères)",
-    "referralRequired": "L'inscription n'est possible que sur invitation d'un membre existant.",
+    "referralRequired": "Si un Kumano t'a invité, saisis son code : il recevra un remerciement. Sinon, laisse vide.",
     "accountCreated": "Inscription réussie ! Tu vas être redirigé vers la connexion...",
-    "invalidReferral": "Code de parrainage invalide. Tu dois être invité par un membre existant.",
+    "invalidReferral": "Code d'invitation non valide. Vérifie-le, ou laisse le champ vide pour t'inscrire sans invitation.",
     "emailAlreadyRegistered": "Cette adresse email est déjà enregistrée. Essaie de te connecter ou utilise une autre adresse.",
     "errorCreatingUser": "Erreur lors de la création de l'utilisateur. Vérifie ton email pour la confirmation.",
     "errorCreatingProfile": "Erreur lors de la création du profil. Contacte le support.",
-    "errorInMatrix": "Erreur lors du placement dans la matrice.",
+    "errorInMatrix": "Erreur lors de l'activation du compte. Réessaie.",
     "creatingAccount": "Création du compte en cours...",
     "networkMarketingProgram": "Kumani",
     "forgotPassword": "Mot de passe oublié ?",
@@ -274,7 +274,9 @@
     "accountActivated": "Compte activé avec succès ! Redirection...",
     "backToForm": "Mauvaises informations ? Retour",
     "enterResetCode": "Saisissez le code et votre nouveau mot de passe",
-    "resetCodeDescription": "Nous avons envoyé un email à {email} avec les instructions : cliquez sur le lien qu'il contient, ou — s'il contient un code — saisissez-le ci-dessous avec votre nouveau mot de passe."
+    "resetCodeDescription": "Nous avons envoyé un email à {email} avec les instructions : cliquez sur le lien qu'il contient, ou — s'il contient un code — saisissez-le ci-dessous avec votre nouveau mot de passe.",
+    "cityOptional": "Ville (facultatif)",
+    "directSignupUnavailable": "Pour le moment, l'inscription n'est possible qu'avec un code d'invitation. Demande-le à la personne qui t'a parlé de KUMANI."
   },
   "dashboard": {
     "growthTool": "Votre outil de croissance",
@@ -2164,5 +2166,16 @@
     "deleteCardText": "{count, plural, =0 {La carte sera supprimée définitivement. Cette action est irréversible.} one {La carte, 1 client et tous ses tampons seront supprimés définitivement : le client ne verra plus sa carte. Cette action est irréversible.} other {La carte, # clients et tous leurs tampons seront supprimés définitivement : les clients ne verront plus leurs cartes. Cette action est irréversible.}}",
     "deleteCardConfirm": "Supprimer définitivement",
     "deleting": "Suppression..."
+  },
+  "referralLanding": {
+    "invalidTitle": "Code non valide",
+    "invalidText": "Le code d'invitation « {code} » n'existe pas ou n'est pas actif. Tu peux quand même t'inscrire sans invitation.",
+    "registerWithoutInvite": "S'inscrire sans invitation",
+    "title": "{name} t'invite sur KUMANI",
+    "description": "Rejoins la communauté KUMANI : des outils pratiques pour le travail et la vie de tous les jours, à un prix honnête.",
+    "invitedBy": "Invité par :",
+    "registerNow": "S'inscrire maintenant",
+    "alreadyRegistered": "Déjà inscrit ?",
+    "goToDashboard": "Accéder au tableau de bord"
   }
 }

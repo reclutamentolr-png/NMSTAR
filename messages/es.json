@@ -222,11 +222,11 @@
   },
   "auth": {
     "loginTitle": "Accede a tu cuenta",
-    "loginDescription": "Gestiona tu suscripción y tu red",
+    "loginDescription": "Para gestionar tu suscripción y tus herramientas",
     "invalidCredentials": "Correo o contraseña incorrectos.",
     "blockedAccount": "Tu cuenta ha sido bloqueada. Contacta con soporte.",
     "loggingIn": "Iniciando sesión...",
-    "noAccount": "¿No tienes cuenta? Regístrate aquí (solo por invitación)",
+    "noAccount": "¿No tienes cuenta? Regístrate aquí",
     "email": "Correo electrónico",
     "password": "Contraseña",
     "login": "Acceder",
@@ -235,17 +235,17 @@
     "firstName": "Nombre",
     "lastName": "Apellido",
     "country": "País",
-    "referralCode": "Código de referido",
+    "referralCode": "Código de invitación (opcional)",
     "createAccount": "Crea tu cuenta",
     "selectCountry": "Selecciona tu país",
     "passwordMinChars": "Contraseña (mín. 6 caracteres)",
-    "referralRequired": "El registro solo es posible por invitación de un miembro existente.",
+    "referralRequired": "Si un Kumano te ha invitado, introduce su código: recibirá un agradecimiento. Si no, déjalo vacío.",
     "accountCreated": "¡Registro completado con éxito! Serás redirigido al inicio de sesión...",
-    "invalidReferral": "Código de referido no válido. Debes ser invitado por un miembro existente.",
+    "invalidReferral": "Código de invitación no válido. Revísalo o deja el campo vacío para registrarte sin invitación.",
     "emailAlreadyRegistered": "Este correo ya está registrado. Intenta iniciar sesión o usa otro correo.",
     "errorCreatingUser": "Error al crear el usuario. Revisa tu correo para confirmar.",
     "errorCreatingProfile": "Error al crear el perfil. Contacta con soporte.",
-    "errorInMatrix": "Error al colocar en la matriz.",
+    "errorInMatrix": "Error al activar la cuenta. Inténtalo de nuevo.",
     "creatingAccount": "Creando cuenta...",
     "networkMarketingProgram": "Kumani",
     "forgotPassword": "¿Olvidaste tu contraseña?",
@@ -274,7 +274,9 @@
     "accountActivated": "¡Cuenta activada correctamente! Redirigiendo...",
     "backToForm": "¿Datos incorrectos? Volver atrás",
     "enterResetCode": "Introduce el código y tu nueva contraseña",
-    "resetCodeDescription": "Hemos enviado un email a {email} con las instrucciones: haz clic en el enlace que contiene, o —si contiene un código— introdúcelo a continuación junto con tu nueva contraseña."
+    "resetCodeDescription": "Hemos enviado un email a {email} con las instrucciones: haz clic en el enlace que contiene, o —si contiene un código— introdúcelo a continuación junto con tu nueva contraseña.",
+    "cityOptional": "Ciudad (opcional)",
+    "directSignupUnavailable": "Por ahora solo es posible registrarse con un código de invitación. Pídeselo a quien te habló de KUMANI."
   },
   "dashboard": {
     "growthTool": "Tu herramienta de crecimiento",
@@ -2164,5 +2166,16 @@
     "deleteCardText": "{count, plural, =0 {La tarjeta se eliminará definitivamente. La acción no se puede deshacer.} one {Se eliminarán definitivamente la tarjeta, 1 cliente y todos sus sellos: el cliente ya no verá su tarjeta. La acción no se puede deshacer.} other {Se eliminarán definitivamente la tarjeta, # clientes y todos sus sellos: los clientes ya no verán sus tarjetas. La acción no se puede deshacer.}}",
     "deleteCardConfirm": "Eliminar definitivamente",
     "deleting": "Eliminando..."
+  },
+  "referralLanding": {
+    "invalidTitle": "Código no válido",
+    "invalidText": "El código de invitación \"{code}\" no existe o no está activo. Aun así puedes registrarte sin invitación.",
+    "registerWithoutInvite": "Registrarse sin invitación",
+    "title": "{name} te invita a KUMANI",
+    "description": "Únete a la comunidad KUMANI: herramientas prácticas para el trabajo y el día a día, a un precio honesto.",
+    "invitedBy": "Te ha invitado:",
+    "registerNow": "Regístrate ahora",
+    "alreadyRegistered": "¿Ya estás registrado?",
+    "goToDashboard": "Ir al panel"
   }
 }
