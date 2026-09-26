@@ -5,21 +5,25 @@ import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { Sparkles, LoaderCircle } from 'lucide-react'
 import { featureListingAction } from '@/app/actions/listings'
+import { featureListingWithKu } from '@/app/actions/ku'
 
 export default function FeatureListingButton({
   listingId,
   cost7d,
   cost15d,
+  kuCosts,
 }: {
   listingId: string
   cost7d: number
   cost15d: number
+  // Vetrina pagabile anche in KU (Gestione KU → 1): null se non attiva.
+  kuCosts?: { cost7d: number; cost15d: number } | null
 }) {
   const t = useTranslations('marketplace')
   const locale = useLocale()
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [loadingDuration, setLoadingDuration] = useState<7 | 15 | null>(null)
+  const [loadingDuration, setLoadingDuration] = useState<7 | 15 | 'ku7' | 'ku15' | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const handleFeature = async (duration: 7 | 15) => {
@@ -41,6 +45,23 @@ export default function FeatureListingButton({
       type: 'success',
       text: t('featureSuccess', { date: new Date(result.featuredUntil).toLocaleDateString(locale) }),
     })
+    setOpen(false)
+    router.refresh()
+  }
+
+  const handleFeatureKu = async (duration: 7 | 15) => {
+    setLoadingDuration(duration === 7 ? 'ku7' : 'ku15')
+    setMessage(null)
+    const result = await featureListingWithKu(listingId, duration)
+    setLoadingDuration(null)
+    if (!result.success || !result.featuredUntil) {
+      setMessage({
+        type: 'error',
+        text: t(result.reason === 'insufficient_points' ? 'featureErrorInsufficientKu' : 'featureErrorGeneric'),
+      })
+      return
+    }
+    setMessage({ type: 'success', text: t('featureSuccess', { date: new Date(result.featuredUntil).toLocaleDateString(locale) }) })
     setOpen(false)
     router.refresh()
   }
@@ -79,6 +100,28 @@ export default function FeatureListingButton({
           {loadingDuration === 15 && <LoaderCircle className="w-3 h-3 animate-spin" />}
           {t('showcaseDays', { days: 15 })} · {cost15d} {t('networkPointsShort')}
         </button>
+        {kuCosts && (
+          <>
+            <button
+              type="button"
+              onClick={() => handleFeatureKu(7)}
+              disabled={loadingDuration !== null}
+              className="flex items-center gap-1 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-[var(--ink)] text-xs font-bold px-3 py-1.5 disabled:opacity-50"
+            >
+              {loadingDuration === 'ku7' && <LoaderCircle className="w-3 h-3 animate-spin" />}
+              {t('showcaseDays', { days: 7 })} · {kuCosts.cost7d} KU
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFeatureKu(15)}
+              disabled={loadingDuration !== null}
+              className="flex items-center gap-1 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-[var(--ink)] text-xs font-bold px-3 py-1.5 disabled:opacity-50"
+            >
+              {loadingDuration === 'ku15' && <LoaderCircle className="w-3 h-3 animate-spin" />}
+              {t('showcaseDays', { days: 15 })} · {kuCosts.cost15d} KU
+            </button>
+          </>
+        )}
         <button
           type="button"
           onClick={() => setOpen(false)}

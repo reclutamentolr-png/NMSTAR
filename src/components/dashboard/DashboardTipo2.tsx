@@ -13,6 +13,7 @@ import { RANKS } from '@/lib/ranks'
 import { Users, ArrowRight, Star, CheckCircle2 } from 'lucide-react'
 import CopyButton from '@/components/CopyButton'
 import VoucherActivationButton from '@/components/VoucherActivationButton'
+import KuBadge from '@/components/ku/KuBadge'
 
 // Tipo 2: the Marketplace-first layout. Tools are the main focus; the
 // network (KUMI, matrix, KUMANI lists, qualifications) is reduced to one
@@ -83,6 +84,9 @@ export default async function DashboardTipo2({
           <p className="text-xs text-[var(--muted)] font-medium mb-1.5">{t('pointsCardLabel')}</p>
           <span className="text-2xl font-bold text-[var(--ink)]">{profile?.daily_points || 0}</span>
           <span className="ml-1.5 text-sm font-semibold text-[var(--gold)]">{t('kuPointsLabel')}</span>
+          <div className="mt-1.5">
+            <KuBadge earnedTotal={profile?.ku_earned_total || 0} />
+          </div>
           <div className="mt-1.5">
             <InfoPopover label={t('howPointsWorkLabel')}>{t('howPointsWorkBody')}</InfoPopover>
           </div>

@@ -24,6 +24,8 @@ import { listMyVouchers } from '@/app/actions/vouchers'
 import WalletMembershipCard from '@/components/WalletMembershipCard'
 import WalletCouponsList from '@/components/WalletCouponsList'
 import WalletVoucherSection from '@/components/WalletVoucherSection'
+import KuRewardsSection from '@/components/ku/KuRewardsSection'
+import { loadKuWalletData } from '@/lib/ku-server'
 
 function WalletSection({
   icon,
@@ -70,6 +72,7 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
   if (!profile) redirect(`/${locale}/dashboard`)
 
   const directSponsored = await fetchDirectSponsored(supabase)
+  const kuWalletData = await loadKuWalletData(supabase, profile)
   const directActiveCount = directSponsored.filter(isActiveSubscription).length
   const currentRank = getCurrentRank(directActiveCount)
 
@@ -183,6 +186,14 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
                 )
               })}
             </div>
+            {/* Invito a condividere: incoraggia a raggiungere la qualifica successiva. */}
+            <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+              {directActiveCount >= RANKS[RANKS.length - 1].threshold
+                ? t('badgeEncourageTop')
+                : currentRank
+                  ? t('badgeEncourageNext')
+                  : t('badgeEncourageFirst')}
+            </p>
           </WalletSection>
         </div>
 
@@ -225,6 +236,8 @@ export default async function WalletPage({ params }: { params: Promise<{ locale:
 
         {/* Voucher abbonamento */}
         <WalletSection icon={<BadgeCheck className="h-5 w-5 text-[var(--gold)]" />} title={t('voucherTitle')}>
+          <KuRewardsSection data={kuWalletData} />
+
           <WalletVoucherSection initialPoints={profile.network_points || 0} initialVouchers={myVouchers} />
         </WalletSection>
 

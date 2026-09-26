@@ -55,6 +55,15 @@ export default async function ListingsPage({
   const featureCost7d = parseSetting('listing_feature_cost_7d', 20)
   const featureCost15d = parseSetting('listing_feature_cost_15d', 35)
 
+  // Vetrina pagabile anche in KU, se attivata in Gestione KU.
+  const { data: kuShowcase } = await supabase.from('ku_features').select('enabled, config').eq('key', 'showcase').maybeSingle()
+  const kuCosts = kuShowcase?.enabled
+    ? {
+        cost7d: Number((kuShowcase.config as { cost_7d?: number }).cost_7d ?? 0),
+        cost15d: Number((kuShowcase.config as { cost_15d?: number }).cost_15d ?? 0),
+      }
+    : null
+
   const allListings = await getActiveListings({
     category: (category as ListingCategory) || undefined,
     excludeFeatured: true
@@ -233,7 +242,7 @@ export default async function ListingsPage({
                       </div>
                     </div>
                     {!isExpired && !isFeatured && (
-                      <FeatureListingButton listingId={listing.id} cost7d={featureCost7d} cost15d={featureCost15d} />
+                      <FeatureListingButton listingId={listing.id} cost7d={featureCost7d} cost15d={featureCost15d} kuCosts={kuCosts} />
                     )}
                   </div>
                 )

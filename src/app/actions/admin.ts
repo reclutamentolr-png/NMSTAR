@@ -296,15 +296,19 @@ export async function creditDailyPoints(userId: string, amount: number) {
   const supabaseAdmin = getServiceClient()
   const { data: profile, error: fetchError } = await supabaseAdmin
     .from('profiles')
-    .select('daily_points')
+    .select('daily_points, ku_earned_total')
     .eq('id', userId)
     .single()
 
   if (fetchError || !profile) return { success: false, error: 'Utente non trovato.' }
 
+  // Conta anche per i badge di costanza (KU guadagnati in totale).
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({ daily_points: (profile.daily_points || 0) + amount })
+    .update({
+      daily_points: (profile.daily_points || 0) + amount,
+      ku_earned_total: (profile.ku_earned_total || 0) + amount,
+    })
     .eq('id', userId)
 
   if (error) return { success: false, error: error.message }
@@ -345,7 +349,7 @@ export async function createReward(input: {
   if (!admin) return { success: false, error: 'Non autorizzato' }
 
   if (!input.title.trim() || !input.pointsCost || input.pointsCost <= 0) {
-    return { success: false, error: 'Titolo e Punti Rete (> 0) sono obbligatori' }
+    return { success: false, error: 'Titolo e Punti Community (> 0) sono obbligatori' }
   }
 
   const supabaseAdmin = getServiceClient()
@@ -369,7 +373,7 @@ export async function updateReward(
   if (!admin) return { success: false, error: 'Non autorizzato' }
 
   if (!input.title.trim() || !input.pointsCost || input.pointsCost <= 0) {
-    return { success: false, error: 'Titolo e Punti Rete (> 0) sono obbligatori' }
+    return { success: false, error: 'Titolo e Punti Community (> 0) sono obbligatori' }
   }
 
   const supabaseAdmin = getServiceClient()
@@ -793,4 +797,251 @@ export async function createHouseAccount(email: string) {
   if (settingError) return { success: false, error: settingError.message }
 
   return { success: true }
+}
+
+// ============================================================
+// Gestione KU
+// ============================================================
+
+// Inizio del mese corrente in ora italiana, come ISO (per le statistiche).
+const romeMonthStartIso = () => {
+  const now = new Date()
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit' })
+      .formatToParts(now)
+      .map((part) => [part.type, part.value])
+  )
+  // Mezzanotte del giorno 1 a Roma: +01:00 o +02:00 a seconda dell'ora legale.
+  const probe = new Date(`${parts.year}-${parts.month}-01T12:00:00Z`)
+  const romeHour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', hourCycle: 'h23' }).format(probe))
+  const offset = romeHour - 12
+  return new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, 1, -offset)).toISOString()
+}
+
+export async function getKuManagement() {
+  const admin = await verifyAdmin('settings.read')
+  if (!admin) return { features: [], unlocks: [], stats: null, error: 'Non autorizzato' }
+
+  const service = getServiceClient()
+  const monthStart = romeMonthStartIso()
+  const [{ data: features, error }, { data: unlocks }, { data: monthTx }, { data: purchases }] = await Promise.all([
+    service.from('ku_features').select('key, enabled, config, updated_at').order('key'),
+    service.from('ku_unlocks').select('key, tool, cost_ku, enabled').order('key'),
+    service.from('ku_transactions').select('kind, ku_amount, details').gte('created_at', monthStart).limit(20000),
+    service.from('ku_unlock_purchases').select('unlock_key'),
+  ])
+  if (error) return { features: [], unlocks: [], stats: null, error: error.message }
+
+  const byKind: Record<string, { count: number; ku: number; points: number; discountEur: number }> = {}
+  for (const tx of monthTx || []) {
+    const entry = (byKind[tx.kind] ||= { count: 0, ku: 0, points: 0, discountEur: 0 })
+    const details = (tx.details || {}) as { points?: number; status?: string; discount_eur?: number }
+    if (tx.kind === 'renewal_discount' && details.status === 'failed') continue
+    entry.count += 1
+    entry.ku += tx.ku_amount
+    entry.points += Number(details.points || 0)
+    entry.discountEur += Number(details.discount_eur || 0)
+  }
+  const unlockOwners: Record<string, number> = {}
+  for (const row of purchases || []) unlockOwners[row.unlock_key] = (unlockOwners[row.unlock_key] || 0) + 1
+
+  return { features: features || [], unlocks: unlocks || [], stats: { byKind, unlockOwners, monthStart }, error: null }
+}
+
+type KuConfigInput = Record<string, unknown>
+
+const int = (value: unknown, min: number, max: number) => {
+  const n = Math.round(Number(value))
+  return Number.isFinite(n) && n >= min && n <= max ? n : null
+}
+
+// Valida e normalizza le impostazioni di ogni metodo prima di salvarle.
+function normalizeKuConfig(key: string, config: KuConfigInput): Record<string, unknown> | null {
+  switch (key) {
+    case 'showcase': {
+      const cost7 = int(config.cost_7d, 1, 100000)
+      const cost15 = int(config.cost_15d, 1, 100000)
+      return cost7 && cost15 ? { cost_7d: cost7, cost_15d: cost15 } : null
+    }
+    case 'unlocks':
+      return {}
+    case 'badges': {
+      const levels = Array.isArray(config.levels) ? config.levels : []
+      const clean = levels
+        .map((level: { key?: unknown; threshold?: unknown }) => ({
+          key: String(level.key || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 30),
+          threshold: int(level.threshold, 1, 10000000),
+        }))
+        .filter((level): level is { key: string; threshold: number } => !!level.key && level.threshold !== null)
+      return clean.length ? { levels: clean.sort((a, b) => a.threshold - b.threshold) } : null
+    }
+    case 'renewal_discount': {
+      const cost = int(config.cost_ku, 1, 1000000)
+      const discount = int(config.discount_eur, 1, 48)
+      const perYear = int(config.max_per_year, 1, 12)
+      return cost && discount && perYear ? { cost_ku: cost, discount_eur: discount, max_per_year: perYear } : null
+    }
+    case 'donation': {
+      const perEuro = int(config.ku_per_euro, 1, 100000)
+      const budget = int(config.monthly_budget_eur, 0, 1000000)
+      const min = int(config.min_ku, 1, 100000)
+      if (!perEuro || budget === null || !min) return null
+      return {
+        association: String(config.association || '').trim().slice(0, 120),
+        description: String(config.description || '').trim().slice(0, 500),
+        ku_per_euro: perEuro,
+        monthly_budget_eur: budget,
+        min_ku: min,
+      }
+    }
+    case 'conversion': {
+      const perPoint = int(config.ku_per_point, 1, 100000)
+      const max = int(config.max_points_per_month, 1, 1000)
+      return perPoint && max ? { ku_per_point: perPoint, max_points_per_month: max } : null
+    }
+    default:
+      return null
+  }
+}
+
+export async function updateKuFeature(key: string, enabled: boolean, config: KuConfigInput) {
+  const admin = await verifyAdmin('settings.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const clean = normalizeKuConfig(key, config)
+  if (!clean) return { success: false, error: 'Impostazioni non valide: controlla i valori.' }
+  if (key === 'donation' && enabled && !String(clean.association || '')) {
+    return { success: false, error: "Indica l'associazione prima di attivare la donazione." }
+  }
+
+  const { error } = await getServiceClient()
+    .from('ku_features')
+    .update({ enabled: !!enabled, config: clean, updated_at: new Date().toISOString() })
+    .eq('key', key)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function updateKuUnlock(key: string, costKu: number, enabled: boolean) {
+  const admin = await verifyAdmin('settings.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+  const cost = int(costKu, 1, 1000000)
+  if (!cost) return { success: false, error: 'Costo non valido.' }
+  const { error } = await getServiceClient().from('ku_unlocks').update({ cost_ku: cost, enabled: !!enabled }).eq('key', key)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+// Foto di un premio del Catalogo: caricata dal server (service role) nel
+// bucket pubblico reward-images, dopo il controllo admin. Il browser la
+// ridimensiona prima dell'invio (vedi AdminDashboard), qui si ricontrollano
+// tipo e peso. Restituisce l'URL pubblico da salvare in image_url.
+export async function uploadRewardImage(formData: FormData): Promise<{ success: true; url: string } | { success: false; error: string }> {
+  const admin = await verifyAdmin('rewards.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File)) return { success: false, error: 'Nessun file ricevuto.' }
+  const allowed: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+  const ext = allowed[file.type]
+  if (!ext) return { success: false, error: 'Formato non supportato: usa JPG, PNG o WEBP.' }
+  if (file.size > 2 * 1024 * 1024) return { success: false, error: "Immagine troppo grande (massimo 2 MB)." }
+
+  const path = `rewards/${randomBytes(12).toString('hex')}.${ext}`
+  const service = getServiceClient()
+  const { error } = await service.storage
+    .from('reward-images')
+    .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false })
+  if (error) return { success: false, error: error.message }
+
+  return { success: true, url: service.storage.from('reward-images').getPublicUrl(path).data.publicUrl }
+}
+
+// ============================================================
+// Coupon per negozianti: lotti di voucher abbonamento
+// ============================================================
+
+export async function createVoucherBatch(input: {
+  businessName: string
+  quantity: number
+  priceEur: number | null
+  invoiceRef: string
+  notes: string
+}): Promise<{ success: true; batchId: string } | { success: false; error: string }> {
+  const admin = await verifyAdmin('vouchers.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+
+  const businessName = input.businessName.trim().slice(0, 120)
+  const quantity = Math.round(Number(input.quantity))
+  const price = input.priceEur === null || Number.isNaN(Number(input.priceEur)) ? null : Math.round(Number(input.priceEur) * 100) / 100
+  if (!businessName) return { success: false, error: "Indica il nome dell'attività." }
+  if (!(quantity >= 1 && quantity <= 500)) return { success: false, error: 'Quantità tra 1 e 500.' }
+  if (price !== null && price < 0) return { success: false, error: 'Prezzo non valido.' }
+
+  const service = getServiceClient()
+  const { data: batch, error } = await service
+    .from('voucher_batches')
+    .insert({
+      business_name: businessName,
+      quantity,
+      price_eur: price,
+      invoice_ref: input.invoiceRef.trim().slice(0, 80) || null,
+      notes: input.notes.trim().slice(0, 500) || null,
+      created_by: admin.id,
+    })
+    .select('id')
+    .single()
+  if (error || !batch) return { success: false, error: error?.message || 'Errore nella creazione del lotto.' }
+
+  // Codici generati tutti insieme; in caso (rarissimo) di codice già
+  // esistente si rigenerano solo quelli in conflitto.
+  let remaining = quantity
+  for (let attempt = 0; attempt < 5 && remaining > 0; attempt++) {
+    const rows = Array.from({ length: remaining }, () => ({
+      code: 'KVA-' + generateSecureVoucherCode(),
+      created_by: admin.id,
+      status: 'active',
+      batch_id: batch.id,
+    }))
+    const { error: insertError } = await service.from('subscription_vouchers').insert(rows)
+    if (!insertError) {
+      remaining = 0
+      break
+    }
+    if (insertError.code !== '23505') return { success: false, error: insertError.message }
+    const { count } = await service.from('subscription_vouchers').select('id', { count: 'exact', head: true }).eq('batch_id', batch.id)
+    remaining = quantity - (count ?? 0)
+  }
+  if (remaining > 0) return { success: false, error: 'Impossibile generare tutti i codici. Riprova.' }
+
+  return { success: true, batchId: batch.id }
+}
+
+export async function listVoucherBatches() {
+  const admin = await verifyAdmin('vouchers.read')
+  if (!admin) return { batches: [], error: 'Non autorizzato' }
+
+  const service = getServiceClient()
+  const [{ data: batches, error }, { data: codes }] = await Promise.all([
+    service.from('voucher_batches').select('id, business_name, quantity, price_eur, invoice_ref, notes, created_at').order('created_at', { ascending: false }),
+    service.from('subscription_vouchers').select('batch_id, status').not('batch_id', 'is', null),
+  ])
+  if (error) return { batches: [], error: error.message }
+
+  const used: Record<string, number> = {}
+  for (const row of codes || []) if (row.status === 'redeemed') used[row.batch_id] = (used[row.batch_id] || 0) + 1
+  return { batches: (batches || []).map((b) => ({ ...b, redeemed: used[b.id] || 0 })), error: null }
+}
+
+// Codici di un lotto (per CSV e cartoncini stampabili).
+export async function getVoucherBatchCodes(batchId: string) {
+  const admin = await verifyAdmin('vouchers.read')
+  if (!admin) return { batch: null, codes: [] as { code: string; status: string; redeemed_at: string | null }[] }
+
+  const service = getServiceClient()
+  const [{ data: batch }, { data: codes }] = await Promise.all([
+    service.from('voucher_batches').select('id, business_name, quantity, price_eur, invoice_ref, created_at').eq('id', batchId).maybeSingle(),
+    service.from('subscription_vouchers').select('code, status, redeemed_at').eq('batch_id', batchId).order('created_at'),
+  ])
+  return { batch, codes: codes || [] }
 }

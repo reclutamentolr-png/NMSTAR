@@ -5,8 +5,10 @@ import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { saveLinkInBio } from '@/app/actions/linkInBio'
 import { normalizeLinkUrl, displayLinkValue } from '@/lib/linkUtils'
-import { BIO_THEMES, ALL_BIO_THEME_KEYS, DEFAULT_BIO_THEME, resolveBioTheme, type BioThemeKey } from '@/lib/linkInBioThemes'
-import { Plus, Trash2, Save, Link as LinkIcon, Check, ExternalLink, Globe, Mail, Phone, MessageCircle } from 'lucide-react'
+import { BIO_THEMES, ALL_BIO_THEME_KEYS, DEFAULT_BIO_THEME, PREMIUM_BIO_THEME_KEYS, resolveBioTheme, type BioThemeKey } from '@/lib/linkInBioThemes'
+import { KU_UNLOCK_LINKINBIO_THEMES } from '@/lib/ku'
+import Link from '@/components/LocalizedLink'
+import { Plus, Trash2, Save, Link as LinkIcon, Check, ExternalLink, Globe, Mail, Phone, MessageCircle, Lock } from 'lucide-react'
 
 type LinkItem = {
   id: string
@@ -39,6 +41,10 @@ export default function LinkInBioEditor({ userId, firstName, lastName }: { userI
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
+  // Temi speciali (sblocco KU): 'owned' = già sbloccati, 'available' =
+  // acquistabili nel Portafoglio, 'hidden' = sblocco non attivo.
+  const [premiumState, setPremiumState] = useState<'owned' | 'available' | 'hidden'>('hidden')
+  const [premiumHint, setPremiumHint] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,6 +53,13 @@ export default function LinkInBioEditor({ userId, firstName, lastName }: { userI
         .select('bio_text, links, theme')
         .eq('user_id', userId)
         .single()
+
+      const [{ data: purchase }, { data: feature }, { data: unlock }] = await Promise.all([
+        supabase.from('ku_unlock_purchases').select('unlock_key').eq('unlock_key', KU_UNLOCK_LINKINBIO_THEMES).maybeSingle(),
+        supabase.from('ku_features').select('enabled').eq('key', 'unlocks').maybeSingle(),
+        supabase.from('ku_unlocks').select('enabled').eq('key', KU_UNLOCK_LINKINBIO_THEMES).maybeSingle(),
+      ])
+      setPremiumState(purchase ? 'owned' : feature?.enabled && unlock?.enabled ? 'available' : 'hidden')
 
       if (data) {
         setBioText(data.bio_text || '')
@@ -130,21 +143,33 @@ export default function LinkInBioEditor({ userId, firstName, lastName }: { userI
             {ALL_BIO_THEME_KEYS.map((key) => {
               const style = BIO_THEMES[key]
               const selected = theme === key
+              const premium = PREMIUM_BIO_THEME_KEYS.includes(key)
+              if (premium && premiumState === 'hidden' && !selected) return null
+              const locked = premium && premiumState !== 'owned'
               return (
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setTheme(key)}
+                  onClick={() => (locked ? setPremiumHint(true) : setTheme(key))}
                   title={style.label}
-                  className={`relative w-9 h-9 rounded-full ${style.swatchClass} transition-transform hover:scale-110 ${selected ? 'ring-2 ring-offset-2 ring-[var(--gold)]' : ''}`}
+                  className={`relative w-9 h-9 rounded-full ${style.swatchClass} transition-transform hover:scale-110 ${selected ? 'ring-2 ring-offset-2 ring-[var(--gold)]' : ''} ${locked ? 'opacity-60' : ''}`}
                 >
                   {selected && (
                     <Check className={`w-4 h-4 absolute inset-0 m-auto ${key === 'bianco' || key === 'giallo' ? 'text-gray-900' : 'text-white'}`} />
                   )}
+                  {locked && <Lock className="w-3.5 h-3.5 absolute inset-0 m-auto text-white" />}
                 </button>
               )
             })}
           </div>
+          {premiumHint && (
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              {t('premiumThemesHint')}{' '}
+              <Link href="/wallet" className="font-semibold text-[var(--gold)] hover:text-[var(--ink)]">
+                {t('premiumThemesCta')}
+              </Link>
+            </p>
+          )}
         </div>
 
         {/* Links Manager */}

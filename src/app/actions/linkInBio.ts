@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { awardToolPoint } from '@/lib/toolPoints'
 import { normalizeLinkUrl } from '@/lib/linkUtils'
-import type { BioThemeKey } from '@/lib/linkInBioThemes'
+import { PREMIUM_BIO_THEME_KEYS, type BioThemeKey } from '@/lib/linkInBioThemes'
+import { KU_UNLOCK_LINKINBIO_THEMES } from '@/lib/ku'
 
 type LinkItem = {
   id: string
@@ -19,6 +20,16 @@ export async function saveLinkInBio(bioText: string, links: LinkItem[], theme: B
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { success: false }
+
+  if (PREMIUM_BIO_THEME_KEYS.includes(theme)) {
+    const { data: unlock } = await supabase
+      .from('ku_unlock_purchases')
+      .select('unlock_key')
+      .eq('user_id', user.id)
+      .eq('unlock_key', KU_UNLOCK_LINKINBIO_THEMES)
+      .maybeSingle()
+    if (!unlock) return { success: false, locked: true }
+  }
 
   const cleanLinks = links
     .filter((l) => l.title && l.url)

@@ -16,6 +16,11 @@ export type BioThemeKey =
   | 'blu'
   | 'viola'
   | 'grigio'
+  // Temi speciali: sbloccabili con i KU (Gestione KU → sblocco
+  // "linkinbio_premium_themes").
+  | 'aurora'
+  | 'notte'
+  | 'tramonto'
 
 export interface BioThemeStyle {
   key: BioThemeKey
@@ -35,6 +40,54 @@ export interface BioThemeStyle {
 }
 
 export const BIO_THEMES: Record<BioThemeKey, BioThemeStyle> = {
+  aurora: {
+    key: 'aurora',
+    label: 'Aurora',
+    swatchClass: 'bg-gradient-to-br from-emerald-400 via-cyan-500 to-violet-600',
+    pageBg: 'bg-gradient-to-br from-emerald-400 via-cyan-600 to-violet-700',
+    cardBg: 'bg-white/10 backdrop-blur-xl border border-white/25',
+    avatarBg: 'bg-white',
+    avatarText: 'text-cyan-700',
+    nameText: 'text-white',
+    secondaryText: 'text-white/80',
+    linkBg: 'bg-white/90 hover:bg-white border border-white/50',
+    linkText: 'text-gray-900',
+    linkIconBg: 'bg-gradient-to-br from-emerald-400 to-violet-600',
+    linkIconText: 'text-white',
+    footerText: 'text-white/60',
+  },
+  notte: {
+    key: 'notte',
+    label: 'Notte dorata',
+    swatchClass: 'bg-gradient-to-br from-slate-950 via-slate-800 to-amber-500',
+    pageBg: 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800',
+    cardBg: 'bg-slate-900/70 backdrop-blur-xl border border-amber-400/40',
+    avatarBg: 'bg-gradient-to-br from-amber-300 to-amber-600',
+    avatarText: 'text-slate-950',
+    nameText: 'text-amber-200',
+    secondaryText: 'text-slate-300',
+    linkBg: 'bg-slate-800 hover:bg-slate-700 border border-amber-400/40',
+    linkText: 'text-amber-100',
+    linkIconBg: 'bg-gradient-to-br from-amber-300 to-amber-600',
+    linkIconText: 'text-slate-950',
+    footerText: 'text-slate-500',
+  },
+  tramonto: {
+    key: 'tramonto',
+    label: 'Tramonto',
+    swatchClass: 'bg-gradient-to-br from-amber-400 via-rose-500 to-indigo-700',
+    pageBg: 'bg-gradient-to-b from-amber-400 via-rose-500 to-indigo-800',
+    cardBg: 'bg-white/10 backdrop-blur-xl border border-white/25',
+    avatarBg: 'bg-white',
+    avatarText: 'text-rose-600',
+    nameText: 'text-white',
+    secondaryText: 'text-white/80',
+    linkBg: 'bg-white/90 hover:bg-white border border-white/50',
+    linkText: 'text-gray-900',
+    linkIconBg: 'bg-gradient-to-br from-amber-400 to-indigo-700',
+    linkIconText: 'text-white',
+    footerText: 'text-white/60',
+  },
   nero: {
     key: 'nero',
     label: 'Nero',
@@ -232,7 +285,11 @@ export const BIO_THEMES: Record<BioThemeKey, BioThemeStyle> = {
 export const ALL_BIO_THEME_KEYS: BioThemeKey[] = [
   'nero', 'bianco', 'oro', 'rosso', 'rosa', 'arancione',
   'giallo', 'verde', 'azzurro', 'blu', 'viola', 'grigio',
+  'aurora', 'notte', 'tramonto',
 ]
+
+// Richiedono lo sblocco KU "linkinbio_premium_themes" per essere scelti.
+export const PREMIUM_BIO_THEME_KEYS: BioThemeKey[] = ['aurora', 'notte', 'tramonto']
 
 // 'gradient-1' is the DB column's old, unused default from before this
 // palette existed — never written by any real UI, so any row still on it

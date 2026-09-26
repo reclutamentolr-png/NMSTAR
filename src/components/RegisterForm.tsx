@@ -23,6 +23,8 @@ export default function RegisterForm() {
 
   // ✅ Legge sia 'sponsor' che 'ref' dall'URL
   const initialReferralCode = searchParams.get('sponsor') || searchParams.get('ref') || ''
+  // Coupon di attivazione (es. dal QR del cartoncino di un negozio).
+  const initialVoucherCode = (searchParams.get('voucher') || '').toUpperCase()
   // Un utente che ha lasciato la verifica a metà e poi ha provato ad
   // accedere viene rimandato qui con ?verify=<email> (vedi login/page.tsx)
   // per riprendere direttamente dall'inserimento del codice.
@@ -36,7 +38,10 @@ export default function RegisterForm() {
     country_code: '',
     city: '',
     referral_code: initialReferralCode,
+    voucher_code: initialVoucherCode,
   })
+  // Esito dell'attivazione del coupon, mostrato nella schermata finale.
+  const [voucherOutcome, setVoucherOutcome] = useState<{ ok: boolean; text: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<Step>(resumeEmail ? 'verify' : 'form')
@@ -71,6 +76,14 @@ export default function RegisterForm() {
         }
       }
 
+      // 1b. Coupon di attivazione facoltativo: verificato subito (solo
+      // "valido/non valido"), attivato davvero a registrazione completata.
+      const cleanVoucherCode = formData.voucher_code.trim().toUpperCase()
+      if (cleanVoucherCode) {
+        const { data: voucherValid } = await supabase.rpc('voucher_code_is_valid', { p_code: cleanVoucherCode })
+        if (!voucherValid) throw new Error(t('invalidVoucher'))
+      }
+
       // 2. Registra l'utente in Supabase Auth — non ancora confermato: Supabase
       // invia un'email con un codice di verifica (OTP). Il profilo e il nodo
       // matrice vengono creati SOLO dopo che il codice viene verificato più
@@ -89,6 +102,7 @@ export default function RegisterForm() {
             country_code: formData.country_code,
             city: formData.city.trim(),
             referral_code: cleanReferralCode,
+            voucher_code: cleanVoucherCode,
           }
         }
       })
@@ -137,6 +151,7 @@ export default function RegisterForm() {
       country_code?: string
       city?: string
       referral_code?: string
+      voucher_code?: string
     }
 
     try {
@@ -158,10 +173,27 @@ export default function RegisterForm() {
         )
       }
 
+      // Coupon: attivazione usa e getta (garantita da redeem_subscription_voucher).
+      // Se non va a buon fine l'account resta creato: il codice si può
+      // riprovare dalla dashboard con "Attiva tramite Voucher".
+      const voucherCode = (meta.voucher_code ?? formData.voucher_code).trim().toUpperCase()
+      let delay = 2000
+      if (voucherCode) {
+        const { data: redeem } = await supabase
+          .rpc('redeem_subscription_voucher', { p_code: voucherCode })
+          .maybeSingle<{ success: boolean; reason: string | null; new_expires_at: string | null }>()
+        setVoucherOutcome(
+          redeem?.success && redeem.new_expires_at
+            ? { ok: true, text: t('voucherActivated', { date: new Date(redeem.new_expires_at).toLocaleDateString(locale) }) }
+            : { ok: false, text: t('voucherNotActivated') }
+        )
+        delay = 4500
+      }
+
       setStep('done')
       setTimeout(() => {
         router.push(`/${locale}/dashboard`)
-      }, 2000)
+      }, delay)
     } catch (err: any) {
       setError(err.message || t('errorCreatingUser'))
     } finally {
@@ -293,6 +325,21 @@ export default function RegisterForm() {
             <p className="text-xs text-gray-500 mt-1">{t('referralRequired')}</p>
           </div>
 
+          <div>
+            <label htmlFor="voucher_code" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('voucherCodeLabel')}
+            </label>
+            <input
+              id="voucher_code"
+              type="text"
+              value={formData.voucher_code}
+              onChange={(e) => setFormData({ ...formData, voucher_code: e.target.value.toUpperCase() })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono tracking-wider"
+              placeholder="KVA-..."
+            />
+            <p className="text-xs text-gray-500 mt-1">{t('voucherCodeHint')}</p>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -382,6 +429,9 @@ export default function RegisterForm() {
             <CheckCircle className="w-6 h-6 text-green-600" />
           </div>
           <p className="text-green-700 font-medium">{t('accountActivated')}</p>
+          {voucherOutcome && (
+            <p className={`mt-3 text-sm font-medium ${voucherOutcome.ok ? 'text-green-700' : 'text-amber-700'}`}>{voucherOutcome.text}</p>
+          )}
         </div>
       )}
     </>

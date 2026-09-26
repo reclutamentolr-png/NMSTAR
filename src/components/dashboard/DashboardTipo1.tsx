@@ -26,6 +26,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import type { DashboardNetworkData } from '@/lib/dashboardNetworkData'
+import KuBadge from '@/components/ku/KuBadge'
 
 // The historic single-page dashboard: everything (tools shortcuts, referral
 // code, KUMI, matrix, KUMANI lists, qualifications) in one scroll. Kept
@@ -182,6 +183,9 @@ export default async function DashboardTipo1({
               <span className="text-3xl font-bold text-yellow-600">{profile?.daily_points || 0}</span>
               <span className="ml-1.5 text-sm font-semibold text-yellow-700">{t('kuPointsLabel')}</span>
             </span>
+          </div>
+          <div className="mb-3">
+            <KuBadge earnedTotal={profile?.ku_earned_total || 0} />
           </div>
           <div className="mb-3">
             <div className="flex justify-between text-xs text-gray-600 mb-1.5">

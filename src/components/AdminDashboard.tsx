@@ -24,6 +24,10 @@ import {
   getAdminFinancialSummary,
   listListingReports,
   adminListUsers,
+  createVoucherBatch,
+  listVoucherBatches,
+  getVoucherBatchCodes,
+  uploadRewardImage,
   getHouseAccount,
   createHouseAccount,
   adminGetProfile,
@@ -42,9 +46,11 @@ import {
 import type { LocalizedText, MessageType } from '@/lib/adminMessages'
 import { DASHBOARD_LAYOUTS, DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboardLayouts'
 import { SPOTLIGHT_HOME_MIN_POOL } from '@/lib/spotlight'
+import KuManagementPanel from '@/components/admin/KuManagementPanel'
 import {
   LayoutDashboard,
   Star,
+  Coins,
   Users,
   GitBranch,
   ShoppingBag,
@@ -157,6 +163,11 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   const [editingRewardId, setEditingRewardId] = useState<string | null>(null)
   const [savingReward, setSavingReward] = useState(false)
   const [rewardError, setRewardError] = useState<string | null>(null)
+  const [uploadingRewardImage, setUploadingRewardImage] = useState(false)
+  const [voucherBatches, setVoucherBatches] = useState<any[]>([])
+  const [batchForm, setBatchForm] = useState({ businessName: '', quantity: '10', priceEur: '400', invoiceRef: '', notes: '' })
+  const [creatingBatch, setCreatingBatch] = useState(false)
+  const [couponArea, setCouponArea] = useState<'merchant' | 'community'>('merchant')
   const [fulfillCodeInputs, setFulfillCodeInputs] = useState<Record<string, string>>({})
   const [fulfillingId, setFulfillingId] = useState<string | null>(null)
 
@@ -326,8 +337,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
       .limit(500)
     setCouponUsers(usersData || [])
 
-    const result = await listCoupons()
+    const [result, batchResult] = await Promise.all([listCoupons(), listVoucherBatches()])
     setCoupons(result.coupons)
+    setVoucherBatches(batchResult.batches)
     setLoadingCoupons(false)
   }
 
@@ -369,6 +381,41 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     setVouchers(voucherResult.vouchers)
     setVoucherUsers(usersResult.users)
     setLoadingVouchers(false)
+  }
+
+  const handleCreateBatch = async () => {
+    const quantity = parseInt(batchForm.quantity, 10) || 0
+    if (!confirm(`Generare ${quantity} coupon di attivazione per "${batchForm.businessName}"?`)) return
+    setCreatingBatch(true)
+    const result = await createVoucherBatch({
+      businessName: batchForm.businessName,
+      quantity,
+      priceEur: batchForm.priceEur.trim() === '' ? null : Number(batchForm.priceEur.replace(',', '.')),
+      invoiceRef: batchForm.invoiceRef,
+      notes: batchForm.notes,
+    })
+    setCreatingBatch(false)
+    if (!result.success) {
+      alert('❌ ' + result.error)
+      return
+    }
+    setBatchForm({ businessName: '', quantity: '10', priceEur: '400', invoiceRef: '', notes: '' })
+    const { batches } = await listVoucherBatches()
+    setVoucherBatches(batches)
+    window.open(`/${locale}/admin/voucher-batch/${result.batchId}`, '_blank')
+  }
+
+  // CSV dei codici di un lotto (codice, stato, data di utilizzo).
+  const downloadBatchCsv = async (batch: any) => {
+    const { codes } = await getVoucherBatchCodes(batch.id)
+    const rows = [['codice', 'stato', 'usato_il'], ...codes.map((c) => [c.code, c.status === 'redeemed' ? 'usato' : c.status === 'revoked' ? 'revocato' : 'disponibile', c.redeemed_at ? new Date(c.redeemed_at).toLocaleDateString('it-IT') : ''])]
+    const csv = rows.map((r) => r.join(';')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `coupon-${batch.business_name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleGenerateAdminVoucher = async () => {
@@ -513,7 +560,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     setRewardError(null)
     const pointsCost = parseInt(rewardForm.pointsCost, 10)
     if (!rewardForm.title.trim() || !pointsCost || pointsCost <= 0) {
-      setRewardError('Titolo e Punti Rete (> 0) sono obbligatori.')
+      setRewardError('Titolo e Punti Community (> 0) sono obbligatori.')
       return
     }
     setSavingReward(true)
@@ -578,6 +625,34 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
       alert('Errore durante l\'aggiornamento')
     }
     setSavingTool(null)
+  }
+
+  // Ridimensiona la foto nel browser (lato lungo max 1200 px, JPEG) prima
+  // dell'invio: resta sotto il limite di 1 MB delle server action e le
+  // pagine del Catalogo si caricano in fretta.
+  const handleRewardImageFile = async (file: File | undefined) => {
+    if (!file) return
+    setRewardError(null)
+    setUploadingRewardImage(true)
+    try {
+      const bitmap = await createImageBitmap(file)
+      const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(bitmap.width * scale)
+      canvas.height = Math.round(bitmap.height * scale)
+      canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+      if (!blob) throw new Error('Impossibile elaborare la foto.')
+      const formData = new FormData()
+      formData.append('file', new File([blob], 'premio.jpg', { type: 'image/jpeg' }))
+      const result = await uploadRewardImage(formData)
+      if (result.success) setRewardForm((prev) => ({ ...prev, imageUrl: result.url }))
+      else setRewardError(result.error)
+    } catch (err: any) {
+      setRewardError(err?.message || 'Caricamento della foto non riuscito.')
+    } finally {
+      setUploadingRewardImage(false)
+    }
   }
 
   const loadHouseAccount = async () => {
@@ -788,7 +863,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
 
     // subscription_source traccia CHI ha attivato l'abbonamento (stripe /
     // voucher / admin): claim_rank_bonus conta solo i downline attivati via
-    // Stripe per i Punti Rete, quindi un'attivazione manuale da qui non deve
+    // Stripe per i Punti Community, quindi un'attivazione manuale da qui non deve
     // mai valere come pagamento reale. Lo tocchiamo solo quando lo stato
     // sta effettivamente cambiando — se era già "active" (es. pagamento
     // Stripe reale) e l'admin salva il form per un altro motivo, non
@@ -855,6 +930,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   { id: 'coupons', label: 'Coupon', Icon: Ticket, permission: 'coupons.read' as Permission },
   { id: 'vouchers', label: 'Voucher', Icon: BadgeCheck, permission: 'vouchers.read' as Permission },
   { id: 'rewards', label: 'Premi', Icon: Gift, permission: 'rewards.read' as Permission },
+  { id: 'kuManagement', label: 'Gestione KU', Icon: Coins, permission: 'settings.read' as Permission },
   { id: 'messages', label: 'Messaggi', Icon: MessageSquare, permission: 'messages.read' as Permission },
   { id: 'financials', label: 'Amministrazione', Icon: PiggyBank, permission: 'stats.read' as Permission },
   { id: 'settings', label: 'Impostazioni', Icon: Settings, permission: 'settings.read' as Permission },
@@ -1302,7 +1378,143 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     )
   }
 
-  const renderCoupons = () => {
+  // Area "Coupon per negozianti": lotti di codici di attivazione venduti a
+  // un'attività (vedi createVoucherBatch). Sta nella voce Coupon, separata
+  // dai coupon assegnati ai singoli utenti della community.
+  const renderMerchantCoupons = () => (
+    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+      <div>
+        <h3 className="font-bold text-gray-900">Coupon per negozianti</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Genera un lotto di codici di attivazione da vendere a un&apos;attività (es. 10 coupon a 400 €), che li regala ai
+          propri clienti. Ogni codice attiva 1 anno di abbonamento, vale una sola volta e si può inserire già in
+          registrazione: il QR stampato sul cartoncino apre la registrazione con il codice compilato. Gli abbonamenti
+          attivati con coupon non si rinnovano da soli e non generano Punti Community a chi invita.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <input
+          placeholder="Nome attività *"
+          value={batchForm.businessName}
+          onChange={(e) => setBatchForm({ ...batchForm, businessName: e.target.value })}
+          className="p-2.5 border border-gray-300 rounded-lg text-sm lg:col-span-2"
+        />
+        <input
+          type="number"
+          min={1}
+          max={500}
+          placeholder="Quantità"
+          value={batchForm.quantity}
+          onChange={(e) => setBatchForm({ ...batchForm, quantity: e.target.value })}
+          className="p-2.5 border border-gray-300 rounded-lg text-sm"
+        />
+        <input
+          placeholder="Prezzo totale €"
+          value={batchForm.priceEur}
+          onChange={(e) => setBatchForm({ ...batchForm, priceEur: e.target.value })}
+          className="p-2.5 border border-gray-300 rounded-lg text-sm"
+        />
+        <input
+          placeholder="N. fattura"
+          value={batchForm.invoiceRef}
+          onChange={(e) => setBatchForm({ ...batchForm, invoiceRef: e.target.value })}
+          className="p-2.5 border border-gray-300 rounded-lg text-sm"
+        />
+      </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          placeholder="Note (facoltative)"
+          value={batchForm.notes}
+          onChange={(e) => setBatchForm({ ...batchForm, notes: e.target.value })}
+          className="flex-1 p-2.5 border border-gray-300 rounded-lg text-sm"
+        />
+        <button
+          type="button"
+          onClick={handleCreateBatch}
+          disabled={creatingBatch || !batchForm.businessName.trim()}
+          className="px-4 py-2.5 rounded-lg bg-[var(--ink)] text-white text-sm font-semibold disabled:opacity-50 whitespace-nowrap"
+        >
+          {creatingBatch ? 'Generazione...' : 'Genera lotto e stampa'}
+        </button>
+      </div>
+
+      {voucherBatches.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-gray-500">
+                <th className="py-2 pr-3 font-medium">Attività</th>
+                <th className="py-2 pr-3 font-medium">Usati</th>
+                <th className="py-2 pr-3 font-medium">Prezzo</th>
+                <th className="py-2 pr-3 font-medium">Fattura</th>
+                <th className="py-2 pr-3 font-medium">Creato il</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {voucherBatches.map((b) => (
+                <tr key={b.id} className="border-b last:border-0">
+                  <td className="py-2 pr-3 text-gray-900">
+                    {b.business_name}
+                    {b.notes && <span className="block text-xs text-gray-400">{b.notes}</span>}
+                  </td>
+                  <td className="py-2 pr-3 text-gray-700">{b.redeemed}/{b.quantity}</td>
+                  <td className="py-2 pr-3 text-gray-700">{b.price_eur != null ? `${Number(b.price_eur).toFixed(2)} €` : '—'}</td>
+                  <td className="py-2 pr-3 text-gray-700">{b.invoice_ref || '—'}</td>
+                  <td className="py-2 pr-3 text-gray-500">{new Date(b.created_at).toLocaleDateString('it-IT')}</td>
+                  <td className="py-2 text-right whitespace-nowrap">
+                    <a
+                      href={`/${locale}/admin/voucher-batch/${b.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-indigo-700 mr-3"
+                    >
+                      Stampa cartoncini
+                    </a>
+                    <button type="button" onClick={() => downloadBatchCsv(b)} className="text-xs font-semibold text-gray-700">
+                      Scarica CSV
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderCoupons = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Ticket className="w-7 h-7" />
+          Coupon
+        </h2>
+        <p className="text-gray-600 mt-1">Due aree distinte: i coupon venduti ai negozianti e quelli assegnati agli utenti della community.</p>
+      </div>
+      <div className="flex flex-wrap gap-2 border-b border-gray-200">
+        {([
+          ['merchant', '🏪 Coupon per negozianti'],
+          ['community', '👥 Coupon per la community'],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setCouponArea(key)}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+              couponArea === key ? 'border-[var(--gold)] text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {couponArea === 'merchant' ? renderMerchantCoupons() : renderCommunityCoupons()}
+    </div>
+  )
+
+  const renderCommunityCoupons = () => {
     const now = new Date()
     const statusOf = (c: any) => {
       if (c.redeemed_at) return { label: 'Utilizzato', className: 'bg-gray-100 text-gray-600' }
@@ -1312,14 +1524,6 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
 
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Ticket className="w-7 h-7" />
-            Coupon Wallet
-          </h2>
-          <p className="text-gray-600 mt-1">Assegna un coupon direttamente a un utente: lo vedrà nel suo My Wallet</p>
-        </div>
-
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
           <h3 className="font-bold text-gray-900">Nuovo coupon</h3>
           {couponError && (
@@ -1454,7 +1658,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             Voucher Abbonamento
           </h2>
           <p className="text-gray-600 mt-1">
-            I Kumani creano questi voucher spendendo 49 Punti Rete; qui puoi anche generarne direttamente in qualità di
+            I Kumani creano questi voucher spendendo 49 Punti Community; qui puoi anche generarne direttamente in qualità di
             amministratore (gratis, nessun punto scalato) o caricare KU Points a un utente.
           </p>
         </div>
@@ -1487,7 +1691,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             <h3 className="font-bold text-gray-900">Carica KU Points</h3>
             <p className="text-sm text-gray-600">
               Accredita punti giornalieri direttamente a un utente. Questi punti abilitano solo la pubblicazione di
-              annunci in bacheca — non i voucher né il Catalogo Premi, che restano legati solo ai Punti Rete guadagnati
+              annunci in bacheca — non i voucher né il Catalogo Premi, che restano legati solo ai Punti Community guadagnati
               realmente.
             </p>
             {creditError && (
@@ -1637,7 +1841,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             Catalogo Premi
           </h2>
           <p className="text-gray-600 mt-1">
-            Premi riscattabili dai Kumani con i Punti Rete. Un premio già riscattato non può più essere eliminato,
+            Premi riscattabili dai Kumani con i Punti Community. Un premio già riscattato non può più essere eliminato,
             solo nascosto (disattiva &quot;Visibile&quot;).
           </p>
         </div>
@@ -1659,7 +1863,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Punti Rete necessari</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Punti Community necessari</label>
               <input
                 type="number"
                 min="1"
@@ -1670,14 +1874,42 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Foto (URL)</label>
-              <input
-                type="text"
-                placeholder="https://..."
-                value={rewardForm.imageUrl}
-                onChange={(e) => setRewardForm({ ...rewardForm, imageUrl: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">Foto</label>
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <label className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-dashed border-gray-400 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap ${uploadingRewardImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {uploadingRewardImage ? 'Caricamento...' : '📷 Carica foto'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      handleRewardImageFile(e.target.files?.[0])
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+                <span className="text-xs text-gray-400">oppure</span>
+                <input
+                  type="text"
+                  placeholder="incolla un link https://..."
+                  value={rewardForm.imageUrl}
+                  onChange={(e) => setRewardForm({ ...rewardForm, imageUrl: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+                />
+              </div>
+              {rewardForm.imageUrl && (
+                <div className="mt-3 flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={rewardForm.imageUrl} alt="Anteprima premio" className="h-20 w-20 rounded-lg object-cover border" />
+                  <button
+                    type="button"
+                    onClick={() => setRewardForm({ ...rewardForm, imageUrl: '' })}
+                    className="text-xs text-red-600 hover:text-red-800"
+                  >
+                    Rimuovi foto
+                  </button>
+                </div>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
@@ -1723,7 +1955,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Premio</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Punti Rete</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Punti Community</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Visibile</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Azioni</th>
               </tr>
@@ -1871,7 +2103,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             Amministrazione
           </h2>
           <p className="text-gray-600 mt-1">
-            Stime basate su {f.subscriptionPrice}€/anno per abbonamento e 1 Punto Rete ≈ 1€. Non sostituisce i dati
+            Stime basate su {f.subscriptionPrice}€/anno per abbonamento e 1 Punto Community ≈ 1€. Non sostituisce i dati
             reali di Stripe, che restano l'unica fonte per la contabilità.
           </p>
         </div>
@@ -2226,7 +2458,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
               onChange={(e) => setSystemSettings({ ...systemSettings, activity_thanks_points: parseInt(e.target.value, 10) || 0 })}
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
             />
-            <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / ringraziamento attività</span>
+            <span className="text-sm text-gray-500 whitespace-nowrap">Punti Community / ringraziamento attività</span>
           </div>
         </div>
 
@@ -2236,7 +2468,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             Bonus Struttura Matrice
           </label>
           <p className="text-xs text-gray-500 mb-3">
-            Punti Rete assegnati una tantum ogni volta che uno dei 5 posti diretti in matrice di un Kumano si riempie
+            Punti Community assegnati una tantum ogni volta che uno dei 5 posti diretti in matrice di un Kumano si riempie
             con un abbonato realmente attivo (pagante Stripe). Il tasso applicato dipende da come quel posto si è
             riempito: sponsorizzazione diretta o spillover di qualcun altro. Fino a 5 posti per persona.
           </p>
@@ -2249,7 +2481,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                 onChange={(e) => setSystemSettings({ ...systemSettings, matrix_slot_bonus_points: parseInt(e.target.value, 10) || 0 })}
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
-              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / posto</span>
+              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Community / posto</span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -2259,7 +2491,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                 onChange={(e) => setSystemSettings({ ...systemSettings, matrix_spillover_bonus_points: parseInt(e.target.value, 10) || 0 })}
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
-              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Rete / Spillover</span>
+              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Community / Spillover</span>
             </div>
           </div>
         </div>
@@ -2270,7 +2502,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             Annunci in Vetrina
           </label>
           <p className="text-xs text-gray-500 mb-3">
-            Punti Rete richiesti a un Kumano per mettere in evidenza un proprio annuncio nella sezione "In Vetrina"
+            Punti Community richiesti a un Kumano per mettere in evidenza un proprio annuncio nella sezione "In Vetrina"
             della bacheca, per 7 o 15 giorni.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
@@ -2494,6 +2726,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
         {activeSection === 'financials' && renderFinancials()}
         {activeSection === 'listingReports' && renderListingReports()}
         {activeSection === 'spotlight' && renderSpotlight()}
+        {activeSection === 'kuManagement' && <KuManagementPanel />}
         {activeSection === 'settings' && renderSettings()}
       </div>
 
