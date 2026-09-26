@@ -56,6 +56,7 @@ export default async function DashboardTipo2({
     personal: marketplaceT('categoryPersonal'),
     wellness: marketplaceT('categoryWellness'),
     lavoro: marketplaceT('categoryLavoro'),
+    affinity: marketplaceT('categoryAffinity'),
     community: marketplaceT('categoryCommunity'),
   }
   const toolsByCategory = MARKETPLACE_CATEGORIES.filter((category) => category !== 'community')

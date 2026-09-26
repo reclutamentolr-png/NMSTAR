@@ -10,6 +10,7 @@ export type ProAreaStats = {
   'digital-receipt'?: { pending: number }
   'qr-code-pro'?: { scans: number }
   offermaker?: { clicks: number }
+  menu?: { items: number; soldOut: number }
 }
 
 const sumClicks = (rows: { click_count: number | null }[] | null) => (rows ?? []).reduce((sum, row) => sum + (row.click_count ?? 0), 0)
@@ -19,12 +20,13 @@ export async function getProAreaStats(supabase: SupabaseClient, userId: string):
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
   const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [card, quotes, receipts, qrCodes, campaigns] = await Promise.all([
+  const [card, quotes, receipts, qrCodes, campaigns, menuItems] = await Promise.all([
     supabase.from('fidelity_cards').select('id').eq('owner_id', userId).maybeSingle(),
     supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('issue_date', monthStart),
     supabase.from('digital_receipts').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('confirmed_at', null),
     supabase.from('qr_pro_codes').select('click_count').eq('user_id', userId),
     supabase.from('offermaker_campaigns').select('click_count').eq('user_id', userId),
+    supabase.from('menu_items').select('available, menus!inner(owner_id)').eq('menus.owner_id', userId),
   ])
 
   const stats: ProAreaStats = {}
@@ -54,6 +56,10 @@ export async function getProAreaStats(supabase: SupabaseClient, userId: string):
   if (!receipts.error) stats['digital-receipt'] = { pending: receipts.count ?? 0 }
   if (!qrCodes.error) stats['qr-code-pro'] = { scans: sumClicks(qrCodes.data) }
   if (!campaigns.error) stats.offermaker = { clicks: sumClicks(campaigns.data) }
+  if (!menuItems.error) {
+    const rows = (menuItems.data ?? []) as { available: boolean }[]
+    stats.menu = { items: rows.length, soldOut: rows.filter((row) => !row.available).length }
+  }
 
   return stats
 }

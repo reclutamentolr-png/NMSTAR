@@ -967,6 +967,7 @@ export async function createVoucherBatch(input: {
   priceEur: number | null
   invoiceRef: string
   notes: string
+  plan: 'base' | 'pro'
 }): Promise<{ success: true; batchId: string } | { success: false; error: string }> {
   const admin = await verifyAdmin('vouchers.write')
   if (!admin) return { success: false, error: 'Non autorizzato' }
@@ -977,6 +978,7 @@ export async function createVoucherBatch(input: {
   if (!businessName) return { success: false, error: "Indica il nome dell'attività." }
   if (!(quantity >= 1 && quantity <= 500)) return { success: false, error: 'Quantità tra 1 e 500.' }
   if (price !== null && price < 0) return { success: false, error: 'Prezzo non valido.' }
+  const plan = input.plan === 'pro' ? 'pro' : 'base'
 
   const service = getServiceClient()
   const { data: batch, error } = await service
@@ -987,6 +989,7 @@ export async function createVoucherBatch(input: {
       price_eur: price,
       invoice_ref: input.invoiceRef.trim().slice(0, 80) || null,
       notes: input.notes.trim().slice(0, 500) || null,
+      plan,
       created_by: admin.id,
     })
     .select('id')
@@ -1023,7 +1026,7 @@ export async function listVoucherBatches() {
 
   const service = getServiceClient()
   const [{ data: batches, error }, { data: codes }] = await Promise.all([
-    service.from('voucher_batches').select('id, business_name, quantity, price_eur, invoice_ref, notes, created_at').order('created_at', { ascending: false }),
+    service.from('voucher_batches').select('id, business_name, quantity, price_eur, invoice_ref, notes, plan, created_at').order('created_at', { ascending: false }),
     service.from('subscription_vouchers').select('batch_id, status').not('batch_id', 'is', null),
   ])
   if (error) return { batches: [], error: error.message }
@@ -1040,7 +1043,7 @@ export async function getVoucherBatchCodes(batchId: string) {
 
   const service = getServiceClient()
   const [{ data: batch }, { data: codes }] = await Promise.all([
-    service.from('voucher_batches').select('id, business_name, quantity, price_eur, invoice_ref, created_at').eq('id', batchId).maybeSingle(),
+    service.from('voucher_batches').select('id, business_name, quantity, price_eur, invoice_ref, plan, created_at').eq('id', batchId).maybeSingle(),
     service.from('subscription_vouchers').select('code, status, redeemed_at').eq('batch_id', batchId).order('created_at'),
   ])
   return { batch, codes: codes || [] }

@@ -1,4 +1,4 @@
-export const MARKETPLACE_CATEGORIES = ['marketing', 'security', 'personal', 'wellness', 'lavoro', 'community'] as const
+export const MARKETPLACE_CATEGORIES = ['marketing', 'security', 'personal', 'wellness', 'lavoro', 'affinity', 'community'] as const
 export type MarketplaceCategory = (typeof MARKETPLACE_CATEGORIES)[number]
 
 export interface MarketplaceTool {
@@ -204,6 +204,27 @@ export function getMarketplaceTools(t: (key: string) => string): MarketplaceTool
       color: 'gold',
       category: 'lavoro',
       requiresSubscription: true,
+    },
+    {
+      toolName: 'menu',
+      href: '/marketplace/menu',
+      gradient: 'bg-[var(--ink)]',
+      iconName: 'UtensilsCrossed',
+      title: t('menu'),
+      description: t('menuDescription'),
+      color: 'gold',
+      category: 'marketing',
+      requiresSubscription: true,
+    },
+    {
+      toolName: 'affinity',
+      href: '/marketplace/affinity',
+      gradient: 'bg-[var(--ink)]',
+      iconName: 'HeartHandshake',
+      title: t('affinity'),
+      description: t('affinityDescription'),
+      color: 'gold',
+      category: 'affinity',
     },
   ]
 }

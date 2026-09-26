@@ -46,8 +46,11 @@ export default async function VoucherBatchPrintPage({ params }: { params: Promis
               <div className="mb-2 flex items-center gap-2">
                 <Logo size={28} className="h-7 w-7" />
                 <span className="text-sm font-bold tracking-[0.25em] text-gray-900">KUMANI</span>
+                {batch.plan === 'pro' && (
+                  <span className="rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-amber-300">PRO</span>
+                )}
               </div>
-              <p className="text-lg font-bold leading-tight text-gray-900">{t('title')}</p>
+              <p className="text-lg font-bold leading-tight text-gray-900">{t(batch.plan === 'pro' ? 'titlePro' : 'title')}</p>
               <p className="mt-0.5 text-xs text-gray-600">{t('offeredBy', { business: batch.business_name })}</p>
               <p className="mt-3 text-[10px] uppercase tracking-wider text-gray-500">{t('codeLabel')}</p>
               <p className="font-mono text-base font-bold tracking-wider text-gray-900">{card.code}</p>

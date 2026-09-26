@@ -221,6 +221,10 @@
     "sendWhatsApp": "Auf WhatsApp senden"
   },
   "auth": {
+    "registrationIncomplete": "Deine Registrierung wurde nicht abgeschlossen. Geh zurück zu „Registrieren\" und nutze dieselbe E-Mail und dasselbe Passwort: Wir schließen sie dort ab.",
+    "professionalLabel": "Ich bin selbstständig / Profi",
+    "professionalHint": "Geschäft, Praxis oder Betrieb: Teste die Pro-Werkzeuge 15 Tage kostenlos (Treuekarte, Angebote, Belege, Aktionen). Keine Karte nötig.",
+    "proTrialStarted": "Pro-Test aktiv bis {date}: Die Werkzeuge findest du im Bereich für Profis.",
     "loginTitle": "Bei deinem Konto anmelden",
     "loginDescription": "Um dein Abo und deine Tools zu verwalten",
     "invalidCredentials": "E-Mail oder Passwort falsch.",
@@ -628,6 +632,12 @@
     "memolife": "MemoLife"
   },
   "marketplace": {
+    "menu": "KUMANI Menu",
+    "menuDescription": "Die Speisekarte deines Lokals mit QR-Code am Tisch, in mehreren Sprachen: Preis am Handy ändern, der QR-Code bleibt gleich.",
+    "affinity": "Affinity",
+    "affinityDescription": "Das Affinitätsspiel: Entdecke deinen KUMANI-Archetyp, deine Karte und deine Kompatibilität mit Freunden und Partner.",
+    "categoryAffinity": "Affinity",
+    "categoryAffinityDesc": "Spiele und Verbindungen: Finde heraus, wer auf deiner Wellenlänge schwingt.",
     "title": "Marktplatz für digitale Services",
     "subtitle": "Tools, um dein Geschäft wachsen zu lassen",
     "description": "Nutze unsere kostenlosen Werkzeuge, um deinen Empfehlungscode zu teilen.",
@@ -2247,6 +2257,7 @@
     "error_error": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
   },
   "voucherCard": {
+    "titlePro": "1 Jahr KUMANI Pro geschenkt",
     "title": "1 Jahr KUMANI geschenkt",
     "offeredBy": "Ein Geschenk von {business}",
     "codeLabel": "Aktivierungscode",
@@ -2256,6 +2267,11 @@
     "noneAvailable": "Keine Gutscheine verfügbar: Alle wurden bereits verwendet."
   },
   "plans": {
+    "trialNote": "{days} Tage kostenlos testen, ohne Karte.",
+    "ctaStartTrial": "Pro {days} Tage kostenlos testen",
+    "trialActiveUntil": "Pro-Test aktiv bis {date}. Aktiviere Pro, um die Werkzeuge weiter zu nutzen.",
+    "trialAlreadyUsed": "Du hast den kostenlosen Pro-Test bereits genutzt.",
+    "trialError": "Der Test konnte nicht aktiviert werden. Bitte versuche es gleich noch einmal.",
     "backToDashboard": "Zurück zum Dashboard",
     "backToHome": "Zurück zur Startseite",
     "proTitle": "KUMANI Pro für Profis",
@@ -2279,6 +2295,7 @@
     "upgradeError_stripe_error": "Zahlung fehlgeschlagen. Bitte versuche es gleich noch einmal."
   },
   "proArea": {
+    "statMenu": "{count, plural, =0 {Speisekarte noch leer} one {# Gericht auf der Karte} other {# Gerichte auf der Karte}}{soldOut, plural, =0 {} other { · # ausverkauft}}",
     "title": "Bereich für Profis",
     "subtitle": "Deine Pro-Werkzeuge und die Zahlen deines Geschäfts.",
     "planActive": "Pro-Tarif aktiv",
@@ -2294,5 +2311,248 @@
     "teaserTitle": "Bist du Profi? Entdecke KUMANI Pro",
     "teaserBody": "Kundenbindung, Angebote, Belege und Aktionen für dein Geschäft.",
     "teaserCta": "Pro entdecken"
+  },
+  "affinity": {
+    "tagline": "Finde heraus, wer auf deiner Wellenlänge schwingt.",
+    "intro": "20 schnelle Fragen, keine richtigen oder falschen Antworten. Am Ende entdeckst du deine Affinitätskarte und deinen KUMANI-Archetyp und kannst einen Freund oder deinen Partner im Duo-Modus herausfordern.",
+    "start": "Spiel starten",
+    "privacyNote": "Wir speichern nur deine Karte (5 Werte) und deinen Archetyp, niemals deine einzelnen Antworten. Du kannst sie jederzeit löschen.",
+    "disclaimer": "Affinity ist ein Spiel: Das Ergebnis ist weder ein psychologischer Test noch eine Bewertung der Person.",
+    "questionOf": "Frage {n} von {total}",
+    "back": "Zurück",
+    "saving": "Deine Karte wird gezeichnet…",
+    "saveError": "Deine Karte konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    "yourArchetype": "Dein Archetyp",
+    "yourMap": "Deine Affinitätskarte",
+    "replay": "Nochmal spielen",
+    "shareImage": "Meine Karte teilen",
+    "shareText": "Mein KUMANI-Archetyp ist {archetype}. Und deiner?",
+    "cardEyebrow": "Mein Archetyp ist",
+    "cardFooter": "Welcher Archetyp bist du?",
+    "duoTitle": "Im Duo spielen",
+    "duoBody": "Schick deinen Link an einen Freund oder deinen Partner: Er spielt (auch ohne Anmeldung) und ihr seht sofort eure Kompatibilität.",
+    "duoShare": "Duo-Link senden",
+    "duoCopied": "Link kopiert",
+    "duoShareText": "Spielen wir Affinity? Beantworte 20 Fragen und wir finden heraus, wie gut wir zusammenpassen:",
+    "comingSoon": "Bald: Affinity Freundschaften. Kumi stellt dir Menschen vor, die mit dir in Resonanz sind.",
+    "deleteMap": "Meine Karte löschen",
+    "deleteConfirm": "Möchtest du deine Karte löschen? Dein Duo-Link funktioniert dann nicht mehr. Du kannst jederzeit wieder spielen.",
+    "axis_valori": "Werte",
+    "axis_ritmo": "Rhythmus",
+    "axis_curiosita": "Neugier",
+    "axis_calore": "Wärme",
+    "axis_avventura": "Abenteuer",
+    "arch_faro_name": "Der Leuchtturm",
+    "arch_faro_short": "Ein Fixpunkt, der den Weg erhellt.",
+    "arch_faro_desc": "Du bist ein Fixpunkt: beständig und verlässlich, deine Nächsten wissen, dass sie auf dich zählen können. Du hältst Kurs, wenn andere sich verlieren, und erhellst den Weg, ohne Lärm zu machen.",
+    "arch_marea_name": "Die Flut",
+    "arch_marea_short": "Energie in Bewegung, die andere mitreißt.",
+    "arch_marea_desc": "Deine Energie steht nie still: Du kannst Gas geben, wenn es nötig ist, und andere mitreißen. Mit dir passiert etwas, und selbst die flachsten Tage bekommen einen neuen Rhythmus.",
+    "arch_bosco_name": "Der Wald",
+    "arch_bosco_short": "Tiefe und Neugier auf jedem Pfad.",
+    "arch_bosco_desc": "Du bist Tiefe und Neugier: Jeder Pfad reizt dich, du willst verstehen, wie Dinge und Menschen funktionieren. Hinter jeder deiner Fragen steckt eine ganze Welt zum Entdecken.",
+    "arch_brace_name": "Die Glut",
+    "arch_brace_short": "Eine Wärme, bei der man sich zu Hause fühlt.",
+    "arch_brace_desc": "Du wärmst die Menschen um dich herum: herzlich und empathisch, bei dir fühlt man sich zu Hause. Du machst nicht viel Lärm, aber ohne dich wäre der Abend nicht derselbe.",
+    "arch_vento_name": "Der Wind",
+    "arch_vento_short": "Frei, unberechenbar, immer unterwegs.",
+    "arch_vento_desc": "Frei und unberechenbar: Du liebst Neues, Planänderungen und nie gegangene Wege. Du bringst frischen Wind, wo immer du bist, und ermutigst andere, ein bisschen mehr zu wagen.",
+    "duoInvite": "{name} fordert dich zu Affinity heraus",
+    "duoInviteBody": "Beantworte 20 schnelle Fragen und entdecke deinen Archetyp und eure Kompatibilität. Keine Anmeldung nötig.",
+    "duoPrivacy": "Wenn du nicht angemeldet bist, speichern wir nichts: Das Ergebnis bleibt nur auf diesem Bildschirm.",
+    "duoNotFound": "Dieser Duo-Link ist ungültig oder nicht mehr aktiv.",
+    "compatibility": "Kompatibilität",
+    "duoPair": "Ihr seid {a} und {b}",
+    "compat_high": "Ihr seid auf derselben Wellenlänge: Ihr versteht euch blind.",
+    "compat_mid": "Ihr ergänzt euch: Wo einer bremst, gibt der andere Gas.",
+    "compat_low": "Gegensätze ziehen sich an: Zusammen seht ihr doppelt so viel.",
+    "you": "Du",
+    "duoRegisterCta": "Kostenlos anmelden und Karte speichern",
+    "duoSaveCta": "Meine Karte speichern",
+    "duoSaved": "Karte gespeichert: zu Affinity",
+    "q1": {
+      "text": "Auf Reisen bevorzugst du…",
+      "a": "Mich ohne Karte treiben zu lassen",
+      "b": "Eine genaue Route, Etappe für Etappe",
+      "c": "Ein festes Ziel, der Rest wird improvisiert"
+    },
+    "q2": {
+      "text": "Jemand schlägt dir etwas nie Ausprobiertes vor (Paragliding, Thai-Kochkurs, Tango).",
+      "a": "Ich denke kurz darüber nach",
+      "b": "Bin dabei! Wann?",
+      "c": "Lieber etwas, das ich kenne"
+    },
+    "q3": {
+      "text": "Im Restaurant wählst du…",
+      "a": "Das Gericht, das ich noch nie probiert habe",
+      "b": "Mein Übliches, passt immer",
+      "c": "Ich frage nach einer Empfehlung"
+    },
+    "q4": {
+      "text": "Plötzlich ein freies Wochenende:",
+      "a": "Ich fahre los, Ziel unbekannt",
+      "b": "Ein Ausflug in der Nähe",
+      "c": "Ich ruhe mich aus und räume auf"
+    },
+    "q5": {
+      "text": "Sonntagmorgen:",
+      "a": "Markt und Plaudern",
+      "b": "Museum oder ruhiger Spaziergang",
+      "c": "Sofa, Decke und Stille"
+    },
+    "q6": {
+      "text": "Ein Freund hat einen schlechten Tag:",
+      "a": "Ich fahre sofort zu ihm",
+      "b": "Ich schreibe ihm, wie es ihm geht",
+      "c": "Ich warte, bis er sich meldet"
+    },
+    "q7": {
+      "text": "Auf einer Party, auf der du wenige kennst:",
+      "a": "Ich stelle mich allen vor",
+      "b": "Ich bleibe bei den Leuten, die ich kenne",
+      "c": "Ein bisschen Smalltalk, dann mal sehen"
+    },
+    "q8": {
+      "text": "Deine Art zu sagen „du bist mir wichtig\":",
+      "a": "Eine Umarmung, ohne nachzudenken",
+      "b": "Konkrete Hilfe, wenn es nötig ist",
+      "c": "Ich behalte es für mich, Taten sprechen"
+    },
+    "q9": {
+      "text": "Ein neues Thema weckt dein Interesse:",
+      "a": "Ich lese alles, bis ich es ganz verstehe",
+      "b": "Die Grundidee reicht mir",
+      "c": "Ein Video und ein paar Fakten"
+    },
+    "q10": {
+      "text": "In einer fremden Stadt:",
+      "a": "Seitengassen und versteckte Läden",
+      "b": "Die Hauptsehenswürdigkeiten",
+      "c": "Ein schöner Ort zum Entspannen"
+    },
+    "q11": {
+      "text": "Dein liebstes Gespräch:",
+      "a": "Ideen, „was wäre wenn…?\" und schräge Fragen",
+      "b": "Lebensgeschichten und Anekdoten",
+      "c": "Praktisches, direkt auf den Punkt"
+    },
+    "q12": {
+      "text": "Etwas funktioniert nicht mehr:",
+      "a": "Ich baue es auseinander, um es zu verstehen",
+      "b": "Ich suche ein Tutorial",
+      "c": "Ich bringe es zur Reparatur"
+    },
+    "q13": {
+      "text": "Dein idealer Tag:",
+      "a": "Voller Dinge, die zu tun sind",
+      "b": "Wenige Dinge, in Ruhe erledigt",
+      "c": "Ein bisschen von beidem"
+    },
+    "q14": {
+      "text": "Der Wecker klingelt:",
+      "a": "Ich springe aus dem Bett",
+      "b": "Noch fünf Minuten…",
+      "c": "Welcher Wecker? Ich wache auf, wann es passt"
+    },
+    "q15": {
+      "text": "Wenn du entscheiden musst:",
+      "a": "Aus dem Bauch heraus, sofort",
+      "b": "Nachdem ich eine Nacht darüber geschlafen habe",
+      "c": "Mit einer Pro-und-Contra-Liste"
+    },
+    "q16": {
+      "text": "Vor einer langen Schlange:",
+      "a": "Ich suche sofort eine Alternative",
+      "b": "Ich nutze die Zeit, um mich umzusehen",
+      "c": "Ich warte, mit dem Handy in der Hand"
+    },
+    "q17": {
+      "text": "Ein fast im Scherz gegebenes Versprechen:",
+      "a": "Versprochen ist versprochen",
+      "b": "Kommt darauf an, was ich versprochen habe",
+      "c": "Es war doch ein Scherz"
+    },
+    "q18": {
+      "text": "In einer Freundesgruppe bist du diejenige Person, die…",
+      "a": "Kurs hält und an Verabredungen erinnert",
+      "b": "Die Ideen einbringt",
+      "c": "Sich treiben lässt"
+    },
+    "q19": {
+      "text": "Einen Job wählst du vor allem wegen…",
+      "a": "Des Sinns, den er für mich hat",
+      "b": "Der Menschen, mit denen ich arbeite",
+      "c": "Der Freiheit, die er mir lässt"
+    },
+    "q20": {
+      "text": "Familientraditionen:",
+      "a": "Sie sind meine Wurzeln, ich führe sie fort",
+      "b": "Ich behalte einige, auf meine Art",
+      "c": "Ich schaffe lieber neue"
+    }
+  },
+  "menuBuilder": {
+    "subtitle": "Deine Online-Speisekarte mit QR-Code am Tisch, in mehreren Sprachen.",
+    "setupTitle": "Erstelle die Speisekarte deines Lokals",
+    "setupBody": "Gib den Namen deines Lokals ein und wähle die Sprachen, dann füge Kategorien und Gerichte hinzu. Der QR-Code für die Tische ist sofort fertig.",
+    "restaurantName": "Name des Lokals",
+    "tagline": "Zeile unter dem Namen (optional)",
+    "taglinePlaceholder": "Z. B. Fischküche seit 1985",
+    "defaultLanguage": "Hauptsprache",
+    "languages": "Sprachen der Speisekarte",
+    "languagesHint": "Gäste sehen die Karte in der Sprache ihres Handys, wenn du sie aktiviert hast. Für jede Sprache kannst du Kategorien und Beschreibungen schreiben.",
+    "menuOnline": "Speisekarte online (über den QR sichtbar)",
+    "saveSettings": "Einstellungen speichern",
+    "createMenu": "Speisekarte erstellen",
+    "yourMenuOnline": "Deine Online-Speisekarte",
+    "statusOnline": "Online: Gäste sehen sie über den QR-Code",
+    "statusOffline": "Offline: Der QR-Code zeigt „Speisekarte nicht verfügbar\"",
+    "openMenu": "Speisekarte öffnen",
+    "copyLink": "Link kopieren",
+    "copied": "Kopiert",
+    "downloadQr": "QR herunterladen",
+    "settings": "Einstellungen",
+    "noCategories": "Die Speisekarte ist leer: Füge zuerst eine Kategorie hinzu (z. B. Vorspeisen).",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "deleteCategoryConfirm": "Kategorie und alle ihre Gerichte löschen?",
+    "deleteItemConfirm": "Dieses Gericht löschen?",
+    "available": "Verfügbar",
+    "soldOut": "Ausverkauft",
+    "dailySpecial": "Tagesgericht",
+    "addItem": "Gericht hinzufügen",
+    "addCategory": "Kategorie hinzufügen",
+    "editCategory": "Kategorie bearbeiten",
+    "categoryHint": "Schreibe den Namen in der Hauptsprache (Pflicht) und, wenn du möchtest, in den anderen aktiven Sprachen.",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "editItem": "Gericht bearbeiten",
+    "itemName": "Name des Gerichts",
+    "itemNameHint": "Der Name bleibt in allen Sprachen original („Spaghetti alla carbonara\" wird nicht übersetzt): Die Beschreibung erklärt das Gericht.",
+    "price": "Preis (€)",
+    "descriptions": "Beschreibung je Sprache",
+    "translateName": "Auch den Namen übersetzen",
+    "tags": "Merkmale",
+    "error_notLoggedIn": "Melde dich an, um die Karte zu bearbeiten.",
+    "error_proRequired": "KUMANI Menu gehört zum Pro-Tarif.",
+    "error_nameRequired": "Gib den Namen ein.",
+    "error_saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "error_limitReached": "Du hast die maximale Anzahl an Einträgen erreicht."
+  },
+  "menuPublic": {
+    "notAvailable": "Speisekarte derzeit nicht verfügbar.",
+    "language": "Sprache",
+    "dailySpecial": "Tagesgericht",
+    "soldOut": "Ausverkauft",
+    "empty": "Die Speisekarte wird gerade vorbereitet.",
+    "allergenNotice": "Informationen zu Allergenen und Unverträglichkeiten erhältst du beim Personal.",
+    "tag_vegetarian": "Vegetarisch",
+    "tag_vegan": "Vegan",
+    "tag_gluten_free": "Glutenfrei",
+    "tag_spicy": "Scharf",
+    "tag_chef": "Empfehlung des Küchenchefs",
+    "tag_new": "Neu"
   }
 }

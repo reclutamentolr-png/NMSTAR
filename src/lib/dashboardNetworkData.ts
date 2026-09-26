@@ -188,6 +188,10 @@ export async function getDashboardNetworkData(
   // abbonamento. Idempotente come i claim sopra.
   await supabase.rpc('claim_activity_thanks')
 
+  // Extra Pro: invitato diretto che paga il piano Pro con carta (si somma
+  // al Bonus Struttura). Idempotente: una volta per invitato.
+  await supabase.rpc('claim_pro_invite_bonus')
+
   const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/${locale}/login`
 
   return {

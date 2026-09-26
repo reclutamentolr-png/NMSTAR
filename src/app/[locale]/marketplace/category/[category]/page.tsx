@@ -34,6 +34,7 @@ export default async function MarketplaceCategoryPage({
     personal: t('categoryPersonal'),
     wellness: t('categoryWellness'),
     lavoro: t('categoryLavoro'),
+    affinity: t('categoryAffinity'),
     community: t('categoryCommunity'),
   }
 

@@ -53,6 +53,15 @@ export default function LoginPage() {
         console.error('Errore nel controllo profilo:', profileError)
       }
 
+      // Accesso creato ma registrazione mai completata (nessun profilo): si
+      // completa da "Registrati" con la stessa email e password.
+      if (!profile && profileError?.code === 'PGRST116') {
+        await supabase.auth.signOut()
+        setError(t('registrationIncomplete'))
+        setLoading(false)
+        return
+      }
+
       if (profile?.is_blocked) {
         await supabase.auth.signOut()
         setError(t('blockedAccount'))

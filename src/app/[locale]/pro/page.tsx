@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Crown } from 'lucide-react'
 import Link from '@/components/LocalizedLink'
 import Logo from '@/components/Logo'
 import UpgradeToProButton from '@/components/UpgradeToProButton'
+import StartProTrialButton from '@/components/StartProTrialButton'
 import { createClient } from '@/lib/supabase/server'
 import { getMarketplaceTools } from '@/lib/marketplaceTools'
 import { marketplaceIconMap } from '@/lib/marketplaceIcons'
@@ -13,7 +14,14 @@ import type { UserPlan } from '@/lib/plans'
 // Admin → Marketplace), prezzo e pulsante adatto alla situazione:
 // non iscritto → registrazione; Base con carta → passaggio a Pro (Stripe
 // calcola la differenza); altrimenti → checkout Pro.
-export default async function ProPage({ searchParams }: { searchParams: Promise<{ tool?: string; error?: string }> }) {
+export default async function ProPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<{ tool?: string; error?: string }>
+}) {
+  const { locale } = await params
   const { tool: highlightTool, error } = await searchParams
   const t = await getTranslations('plans')
   const tm = await getTranslations('marketplace')
@@ -21,9 +29,10 @@ export default async function ProPage({ searchParams }: { searchParams: Promise<
   const service = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
-  const [{ data: settings }, { data: priceRow }] = await Promise.all([
+  const [{ data: settings }, { data: priceRow }, { data: trialDaysRow }] = await Promise.all([
     service.from('marketplace_settings').select('tool_name, is_enabled, required_plan'),
     service.from('system_settings').select('value').eq('key', 'pro_price_eur').maybeSingle(),
+    service.from('system_settings').select('value').eq('key', 'pro_trial_days').maybeSingle(),
   ])
   const proToolNames = new Set(
     (settings ?? []).filter((s: { is_enabled: boolean; required_plan?: string }) => s.is_enabled && s.required_plan === 'pro').map((s: { tool_name: string }) => s.tool_name)
@@ -38,14 +47,28 @@ export default async function ProPage({ searchParams }: { searchParams: Promise<
   } = await supabase.auth.getUser()
   let plan: UserPlan = 'none'
   let hasStripeSubscription = false
+  let paidPro = false
+  let trialEndsAt: string | null = null
+  let trialUsed = false
   if (user) {
     const [{ data: myPlan }, { data: profile }] = await Promise.all([
       supabase.rpc('my_plan'),
-      supabase.from('profiles').select('subscription_status, subscription_source').eq('id', user.id).maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('subscription_status, subscription_source, subscription_plan, pro_trial_ends_at')
+        .eq('id', user.id)
+        .maybeSingle(),
     ])
     plan = (typeof myPlan === 'string' ? myPlan : 'none') as UserPlan
     hasStripeSubscription = profile?.subscription_status === 'active' && profile?.subscription_source === 'stripe'
+    paidPro = profile?.subscription_status === 'active' && profile?.subscription_plan === 'pro'
+    trialUsed = !!profile?.pro_trial_ends_at
+    // In prova: Pro attivo ma non pagato → si mostra la scadenza e il pulsante per attivarlo.
+    if (plan === 'pro' && !paidPro && profile?.pro_trial_ends_at) {
+      trialEndsAt = new Date(profile.pro_trial_ends_at).toLocaleDateString(locale)
+    }
   }
+  const trialDays = Number(String(trialDaysRow?.value ?? '15').replace(/"/g, '')) || 15
   const proAvailable = !!process.env.STRIPE_PRICE_ID_PRO
 
   return (
@@ -101,10 +124,16 @@ export default async function ProPage({ searchParams }: { searchParams: Promise<
 
             <div className="mt-6">
               {!user ? (
-                <Link href="/register" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-6 py-3.5 font-bold text-[var(--ink)]">
-                  <Crown className="h-5 w-5" /> {t('ctaRegister')}
-                </Link>
-              ) : plan === 'pro' ? (
+                <>
+                  <Link
+                    href="/register?plan=pro"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-6 py-3.5 font-bold text-[var(--ink)]"
+                  >
+                    <Crown className="h-5 w-5" /> {t('ctaRegister')}
+                  </Link>
+                  <p className="mt-2 text-sm text-[var(--gold-bright)]">{t('trialNote', { days: trialDays })}</p>
+                </>
+              ) : plan === 'pro' && !trialEndsAt ? (
                 <div className="space-y-3">
                   <p className="rounded-xl bg-green-500/10 px-4 py-3 font-semibold text-green-300">{t('alreadyPro')}</p>
                   <Link
@@ -114,19 +143,29 @@ export default async function ProPage({ searchParams }: { searchParams: Promise<
                     {t('goToProArea')} <ArrowRight className="h-5 w-5" />
                   </Link>
                 </div>
-              ) : !proAvailable ? (
-                <p className="rounded-xl bg-white/5 px-4 py-3 text-sm text-gray-300">{t('proUnavailable')}</p>
-              ) : hasStripeSubscription ? (
-                <UpgradeToProButton label={t('ctaUpgrade')} note={t('upgradeNote')} />
               ) : (
-                <form action="/api/checkout?plan=pro" method="POST">
-                  <button
-                    type="submit"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-6 py-3.5 font-bold text-[var(--ink)]"
-                  >
-                    <Crown className="h-5 w-5" /> {t('ctaSubscribePro', { price })}
-                  </button>
-                </form>
+                <div className="space-y-3">
+                  {trialEndsAt && (
+                    <p className="rounded-xl bg-[var(--gold)]/10 px-4 py-3 text-sm font-semibold text-[var(--gold-bright)]">
+                      {t('trialActiveUntil', { date: trialEndsAt })}
+                    </p>
+                  )}
+                  {!proAvailable ? (
+                    <p className="rounded-xl bg-white/5 px-4 py-3 text-sm text-gray-300">{t('proUnavailable')}</p>
+                  ) : hasStripeSubscription ? (
+                    <UpgradeToProButton label={t('ctaUpgrade')} note={t('upgradeNote')} />
+                  ) : (
+                    <form action="/api/checkout?plan=pro" method="POST">
+                      <button
+                        type="submit"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-6 py-3.5 font-bold text-[var(--ink)]"
+                      >
+                        <Crown className="h-5 w-5" /> {t('ctaSubscribePro', { price })}
+                      </button>
+                    </form>
+                  )}
+                  {!trialUsed && plan !== 'pro' && <StartProTrialButton label={t('ctaStartTrial', { days: trialDays })} />}
+                </div>
               )}
             </div>
           </div>

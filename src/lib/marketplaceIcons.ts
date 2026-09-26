@@ -16,6 +16,8 @@ import {
   PiggyBank,
   Flower2,
   Stamp,
+  HeartHandshake,
+  UtensilsCrossed,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -41,4 +43,6 @@ export const marketplaceIconMap: Record<string, LucideIcon> = {
   PiggyBank,
   Flower2,
   Stamp,
+  HeartHandshake,
+  UtensilsCrossed,
 }

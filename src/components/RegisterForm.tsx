@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl' // ✅ Aggiungilo qui
 import Link from 'next/link'
 import { europeanCountries } from '@/lib/european-countries'
-import { User, Mail, Lock, MapPin, AlertCircle, Loader2, Home, ShieldCheck, CheckCircle } from 'lucide-react'
+import { User, Mail, Lock, MapPin, AlertCircle, Loader2, Home, ShieldCheck, CheckCircle, Briefcase } from 'lucide-react'
 import Logo from '@/components/Logo'
 
 const RESEND_COOLDOWN_SECONDS = 30
@@ -29,6 +29,8 @@ export default function RegisterForm() {
   // accedere viene rimandato qui con ?verify=<email> (vedi login/page.tsx)
   // per riprendere direttamente dall'inserimento del codice.
   const resumeEmail = searchParams.get('verify') || ''
+  // "Registrati e scegli Pro" dalla pagina /pro arriva con ?plan=pro.
+  const initialProfessional = searchParams.get('plan') === 'pro'
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -39,9 +41,11 @@ export default function RegisterForm() {
     city: '',
     referral_code: initialReferralCode,
     voucher_code: initialVoucherCode,
+    professional: initialProfessional,
   })
   // Esito dell'attivazione del coupon, mostrato nella schermata finale.
   const [voucherOutcome, setVoucherOutcome] = useState<{ ok: boolean; text: string } | null>(null)
+  const [proTrialOutcome, setProTrialOutcome] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<Step>(resumeEmail ? 'verify' : 'form')
@@ -54,6 +58,38 @@ export default function RegisterForm() {
     const timer = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000)
     return () => clearInterval(timer)
   }, [resendCooldown])
+
+  // Email già presente: se la password è giusta e il profilo non esiste
+  // (registrazione interrotta, es. invito mancante), si aggiornano i dati con
+  // quelli del modulo e si completa la registrazione. Se il profilo esiste
+  // già si esce: è un utente vero, deve accedere dal login.
+  const resumeIncompleteRegistration = async (referralCode: string, voucherCode: string): Promise<boolean> => {
+    const { data: signIn, error: signInError } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    })
+    if (signInError || !signIn.user) return false
+
+    const { data: existingProfile } = await supabase.rpc('get_my_profile').maybeSingle()
+    if (existingProfile) {
+      await supabase.auth.signOut()
+      return false
+    }
+
+    const { data: updated } = await supabase.auth.updateUser({
+      data: {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        country_code: formData.country_code,
+        city: formData.city.trim(),
+        referral_code: referralCode,
+        voucher_code: voucherCode,
+        professional: formData.professional,
+      },
+    })
+    await activateAccount(updated.user ?? signIn.user)
+    return true
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,6 +110,11 @@ export default function RegisterForm() {
         if (sponsorError || !sponsorMatches || sponsorMatches.length === 0) {
           throw new Error(t('invalidReferral'))
         }
+      } else {
+        // Senza invito serve l'account KUMANI configurato: controllo prima di
+        // creare l'accesso (se la funzione non c'è ancora, decide il server).
+        const { data: directOk, error: directError } = await supabase.rpc('direct_signup_available')
+        if (!directError && directOk === false) throw new Error(t('directSignupUnavailable'))
       }
 
       // 1b. Coupon di attivazione facoltativo: verificato subito (solo
@@ -103,12 +144,16 @@ export default function RegisterForm() {
             city: formData.city.trim(),
             referral_code: cleanReferralCode,
             voucher_code: cleanVoucherCode,
+            professional: formData.professional,
           }
         }
       })
 
       if (authError) {
         if (authError.message.includes('already registered')) {
+          // Registrazione rimasta a metà (accesso creato, profilo mai
+          // completato): con la stessa password si riprende da qui.
+          if (await resumeIncompleteRegistration(cleanReferralCode, cleanVoucherCode)) return
           throw new Error(t('emailAlreadyRegistered'))
         }
         throw authError
@@ -152,6 +197,7 @@ export default function RegisterForm() {
       city?: string
       referral_code?: string
       voucher_code?: string
+      professional?: boolean
     }
 
     try {
@@ -188,6 +234,18 @@ export default function RegisterForm() {
             : { ok: false, text: t('voucherNotActivated') }
         )
         delay = 4500
+      }
+
+      // "Sono un professionista": 15 giorni di Pro gratis, una sola volta per
+      // account (start_pro_trial non fa nulla se il coupon ha già dato il Pro).
+      if (meta.professional ?? formData.professional) {
+        const { data: trial } = await supabase
+          .rpc('start_pro_trial')
+          .maybeSingle<{ status: string; trial_ends_at: string | null }>()
+        if (trial?.status === 'ok' && trial.trial_ends_at) {
+          setProTrialOutcome(t('proTrialStarted', { date: new Date(trial.trial_ends_at).toLocaleDateString(locale) }))
+          delay = 4500
+        }
       }
 
       setStep('done')
@@ -325,6 +383,27 @@ export default function RegisterForm() {
             <p className="text-xs text-gray-500 mt-1">{t('referralRequired')}</p>
           </div>
 
+          <label
+            htmlFor="professional"
+            className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+              formData.professional ? 'border-amber-400 bg-amber-50' : 'border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            <input
+              id="professional"
+              type="checkbox"
+              checked={formData.professional}
+              onChange={(e) => setFormData({ ...formData, professional: e.target.checked })}
+              className="mt-1 h-4 w-4 accent-amber-500"
+            />
+            <span>
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                <Briefcase className="h-4 w-4 text-amber-600" /> {t('professionalLabel')}
+              </span>
+              <span className="mt-0.5 block text-xs text-gray-500">{t('professionalHint')}</span>
+            </span>
+          </label>
+
           <div>
             <label htmlFor="voucher_code" className="block text-sm font-medium text-gray-700 mb-1">
               {t('voucherCodeLabel')}
@@ -432,6 +511,7 @@ export default function RegisterForm() {
           {voucherOutcome && (
             <p className={`mt-3 text-sm font-medium ${voucherOutcome.ok ? 'text-green-700' : 'text-amber-700'}`}>{voucherOutcome.text}</p>
           )}
+          {proTrialOutcome && <p className="mt-3 text-sm font-medium text-amber-700">{proTrialOutcome}</p>}
         </div>
       )}
     </>

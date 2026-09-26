@@ -221,6 +221,10 @@
     "sendWhatsApp": "Enviar no WhatsApp"
   },
   "auth": {
+    "registrationIncomplete": "O teu registo não foi concluído. Volta a «Registar» com o mesmo email e palavra-passe: concluímos a partir daí.",
+    "professionalLabel": "Sou profissional",
+    "professionalHint": "Loja, escritório ou negócio: experimenta grátis durante 15 dias as ferramentas Pro (cartão de fidelização, orçamentos, recibos, promoções). Sem cartão.",
+    "proTrialStarted": "Teste Pro ativo até {date}: encontras as ferramentas na Área Profissionais.",
     "loginTitle": "Entre na sua conta",
     "loginDescription": "Para gerenciar sua assinatura e suas ferramentas",
     "invalidCredentials": "Email ou senha incorretos.",
@@ -628,6 +632,12 @@
     "memolife": "MemoLife"
   },
   "marketplace": {
+    "menu": "KUMANI Menu",
+    "menuDescription": "O menu do teu espaço com QR na mesa, em várias línguas: mudas um preço no telemóvel e o QR continua o mesmo.",
+    "affinity": "Affinity",
+    "affinityDescription": "O jogo das afinidades: descobre o teu arquétipo KUMANI, o teu mapa e a compatibilidade com amigos e parceiro.",
+    "categoryAffinity": "Affinity",
+    "categoryAffinityDesc": "Jogos e ligações: descobre quem vibra na tua frequência.",
     "title": "Marketplace de serviços digitais",
     "subtitle": "Ferramentas para fazer crescer a tua atividade",
     "description": "Use nossas ferramentas gratuitas para promover seu código de indicação.",
@@ -2247,6 +2257,7 @@
     "error_error": "Algo deu errado. Tente novamente."
   },
   "voucherCard": {
+    "titlePro": "1 ano de KUMANI Pro de oferta",
     "title": "1 ano de KUMANI de presente",
     "offeredBy": "Oferecido por {business}",
     "codeLabel": "Código de ativação",
@@ -2256,6 +2267,11 @@
     "noneAvailable": "Nenhum cupom disponível: todos já foram usados."
   },
   "plans": {
+    "trialNote": "{days} dias de teste grátis, sem cartão.",
+    "ctaStartTrial": "Experimenta o Pro grátis {days} dias",
+    "trialActiveUntil": "Teste Pro ativo até {date}. Ativa o Pro para continuar a usar as ferramentas.",
+    "trialAlreadyUsed": "Já usaste o teste Pro grátis.",
+    "trialError": "Não foi possível ativar o teste. Tenta novamente daqui a pouco.",
     "backToDashboard": "Voltar ao painel",
     "backToHome": "Voltar ao início",
     "proTitle": "KUMANI Pro para profissionais",
@@ -2279,6 +2295,7 @@
     "upgradeError_stripe_error": "O pagamento falhou. Tenta novamente daqui a pouco."
   },
   "proArea": {
+    "statMenu": "{count, plural, =0 {Menu ainda vazio} one {# prato no menu} other {# pratos no menu}}{soldOut, plural, =0 {} other { · # esgotados}}",
     "title": "Área Profissionais",
     "subtitle": "As tuas ferramentas Pro e os números da tua atividade.",
     "planActive": "Plano Pro ativo",
@@ -2294,5 +2311,248 @@
     "teaserTitle": "És profissional? Descobre o KUMANI Pro",
     "teaserBody": "Fidelização de clientes, orçamentos, recibos e promoções para a tua atividade.",
     "teaserCta": "Descobrir Pro"
+  },
+  "affinity": {
+    "tagline": "Descobre quem vibra na tua frequência.",
+    "intro": "20 perguntas rápidas, sem respostas certas ou erradas. No fim descobres o teu Mapa de Afinidade e o teu arquétipo KUMANI, e podes desafiar um amigo ou o teu parceiro no modo Duo.",
+    "start": "Começar o jogo",
+    "privacyNote": "Guardamos apenas o teu mapa (5 valores) e o teu arquétipo, nunca as tuas respostas. Podes apagá-lo quando quiseres.",
+    "disclaimer": "Affinity é um jogo: o resultado não é um teste psicológico nem uma avaliação da pessoa.",
+    "questionOf": "Pergunta {n} de {total}",
+    "back": "Voltar",
+    "saving": "A desenhar o teu mapa…",
+    "saveError": "Não foi possível guardar o teu mapa. Tenta novamente.",
+    "yourArchetype": "O teu arquétipo",
+    "yourMap": "O teu Mapa de Afinidade",
+    "replay": "Jogar outra vez",
+    "shareImage": "Partilhar o meu mapa",
+    "shareText": "O meu arquétipo KUMANI é {archetype}. E o teu?",
+    "cardEyebrow": "O meu arquétipo é",
+    "cardFooter": "E tu, que arquétipo és?",
+    "duoTitle": "Jogar em Duo",
+    "duoBody": "Envia o teu link a um amigo ou ao teu parceiro: joga (mesmo sem se registar) e descobrem logo a vossa compatibilidade.",
+    "duoShare": "Enviar o link Duo",
+    "duoCopied": "Link copiado",
+    "duoShareText": "Jogamos Affinity? Responde a 20 perguntas e vamos descobrir quão compatíveis somos:",
+    "comingSoon": "Em breve: Affinity Amizades. O Kumi vai apresentar-te pessoas que vibram contigo.",
+    "deleteMap": "Apagar o meu mapa",
+    "deleteConfirm": "Queres apagar o teu mapa? O teu link Duo deixará de funcionar. Podes voltar a jogar quando quiseres.",
+    "axis_valori": "Valores",
+    "axis_ritmo": "Ritmo",
+    "axis_curiosita": "Curiosidade",
+    "axis_calore": "Calor",
+    "axis_avventura": "Aventura",
+    "arch_faro_name": "O Farol",
+    "arch_faro_short": "Um ponto firme que ilumina o caminho.",
+    "arch_faro_desc": "És um ponto firme: coerente e fiável, quem está perto de ti sabe que pode contar contigo. Manténs o rumo quando os outros se perdem e iluminas o caminho sem fazer barulho.",
+    "arch_marea_name": "A Maré",
+    "arch_marea_short": "Energia em movimento que arrasta os outros.",
+    "arch_marea_desc": "A tua energia nunca pára: sabes acelerar quando é preciso e levar os outros contigo. Contigo as coisas acontecem, e até os dias mais parados mudam de ritmo.",
+    "arch_bosco_name": "O Bosque",
+    "arch_bosco_short": "Profundidade e curiosidade em cada trilho.",
+    "arch_bosco_desc": "És profundidade e curiosidade: cada trilho te intriga, adoras perceber como funcionam as coisas e as pessoas. Por trás de cada pergunta tua há sempre um mundo para explorar.",
+    "arch_brace_name": "A Brasa",
+    "arch_brace_short": "Um calor que faz sentir em casa.",
+    "arch_brace_desc": "Aqueces quem está à tua volta: acolhedor e empático, as pessoas sentem-se em casa contigo. Não fazes muito barulho, mas sem ti a noite não seria a mesma.",
+    "arch_vento_name": "O Vento",
+    "arch_vento_short": "Livre, imprevisível, sempre em viagem.",
+    "arch_vento_desc": "Livre e imprevisível: adoras o novo, as mudanças de planos e os caminhos nunca percorridos. Levas ar fresco por onde passas e incentivas os outros a arriscar um pouco mais.",
+    "duoInvite": "{name} desafia-te para o Affinity",
+    "duoInviteBody": "Responde a 20 perguntas rápidas e descobre o teu arquétipo e a vossa compatibilidade. Não é preciso registo.",
+    "duoPrivacy": "Se não estiveres registado não guardamos nada: o resultado fica só neste ecrã.",
+    "duoNotFound": "Este link Duo não é válido ou já não está ativo.",
+    "compatibility": "Compatibilidade",
+    "duoPair": "Vocês são {a} e {b}",
+    "compat_high": "Estão na mesma frequência: entendem-se num instante.",
+    "compat_mid": "Completam-se: quando um abranda, o outro acelera.",
+    "compat_low": "Os opostos atraem-se: juntos veem o dobro das coisas.",
+    "you": "Tu",
+    "duoRegisterCta": "Regista-te grátis e guarda o teu mapa",
+    "duoSaveCta": "Guardar o meu mapa",
+    "duoSaved": "Mapa guardado: ir para o Affinity",
+    "q1": {
+      "text": "Em viagem preferes…",
+      "a": "Perder-te sem mapa",
+      "b": "Um itinerário preciso, paragem a paragem",
+      "c": "Um destino fixo e o resto improvisado"
+    },
+    "q2": {
+      "text": "Propõem-te uma atividade que nunca experimentaste (parapente, cozinha tailandesa, tango).",
+      "a": "Penso um pouco nisso",
+      "b": "Alinho! Quando?",
+      "c": "Prefiro algo que conheço"
+    },
+    "q3": {
+      "text": "No restaurante escolhes…",
+      "a": "O prato que nunca provei",
+      "b": "O habitual, nunca falha",
+      "c": "Peço uma sugestão e depois decido"
+    },
+    "q4": {
+      "text": "Um fim de semana livre de repente:",
+      "a": "Parto, destino surpresa",
+      "b": "Um passeio perto de casa",
+      "c": "Descanso e arrumo as minhas coisas"
+    },
+    "q5": {
+      "text": "Domingo de manhã:",
+      "a": "Mercado e conversa",
+      "b": "Museu ou um passeio tranquilo",
+      "c": "Sofá, manta e silêncio"
+    },
+    "q6": {
+      "text": "Um amigo está num dia mau:",
+      "a": "Vou ter com ele logo",
+      "b": "Escrevo-lhe para saber como está",
+      "c": "Espero que seja ele a procurar-me"
+    },
+    "q7": {
+      "text": "Numa festa onde conheces pouca gente:",
+      "a": "Apresento-me a todos",
+      "b": "Fico com quem conheço",
+      "c": "Um pouco de conversa, depois logo se vê"
+    },
+    "q8": {
+      "text": "A tua forma de dizer «gosto de ti»:",
+      "a": "Um abraço, sem pensar",
+      "b": "Uma ajuda concreta quando é preciso",
+      "c": "Guardo para mim, vê-se pelos atos"
+    },
+    "q9": {
+      "text": "Um tema novo desperta-te a curiosidade:",
+      "a": "Leio tudo até o perceber a fundo",
+      "b": "Basta-me a ideia geral",
+      "c": "Um vídeo e algumas curiosidades"
+    },
+    "q10": {
+      "text": "Numa cidade desconhecida:",
+      "a": "Ruelas e lojas escondidas",
+      "b": "As principais atrações",
+      "c": "Um bom sítio para estar tranquilo"
+    },
+    "q11": {
+      "text": "A conversa de que mais gostas:",
+      "a": "Ideias, «e se…?» e perguntas estranhas",
+      "b": "Histórias de vida e episódios",
+      "c": "Coisas práticas, direto ao assunto"
+    },
+    "q12": {
+      "text": "Algo deixa de funcionar:",
+      "a": "Desmonto para perceber como é feito",
+      "b": "Procuro um tutorial",
+      "c": "Levo-o a reparar"
+    },
+    "q13": {
+      "text": "O teu dia ideal:",
+      "a": "Cheio de coisas para fazer",
+      "b": "Poucas coisas, feitas com calma",
+      "c": "Um pouco de tudo"
+    },
+    "q14": {
+      "text": "O despertador toca:",
+      "a": "Salto da cama",
+      "b": "Só mais cinco minutos…",
+      "c": "Que despertador? Acordo quando calha"
+    },
+    "q15": {
+      "text": "Quando tens de decidir:",
+      "a": "Por instinto, logo",
+      "b": "Depois de dormir sobre o assunto",
+      "c": "Com uma lista de prós e contras"
+    },
+    "q16": {
+      "text": "Diante de uma fila longa:",
+      "a": "Procuro logo uma alternativa",
+      "b": "Aproveito para observar à minha volta",
+      "c": "Espero, de telemóvel na mão"
+    },
+    "q17": {
+      "text": "Uma promessa feita quase a brincar:",
+      "a": "Uma promessa é uma promessa",
+      "b": "Depende do que prometi",
+      "c": "Era a brincar, precisamente"
+    },
+    "q18": {
+      "text": "Num grupo de amigos, tu és quem…",
+      "a": "Mantém o rumo e lembra os compromissos",
+      "b": "Traz as ideias",
+      "c": "Se deixa levar"
+    },
+    "q19": {
+      "text": "Escolhes um trabalho sobretudo…",
+      "a": "Pelo sentido que tem para mim",
+      "b": "Pelas pessoas com quem trabalho",
+      "c": "Pela liberdade que me dá"
+    },
+    "q20": {
+      "text": "As tradições de família:",
+      "a": "São as minhas raízes, mantenho-as",
+      "b": "Guardo algumas, à minha maneira",
+      "c": "Prefiro criar novas"
+    }
+  },
+  "menuBuilder": {
+    "subtitle": "O teu menu online com QR na mesa, em várias línguas.",
+    "setupTitle": "Cria o menu do teu espaço",
+    "setupBody": "Escreve o nome do espaço e escolhe as línguas; depois adiciona categorias e pratos. O QR para as mesas fica logo pronto.",
+    "restaurantName": "Nome do espaço",
+    "tagline": "Frase por baixo do nome (opcional)",
+    "taglinePlaceholder": "Ex. Cozinha do mar desde 1985",
+    "defaultLanguage": "Língua principal",
+    "languages": "Línguas do menu",
+    "languagesHint": "O cliente vê o menu na língua do telemóvel, se a ativaste. Para cada língua podes escrever categorias e descrições.",
+    "menuOnline": "Menu online (visível pelo QR)",
+    "saveSettings": "Guardar definições",
+    "createMenu": "Criar o menu",
+    "yourMenuOnline": "O teu menu online",
+    "statusOnline": "Online: os clientes veem-no pelo QR",
+    "statusOffline": "Offline: o QR mostra «menu indisponível»",
+    "openMenu": "Abrir o menu",
+    "copyLink": "Copiar link",
+    "copied": "Copiado",
+    "downloadQr": "Descarregar QR",
+    "settings": "Definições",
+    "noCategories": "O menu está vazio: começa por adicionar uma categoria (ex. Entradas).",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteCategoryConfirm": "Eliminar a categoria e todos os seus pratos?",
+    "deleteItemConfirm": "Eliminar este prato?",
+    "available": "Disponível",
+    "soldOut": "Esgotado",
+    "dailySpecial": "Prato do dia",
+    "addItem": "Adicionar prato",
+    "addCategory": "Adicionar categoria",
+    "editCategory": "Editar categoria",
+    "categoryHint": "Escreve o nome na língua principal (obrigatório) e, se quiseres, nas outras línguas ativas.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "editItem": "Editar prato",
+    "itemName": "Nome do prato",
+    "itemNameHint": "O nome fica original em todas as línguas («Spaghetti alla carbonara» não se traduz): a descrição explica o prato ao cliente.",
+    "price": "Preço (€)",
+    "descriptions": "Descrição por língua",
+    "translateName": "Traduzir também o nome",
+    "tags": "Características",
+    "error_notLoggedIn": "Inicia sessão para editar o menu.",
+    "error_proRequired": "O KUMANI Menu faz parte do plano Pro.",
+    "error_nameRequired": "Escreve o nome.",
+    "error_saveError": "Não foi possível guardar. Tenta novamente.",
+    "error_limitReached": "Atingiste o número máximo de itens."
+  },
+  "menuPublic": {
+    "notAvailable": "Menu indisponível neste momento.",
+    "language": "Língua",
+    "dailySpecial": "Prato do dia",
+    "soldOut": "Esgotado",
+    "empty": "O menu está a ser preparado.",
+    "allergenNotice": "Para informações sobre alergénios e intolerâncias, pergunta ao pessoal.",
+    "tag_vegetarian": "Vegetariano",
+    "tag_vegan": "Vegano",
+    "tag_gluten_free": "Sem glúten",
+    "tag_spicy": "Picante",
+    "tag_chef": "Sugestão do chef",
+    "tag_new": "Novidade"
   }
 }

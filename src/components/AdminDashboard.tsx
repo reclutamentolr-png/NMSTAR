@@ -166,7 +166,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   const [rewardError, setRewardError] = useState<string | null>(null)
   const [uploadingRewardImage, setUploadingRewardImage] = useState(false)
   const [voucherBatches, setVoucherBatches] = useState<any[]>([])
-  const [batchForm, setBatchForm] = useState({ businessName: '', quantity: '10', priceEur: '400', invoiceRef: '', notes: '' })
+  const [batchForm, setBatchForm] = useState<{ businessName: string; quantity: string; priceEur: string; invoiceRef: string; notes: string; plan: 'base' | 'pro' }>({ businessName: '', quantity: '10', priceEur: '400', invoiceRef: '', notes: '', plan: 'base' })
   const [creatingBatch, setCreatingBatch] = useState(false)
   const [couponArea, setCouponArea] = useState<'merchant' | 'community'>('merchant')
   const [fulfillCodeInputs, setFulfillCodeInputs] = useState<Record<string, string>>({})
@@ -179,6 +179,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     matrix_slot_bonus_points: 5,
     matrix_spillover_bonus_points: 5,
     activity_thanks_points: 3,
+    pro_invite_extra_points: 20,
+    pro_trial_days: 15,
     listing_feature_cost_7d: 20,
     listing_feature_cost_15d: 35,
     subscription_price_eur: 49
@@ -386,7 +388,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
 
   const handleCreateBatch = async () => {
     const quantity = parseInt(batchForm.quantity, 10) || 0
-    if (!confirm(`Generare ${quantity} coupon di attivazione per "${batchForm.businessName}"?`)) return
+    if (!confirm(`Generare ${quantity} coupon ${batchForm.plan === 'pro' ? 'PRO' : 'Base'} di attivazione per "${batchForm.businessName}"?`)) return
     setCreatingBatch(true)
     const result = await createVoucherBatch({
       businessName: batchForm.businessName,
@@ -394,13 +396,14 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
       priceEur: batchForm.priceEur.trim() === '' ? null : Number(batchForm.priceEur.replace(',', '.')),
       invoiceRef: batchForm.invoiceRef,
       notes: batchForm.notes,
+      plan: batchForm.plan,
     })
     setCreatingBatch(false)
     if (!result.success) {
       alert('❌ ' + result.error)
       return
     }
-    setBatchForm({ businessName: '', quantity: '10', priceEur: '400', invoiceRef: '', notes: '' })
+    setBatchForm({ businessName: '', quantity: '10', priceEur: '400', invoiceRef: '', notes: '', plan: 'base' })
     const { batches } = await listVoucherBatches()
     setVoucherBatches(batches)
     window.open(`/${locale}/admin/voucher-batch/${result.batchId}`, '_blank')
@@ -1428,7 +1431,30 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
           propri clienti. Ogni codice attiva 1 anno di abbonamento, vale una sola volta e si può inserire già in
           registrazione: il QR stampato sul cartoncino apre la registrazione con il codice compilato. Gli abbonamenti
           attivati con coupon non si rinnovano da soli e non generano Punti Community a chi invita.
+          Scegli il piano del lotto: <strong>Base</strong> oppure <strong>Pro</strong> (per negozi e professionisti:
+          attiva 1 anno di Pro, che include anche il Base).
         </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500 uppercase">Piano del lotto</span>
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          {(['base', 'pro'] as const).map((plan) => (
+            <button
+              key={plan}
+              type="button"
+              onClick={() => setBatchForm({ ...batchForm, plan })}
+              className={`px-4 py-1.5 text-xs font-semibold ${
+                batchForm.plan === plan
+                  ? plan === 'pro'
+                    ? 'bg-[var(--ink)] text-[var(--gold-bright)]'
+                    : 'bg-gray-800 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {plan === 'pro' ? 'Pro' : 'Base'}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <input
@@ -1482,6 +1508,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             <thead>
               <tr className="border-b text-left text-gray-500">
                 <th className="py-2 pr-3 font-medium">Attività</th>
+                <th className="py-2 pr-3 font-medium">Piano</th>
                 <th className="py-2 pr-3 font-medium">Usati</th>
                 <th className="py-2 pr-3 font-medium">Prezzo</th>
                 <th className="py-2 pr-3 font-medium">Fattura</th>
@@ -1495,6 +1522,13 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                   <td className="py-2 pr-3 text-gray-900">
                     {b.business_name}
                     {b.notes && <span className="block text-xs text-gray-400">{b.notes}</span>}
+                  </td>
+                  <td className="py-2 pr-3">
+                    {b.plan === 'pro' ? (
+                      <span className="rounded-full bg-[var(--ink)] px-2 py-0.5 text-[10px] font-bold text-[var(--gold-bright)]">PRO</span>
+                    ) : (
+                      <span className="text-xs text-gray-600">Base</span>
+                    )}
                   </td>
                   <td className="py-2 pr-3 text-gray-700">{b.redeemed}/{b.quantity}</td>
                   <td className="py-2 pr-3 text-gray-700">{b.price_eur != null ? `${Number(b.price_eur).toFixed(2)} €` : '—'}</td>
@@ -2530,6 +2564,41 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
               <span className="text-sm text-gray-500 whitespace-nowrap">Punti Community / Spillover</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <GitBranch className="w-4 h-4" />
+            Piano Pro: extra inviti e prova gratuita
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            <strong>Extra Pro:</strong> Punti Community in più, una sola volta per invitato, a chi invita direttamente una
+            persona che paga il piano Pro con carta. Si sommano al Bonus Struttura qui sopra (es. 10 + 20 = 30 punti, in
+            proporzione al prezzo Pro). <strong>Prova Pro:</strong> giorni di Pro gratis per chi si registra come
+            professionista o la attiva dalla pagina Pro (una sola volta per account, senza carta).
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={systemSettings.pro_invite_extra_points ?? 20}
+                onChange={(e) => setSystemSettings({ ...systemSettings, pro_invite_extra_points: parseInt(e.target.value, 10) || 0 })}
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+              />
+              <span className="text-sm text-gray-500 whitespace-nowrap">Punti extra / invito Pro</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={systemSettings.pro_trial_days ?? 15}
+                onChange={(e) => setSystemSettings({ ...systemSettings, pro_trial_days: parseInt(e.target.value, 10) || 1 })}
+                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+              />
+              <span className="text-sm text-gray-500 whitespace-nowrap">Giorni di prova</span>
             </div>
           </div>
         </div>
