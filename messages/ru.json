@@ -2267,6 +2267,7 @@
     "proUnavailable": "Тариф Pro скоро будет доступен.",
     "ctaRegister": "Зарегистрируйтесь и выберите Pro",
     "alreadyPro": "У вас уже активен тариф Pro.",
+    "goToProArea": "Перейти в раздел для профессионалов",
     "ctaUpgrade": "Перейти на Pro",
     "upgradeNote": "Ваша подписка Base станет Pro: сейчас вы платите только разницу за оставшийся период.",
     "ctaSubscribePro": "Активировать Pro за {price} €/год",
@@ -2276,5 +2277,22 @@
     "upgradeError_unavailable": "Тариф Pro пока недоступен.",
     "upgradeError_already_pro": "У вас уже есть тариф Pro.",
     "upgradeError_stripe_error": "Платёж не прошёл. Попробуйте ещё раз чуть позже."
+  },
+  "proArea": {
+    "title": "Раздел для профессионалов",
+    "subtitle": "Ваши инструменты Pro и показатели вашего бизнеса.",
+    "planActive": "Тариф Pro активен",
+    "renewsOn": "Продление: {date}",
+    "manageSubscription": "Управлять подпиской",
+    "trialLeft": "Пробный Pro: {days, plural, one {остался # день} few {осталось # дня} many {осталось # дней} other {осталось # дня}}",
+    "keepPro": "Активируйте Pro, чтобы сохранить его",
+    "statFidelity": "{members, plural, one {# клиент} few {# клиента} many {# клиентов} other {# клиента}} · {stamps, plural, one {# отметка} few {# отметки} many {# отметок} other {# отметки}} за 30 дней",
+    "statQuotes": "{count, plural, =0 {В этом месяце смет нет} one {# смета в этом месяце} few {# сметы в этом месяце} many {# смет в этом месяце} other {# сметы в этом месяце}}",
+    "statReceipts": "{count, plural, =0 {Нет чеков в ожидании} one {# чек ждёт подтверждения} few {# чека ждут подтверждения} many {# чеков ждут подтверждения} other {# чека ждут подтверждения}}",
+    "statQr": "{count, plural, one {# сканирование} few {# сканирования} many {# сканирований} other {# сканирования}} всего",
+    "statOffers": "{count, plural, one {# клик} few {# клика} many {# кликов} other {# клика}} по вашим предложениям",
+    "teaserTitle": "Вы профессионал? Откройте KUMANI Pro",
+    "teaserBody": "Лояльность клиентов, сметы, чеки и акции для вашего бизнеса.",
+    "teaserCta": "Узнать о Pro"
   }
 }

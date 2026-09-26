@@ -2238,6 +2238,7 @@
     "proUnavailable": "The Pro plan will be available soon.",
     "ctaRegister": "Sign up and choose Pro",
     "alreadyPro": "Your Pro plan is already active.",
+    "goToProArea": "Go to the Professionals Area",
     "ctaUpgrade": "Upgrade to Pro",
     "upgradeNote": "Your Base subscription becomes Pro: you only pay the difference for the remaining period now.",
     "ctaSubscribePro": "Activate Pro for €{price}/year",
@@ -2247,5 +2248,22 @@
     "upgradeError_unavailable": "The Pro plan is not available yet.",
     "upgradeError_already_pro": "You already have the Pro plan.",
     "upgradeError_stripe_error": "Payment failed. Please try again shortly."
+  },
+  "proArea": {
+    "title": "Professionals Area",
+    "subtitle": "Your Pro tools and your business numbers.",
+    "planActive": "Pro plan active",
+    "renewsOn": "Renews: {date}",
+    "manageSubscription": "Manage subscription",
+    "trialLeft": "Pro trial: {days, plural, one {# day left} other {# days left}}",
+    "keepPro": "Activate Pro to keep it",
+    "statFidelity": "{members, plural, one {# customer} other {# customers}} · {stamps, plural, one {# stamp} other {# stamps}} in the last 30 days",
+    "statQuotes": "{count, plural, =0 {No quotes this month} one {# quote this month} other {# quotes this month}}",
+    "statReceipts": "{count, plural, =0 {No receipts pending} one {# receipt awaiting confirmation} other {# receipts awaiting confirmation}}",
+    "statQr": "{count, plural, one {# total scan} other {# total scans}}",
+    "statOffers": "{count, plural, one {# click on your offers} other {# clicks on your offers}}",
+    "teaserTitle": "Are you a professional? Discover KUMANI Pro",
+    "teaserBody": "Customer loyalty, quotes, receipts and promotions for your business.",
+    "teaserCta": "Discover Pro"
   }
 }

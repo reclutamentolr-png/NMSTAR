@@ -20,6 +20,9 @@ import { getMarketplaceTools } from '@/lib/marketplaceTools'
 import { getFavoriteToolNames } from '@/lib/favorites'
 import DashboardTipo1 from '@/components/dashboard/DashboardTipo1'
 import DashboardTipo2 from '@/components/dashboard/DashboardTipo2'
+import ProArea from '@/components/dashboard/ProArea'
+import ProTeaser from '@/components/dashboard/ProTeaser'
+import { getProAreaStats } from '@/lib/proAreaStats'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -73,15 +76,36 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const recentListings = await getActiveListings({ limit: 3 })
   const unreadMessagesCount = await getUnreadMessagesCount(user.id)
 
-  // 8. Solo Tipo 2 ha bisogno della lista strumenti Marketplace e dei
-  //    preferiti in dashboard
+  // 8. Strumenti Marketplace attivi e piano dell'utente (Area Professionisti
+  //    per tutti i layout; lista strumenti e preferiti solo per Tipo 2)
+  const { userPlan, isSettingEnabled, isToolEnabled, requiredPlan } = await getMarketplaceAccessState(supabase, user.id)
+  const enabledTools = getMarketplaceTools(marketplaceT).filter((tool) => isSettingEnabled(tool.toolName))
+  const proTools = enabledTools.filter((tool) => requiredPlan(tool.toolName) === 'pro')
+  const isPro = userPlan === 'pro'
+
+  // Area Professionisti: dati dell'attività, giorni di prova rimasti o data di rinnovo
+  let proAreaStats: Awaited<ReturnType<typeof getProAreaStats>> = {}
+  let trialDaysLeft: number | null = null
+  let proRenewsOn: string | null = null
+  if (isPro && proTools.length > 0) {
+    proAreaStats = await getProAreaStats(supabase, user.id)
+    const paidPro = profile?.subscription_status === 'active' && profile?.subscription_plan === 'pro'
+    const trialEnd = profile?.pro_trial_ends_at ? new Date(profile.pro_trial_ends_at).getTime() : 0
+    if (!paidPro && trialEnd > new Date().getTime()) {
+      trialDaysLeft = Math.ceil((trialEnd - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    } else if (profile?.subscription_expires_at) {
+      proRenewsOn = new Date(profile.subscription_expires_at).toLocaleDateString(locale)
+    }
+  }
+
   let visibleTools: ReturnType<typeof getMarketplaceTools> = []
   let lockedToolNames: string[] = []
   let proToolNames: string[] = []
   let favoriteToolNames: string[] = []
   if (layout === 'tipo2') {
-    const { isSettingEnabled, isToolEnabled, requiredPlan } = await getMarketplaceAccessState(supabase, user.id)
-    visibleTools = getMarketplaceTools(marketplaceT).filter((tool) => isSettingEnabled(tool.toolName))
+    // Chi è Pro trova gli strumenti Pro nell'Area Professionisti: non si
+    // ripetono nelle categorie sotto.
+    visibleTools = isPro ? enabledTools.filter((tool) => requiredPlan(tool.toolName) !== 'pro') : enabledTools
     // Admin-enabled but not usable by THIS user (no active subscription) —
     // shown locked instead of silently hidden, same distinction the
     // marketplace category grid already makes via MarketplaceCard.
@@ -125,6 +149,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <ActivityTracker userId={user.id} />
+
+        {isPro && proTools.length > 0 ? (
+          <ProArea tools={proTools} stats={proAreaStats} trialDaysLeft={trialDaysLeft} renewsOn={proRenewsOn} />
+        ) : (
+          !isPro && proTools.length > 0 && <ProTeaser />
+        )}
 
         {layout === 'tipo2' ? (
           <DashboardTipo2

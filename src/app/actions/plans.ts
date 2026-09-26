@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import type Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 
 const getServiceClient = () =>
@@ -38,14 +39,26 @@ export async function upgradeToPro(): Promise<{ success: boolean; reason?: 'not_
   try {
     const stripe = getStripe()
     const found = await stripe.subscriptions.search({ query: `metadata['userId']:'${user.id}' AND status:'active'`, limit: 1 })
-    const subscription = found.data[0]
+    let subscription: Stripe.Subscription | undefined = found.data[0]
+    // Abbonamenti creati prima che il checkout salvasse userId anche
+    // sull'abbonamento: si ritrovano dal cliente Stripe con la stessa email.
+    if (!subscription && user.email) {
+      const customers = await stripe.customers.list({ email: user.email, limit: 10 })
+      for (const customer of customers.data) {
+        const subs = await stripe.subscriptions.list({ customer: customer.id, status: 'active', limit: 1 })
+        if (subs.data[0]) {
+          subscription = subs.data[0]
+          break
+        }
+      }
+    }
     const item = subscription?.items.data[0]
     if (!subscription || !item) return { success: false, reason: 'not_stripe' }
 
     const updated = await stripe.subscriptions.update(subscription.id, {
       items: [{ id: item.id, price: proPrice }],
       proration_behavior: 'always_invoice',
-      metadata: { ...subscription.metadata, plan: 'pro' },
+      metadata: { ...subscription.metadata, userId: user.id, plan: 'pro' },
     })
 
     // Il webhook customer.subscription.updated fa lo stesso: qui si aggiorna

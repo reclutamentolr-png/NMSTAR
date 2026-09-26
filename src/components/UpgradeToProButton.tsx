@@ -17,13 +17,18 @@ export default function UpgradeToProButton({ label, note }: { label: string; not
     if (!confirm(note)) return
     setBusy(true)
     setMessage(null)
-    const result = await upgradeToPro()
-    setBusy(false)
-    if (result.success) {
-      setMessage({ ok: true, text: t('upgradeDone') })
-      router.refresh()
-    } else {
-      setMessage({ ok: false, text: t(`upgradeError_${result.reason ?? 'stripe_error'}`) })
+    try {
+      const result = await upgradeToPro()
+      if (result.success) {
+        setMessage({ ok: true, text: t('upgradeDone') })
+        router.refresh()
+      } else {
+        setMessage({ ok: false, text: t(`upgradeError_${result.reason ?? 'stripe_error'}`) })
+      }
+    } catch {
+      setMessage({ ok: false, text: t('upgradeError_stripe_error') })
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -38,7 +43,14 @@ export default function UpgradeToProButton({ label, note }: { label: string; not
         {busy ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Crown className="h-5 w-5" />} {label}
       </button>
       <p className="mt-2 text-xs text-gray-400">{note}</p>
-      {message && <p className={`mt-3 text-sm ${message.ok ? 'text-green-300' : 'text-amber-300'}`}>{message.text}</p>}
+      {message && (
+        <p
+          role="status"
+          className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${message.ok ? 'bg-green-500/15 text-green-300' : 'bg-amber-500/15 text-amber-200'}`}
+        >
+          {message.text}
+        </p>
+      )}
     </div>
   )
 }

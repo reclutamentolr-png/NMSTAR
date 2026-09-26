@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { ArrowLeft, CheckCircle2, Crown } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Crown } from 'lucide-react'
 import Link from '@/components/LocalizedLink'
 import Logo from '@/components/Logo'
 import UpgradeToProButton from '@/components/UpgradeToProButton'
@@ -105,7 +105,15 @@ export default async function ProPage({ searchParams }: { searchParams: Promise<
                   <Crown className="h-5 w-5" /> {t('ctaRegister')}
                 </Link>
               ) : plan === 'pro' ? (
-                <p className="rounded-xl bg-green-500/10 px-4 py-3 font-semibold text-green-300">{t('alreadyPro')}</p>
+                <div className="space-y-3">
+                  <p className="rounded-xl bg-green-500/10 px-4 py-3 font-semibold text-green-300">{t('alreadyPro')}</p>
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-6 py-3.5 font-bold text-[var(--ink)]"
+                  >
+                    {t('goToProArea')} <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </div>
               ) : !proAvailable ? (
                 <p className="rounded-xl bg-white/5 px-4 py-3 text-sm text-gray-300">{t('proUnavailable')}</p>
               ) : hasStripeSubscription ? (

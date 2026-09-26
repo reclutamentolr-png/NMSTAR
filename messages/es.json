@@ -2267,6 +2267,7 @@
     "proUnavailable": "El plan Pro estará disponible pronto.",
     "ctaRegister": "Regístrate y elige Pro",
     "alreadyPro": "Ya tienes el plan Pro activo.",
+    "goToProArea": "Ir al Área Profesionales",
     "ctaUpgrade": "Pasar a Pro",
     "upgradeNote": "Tu suscripción Base pasa a Pro: ahora solo pagas la diferencia por el periodo restante.",
     "ctaSubscribePro": "Activar Pro por {price} €/año",
@@ -2276,5 +2277,22 @@
     "upgradeError_unavailable": "El plan Pro aún no está disponible.",
     "upgradeError_already_pro": "Ya tienes el plan Pro.",
     "upgradeError_stripe_error": "El pago no se realizó. Inténtalo de nuevo en un momento."
+  },
+  "proArea": {
+    "title": "Área Profesionales",
+    "subtitle": "Tus herramientas Pro y los números de tu actividad.",
+    "planActive": "Plan Pro activo",
+    "renewsOn": "Renovación: {date}",
+    "manageSubscription": "Gestionar suscripción",
+    "trialLeft": "Prueba Pro: {days, plural, one {queda # día} other {quedan # días}}",
+    "keepPro": "Activa Pro para no perderlo",
+    "statFidelity": "{members, plural, one {# cliente} other {# clientes}} · {stamps, plural, one {# sello} other {# sellos}} en los últimos 30 días",
+    "statQuotes": "{count, plural, =0 {Ningún presupuesto este mes} one {# presupuesto este mes} other {# presupuestos este mes}}",
+    "statReceipts": "{count, plural, =0 {Ningún recibo pendiente} one {# recibo pendiente de confirmación} other {# recibos pendientes de confirmación}}",
+    "statQr": "{count, plural, one {# escaneo en total} other {# escaneos en total}}",
+    "statOffers": "{count, plural, one {# clic en tus ofertas} other {# clics en tus ofertas}}",
+    "teaserTitle": "¿Eres profesional? Descubre KUMANI Pro",
+    "teaserBody": "Fidelización de clientes, presupuestos, recibos y promociones para tu actividad.",
+    "teaserCta": "Descubrir Pro"
   }
 }
