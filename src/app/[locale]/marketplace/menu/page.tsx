@@ -38,7 +38,7 @@ export default async function MenuBuilderPage({ params }: { params: Promise<{ lo
           <h1 className="text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-4xl">KUMANI Menu</h1>
           <p className="mt-2 text-[var(--muted)]">{t('subtitle')}</p>
         </div>
-        <MenuBuilder initial={data} siteUrl={process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'} />
+        <MenuBuilder initial={data} siteUrl={process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'} locale={locale} />
       </main>
     </div>
   )

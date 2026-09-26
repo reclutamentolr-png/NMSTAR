@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server'
-import { ArrowRight, Briefcase, Smartphone } from 'lucide-react'
+import { ArrowRight, Briefcase, Crown, Hourglass, Smartphone } from 'lucide-react'
 import Link from '@/components/LocalizedLink'
 import { marketplaceIconMap } from '@/lib/marketplaceIcons'
 import type { MarketplaceTool } from '@/lib/marketplaceTools'
@@ -11,12 +11,12 @@ import type { ProAreaStats } from '@/lib/proAreaStats'
 export default async function ProArea({
   tools,
   stats,
-  trialDaysLeft,
+  trial,
   renewsOn,
 }: {
   tools: MarketplaceTool[]
   stats: ProAreaStats
-  trialDaysLeft: number | null
+  trial: { daysLeft: number; totalDays: number; endsOn: string; price: number } | null
   renewsOn: string | null
 }) {
   const t = await getTranslations('proArea')
@@ -58,25 +58,42 @@ export default async function ProArea({
           </div>
         </div>
 
-        <div className="text-right text-xs">
-          {trialDaysLeft !== null ? (
-            <>
-              <p className="font-semibold text-[var(--gold-bright)]">{t('trialLeft', { days: trialDaysLeft })}</p>
-              <Link href="/pro" className="mt-1 inline-block text-white/70 underline-offset-2 hover:text-white hover:underline">
-                {t('keepPro')}
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="font-semibold text-emerald-300">{t('planActive')}</p>
-              {renewsOn && <p className="mt-0.5 text-white/60">{t('renewsOn', { date: renewsOn })}</p>}
-              <Link href="/billing" className="mt-1 inline-block text-white/70 underline-offset-2 hover:text-white hover:underline">
-                {t('manageSubscription')}
-              </Link>
-            </>
-          )}
-        </div>
+        {!trial && (
+          <div className="text-right text-xs">
+            <p className="font-semibold text-emerald-300">{t('planActive')}</p>
+            {renewsOn && <p className="mt-0.5 text-white/60">{t('renewsOn', { date: renewsOn })}</p>}
+            <Link href="/billing" className="mt-1 inline-block text-white/70 underline-offset-2 hover:text-white hover:underline">
+              {t('manageSubscription')}
+            </Link>
+          </div>
+        )}
       </div>
+
+      {trial && (
+        <div className="mb-5 rounded-xl border border-[var(--gold)]/60 bg-gradient-to-r from-[var(--gold)]/25 to-[var(--gold-bright)]/10 p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Hourglass className={`mt-0.5 h-6 w-6 shrink-0 ${trial.daysLeft <= 3 ? 'animate-pulse text-amber-300' : 'text-[var(--gold-bright)]'}`} />
+              <div>
+                <p className="text-lg font-bold text-white">{t('trialBannerTitle', { days: trial.daysLeft })}</p>
+                <p className="mt-0.5 text-sm text-white/75">{t('trialBannerBody', { date: trial.endsOn })}</p>
+              </div>
+            </div>
+            <Link
+              href="/pro"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-5 py-3 font-bold text-[var(--ink)] shadow-lg transition-all hover:brightness-110"
+            >
+              <Crown className="h-5 w-5" /> {t('trialBannerCta', { price: trial.price })}
+            </Link>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/15">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)]"
+              style={{ width: `${Math.max(4, Math.min(100, (trial.daysLeft / Math.max(trial.totalDays, 1)) * 100))}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tools.map((tool) => {

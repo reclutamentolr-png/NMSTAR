@@ -3,7 +3,7 @@ import { ArrowRight, Briefcase } from 'lucide-react'
 import Link from '@/components/LocalizedLink'
 
 // Invito compatto al piano Pro per chi non ce l'ha: porta alla pagina /pro.
-export default async function ProTeaser() {
+export default async function ProTeaser({ trialExpired = false }: { trialExpired?: boolean }) {
   const t = await getTranslations('proArea')
   return (
     <Link
@@ -15,12 +15,12 @@ export default async function ProTeaser() {
           <Briefcase className="h-4.5 w-4.5" />
         </div>
         <div>
-          <p className="font-semibold">{t('teaserTitle')}</p>
-          <p className="text-xs text-white/60">{t('teaserBody')}</p>
+          <p className="font-semibold">{trialExpired ? t('trialExpiredTitle') : t('teaserTitle')}</p>
+          <p className="text-xs text-white/60">{trialExpired ? t('trialExpiredBody') : t('teaserBody')}</p>
         </div>
       </div>
       <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-[var(--gold-bright)]">
-        <span className="hidden sm:inline">{t('teaserCta')}</span>
+        <span className="hidden sm:inline">{trialExpired ? t('trialExpiredCta') : t('teaserCta')}</span>
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
       </span>
     </Link>

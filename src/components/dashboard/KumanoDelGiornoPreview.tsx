@@ -5,7 +5,7 @@ import { ArrowRight, Star } from 'lucide-react'
 import { isEmptySpotlightProfile, type SpotlightProfile } from '@/lib/spotlight'
 
 // Teaser "Kumano del Giorno" sul dashboard: la categoria Community non ha
-// una propria accordion tra gli strumenti (vedi DashboardTipo1/2 — è
+// una propria accordion tra gli strumenti (vedi DashboardTipo2 — è
 // esclusa da toolsByCategory perché già rappresentata inline da
 // CommunityPreview), quindi questo nuovo tool ha bisogno del proprio
 // piccolo blocco accanto ad essa, altrimenti resta visibile solo dalla

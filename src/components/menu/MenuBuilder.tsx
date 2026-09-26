@@ -7,18 +7,24 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  Camera,
   Copy,
   Download,
   ExternalLink,
   LoaderCircle,
   Pencil,
   Plus,
+  Printer,
   Settings2,
+  Sparkles,
   Star,
   Trash2,
   X,
 } from 'lucide-react'
+import { MENU_TEMPLATES, MENU_THEMES, type MenuTemplate } from '@/lib/menuThemes'
+import { resizeImageFile } from '@/lib/resizeImage'
 import {
+  deleteMenu,
   deleteMenuCategory,
   deleteMenuItem,
   moveMenuEntry,
@@ -26,14 +32,20 @@ import {
   saveMenuItem,
   saveMenuSettings,
   setMenuItemFlag,
+  translateMenuMissing,
+  uploadMenuPhoto,
 } from '@/app/actions/menu'
 import {
+  allergenNumber,
   formatMenuPrice,
+  MENU_ALLERGENS,
   MENU_DIET_TAGS,
   MENU_LOCALE_NAMES,
   MENU_LOCALES,
+  menuPhotoUrl,
   pickText,
   type LocalizedText,
+  type MenuAllergen,
   type MenuCategory,
   type MenuData,
   type MenuDietTag,
@@ -51,6 +63,8 @@ type ItemDraft = {
   descriptions: LocalizedText
   price: string
   dietTags: MenuDietTag[]
+  allergens: MenuAllergen[]
+  photoPath: string | null
   available: boolean
   isDailySpecial: boolean
   translateName: boolean
@@ -58,7 +72,7 @@ type ItemDraft = {
 
 const inputClass = 'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/30'
 
-export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; siteUrl: string }) {
+export default function MenuBuilder({ initial, siteUrl, locale }: { initial: MenuData; siteUrl: string; locale: string }) {
   const t = useTranslations('menuBuilder')
   const tp = useTranslations('menuPublic')
   const [data, setData] = useState<MenuData>(initial)
@@ -68,16 +82,21 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
   const [categoryDraft, setCategoryDraft] = useState<{ id?: string; names: LocalizedText } | null>(null)
   const [itemDraft, setItemDraft] = useState<ItemDraft | null>(null)
   const [qr, setQr] = useState<string | null>(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   const menu = data.menu
   const lang = menu?.default_locale ?? 'it'
   const languages = menu?.languages ?? ['it']
   const publicUrl = menu ? `${siteUrl}/m/${menu.token}` : ''
+  const menuBasePath = `/${locale}/marketplace/menu`
 
   const [settings, setSettings] = useState({
     restaurantName: initial.menu?.restaurant_name ?? '',
     tagline: initial.menu?.tagline ?? '',
+    reviewUrl: initial.menu?.review_url ?? '',
+    template: (initial.menu?.template ?? 'elegante') as MenuTemplate,
     defaultLocale: (initial.menu?.default_locale ?? 'it') as MenuLocale,
     languages: (initial.menu?.languages ?? ['it']) as MenuLocale[],
     isActive: initial.menu?.is_active ?? true,
@@ -132,12 +151,65 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
             descriptions: item.descriptions,
             price: item.price === null ? '' : String(item.price),
             dietTags: item.diet_tags,
+            allergens: item.allergens,
+            photoPath: item.photo_path,
             available: item.available,
             isDailySpecial: item.is_daily_special,
             translateName: Object.keys(item.names).length > 0,
           }
-        : { categoryId, name: '', names: {}, descriptions: {}, price: '', dietTags: [], available: true, isDailySpecial: false, translateName: false }
+        : {
+            categoryId,
+            name: '',
+            names: {},
+            descriptions: {},
+            price: '',
+            dietTags: [],
+            allergens: [],
+            photoPath: null,
+            available: true,
+            isDailySpecial: false,
+            translateName: false,
+          }
     )
+
+  const choosePhoto = async (file: File | undefined) => {
+    if (!file || !itemDraft) return
+    setUploadingPhoto(true)
+    setError(null)
+    try {
+      const resized = await resizeImageFile(file)
+      if (!resized) throw new Error('resize')
+      const form = new FormData()
+      form.append('file', resized)
+      const result = await uploadMenuPhoto(form)
+      if (!result.success) throw new Error(result.message)
+      setItemDraft((draft) => (draft ? { ...draft, photoPath: result.path } : draft))
+    } catch {
+      setError(t('error_photoError'))
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  const translateWithAi = async () => {
+    if (!confirm(t('aiConfirm'))) return
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const result = await translateMenuMissing()
+      if (result.success) {
+        setData(result.data)
+        setNotice(t('aiDone', { count: result.translated }))
+      } else {
+        setError(t(`error_${result.message}`))
+      }
+    } catch {
+      setError(t('error_aiError'))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const saveItem = () => {
     if (!itemDraft) return
@@ -152,6 +224,8 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
           descriptions: itemDraft.descriptions,
           price: price !== null && Number.isNaN(price) ? null : price,
           dietTags: itemDraft.dietTags,
+          allergens: itemDraft.allergens,
+          photoPath: itemDraft.photoPath,
           available: itemDraft.available,
           isDailySpecial: itemDraft.isDailySpecial,
         }),
@@ -175,6 +249,41 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
           placeholder={t('taglinePlaceholder')}
           onChange={(e) => setSettings({ ...settings, tagline: e.target.value })}
         />
+      </div>
+      <div>
+        <p className="mb-2 text-sm font-semibold text-gray-700">{t('template')}</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {MENU_TEMPLATES.map((template) => {
+            const [bg, accent] = MENU_THEMES[template].swatch
+            const on = settings.template === template
+            return (
+              <button
+                key={template}
+                type="button"
+                onClick={() => setSettings({ ...settings, template })}
+                className={`rounded-xl border-2 p-2 text-left ${on ? 'border-[var(--gold)]' : 'border-gray-200'}`}
+              >
+                <span className="flex h-10 items-center justify-center rounded-lg border border-gray-200" style={{ background: bg }}>
+                  <span className="h-2 w-10 rounded-full" style={{ background: accent }} />
+                </span>
+                <span className="mt-1.5 block text-xs font-bold text-gray-800">{t(`template_${template}`)}</span>
+                <span className="block text-[10px] leading-4 text-gray-500">{t(`template_${template}_hint`)}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-gray-700">{t('reviewUrl')}</label>
+        <input
+          className={inputClass}
+          value={settings.reviewUrl}
+          maxLength={500}
+          inputMode="url"
+          placeholder="https://g.page/r/..."
+          onChange={(e) => setSettings({ ...settings, reviewUrl: e.target.value })}
+        />
+        <p className="mt-1 text-xs text-gray-500">{t('reviewUrlHint')}</p>
       </div>
       <div>
         <label className="mb-1 block text-sm font-semibold text-gray-700">{t('defaultLanguage')}</label>
@@ -228,6 +337,25 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
       >
         {busy && <LoaderCircle className="h-4 w-4 animate-spin" />} {menu ? t('saveSettings') : t('createMenu')}
       </button>
+      {menu && (
+        <div className="border-t border-gray-100 pt-4">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              confirm(t('deleteMenuConfirm')) &&
+              run(deleteMenu, () => {
+                setShowSettings(true)
+                setSettings((current) => ({ ...current, isActive: true }))
+              })
+            }
+            className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" /> {t('deleteMenu')}
+          </button>
+          <p className="mt-1.5 text-xs text-gray-500">{t('deleteMenuHint')}</p>
+        </div>
+      )}
     </div>
   )
 
@@ -274,6 +402,22 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
                 <Download className="h-4 w-4" /> {t('downloadQr')}
               </a>
             )}
+            <a
+              href={`${menuBasePath}/print`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold"
+            >
+              <Printer className="h-4 w-4" /> {t('printMenu')}
+            </a>
+            <a
+              href={`${menuBasePath}/tent`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold"
+            >
+              <Printer className="h-4 w-4" /> {t('printTent')}
+            </a>
             <button
               type="button"
               onClick={() => setShowSettings((v) => !v)}
@@ -292,6 +436,26 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
       {showSettings && <div className="rounded-2xl border border-[var(--gold)]/25 bg-white p-6 shadow-sm">{settingsForm}</div>}
 
       {errorBox}
+      {notice && <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{notice}</p>}
+
+      {languages.length > 1 && data.categories.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold-pale)]/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="flex items-center gap-1.5 font-bold text-[var(--ink)]">
+              <Sparkles className="h-4 w-4 text-[var(--gold)]" /> {t('aiTitle')}
+            </p>
+            <p className="mt-0.5 text-xs text-gray-600">{t('aiBody')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={translateWithAi}
+            disabled={busy}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+          >
+            {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-[var(--gold-bright)]" />} {t('aiButton')}
+          </button>
+        </div>
+      )}
 
       {/* Categorie e piatti */}
       {data.categories.length === 0 && <p className="rounded-2xl bg-white p-6 text-center text-sm text-gray-500">{t('noCategories')}</p>}
@@ -329,12 +493,21 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
             {itemsOf(category).map((item, ii, list) => (
               <li key={item.id} className={`px-4 py-3 ${item.available ? '' : 'bg-gray-50'}`}>
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  {item.photo_path && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={menuPhotoUrl(item.photo_path) ?? ''} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                  )}
+                  <div className="min-w-0 flex-1">
                     <p className={`font-semibold ${item.available ? 'text-[var(--ink)]' : 'text-gray-400 line-through'}`}>
                       {item.is_daily_special && <Star className="mr-1 inline h-4 w-4 fill-[var(--gold)] text-[var(--gold)]" />}
                       {item.name}
                     </p>
                     {pickText(item.descriptions, lang, lang) && <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{pickText(item.descriptions, lang, lang)}</p>}
+                    {item.allergens.length > 0 && (
+                      <p className="mt-1 text-[11px] text-gray-500">
+                        {tp('allergensLabel')}: {item.allergens.map((a) => tp(`allergen_${a}`)).join(', ')}
+                      </p>
+                    )}
                     {item.diet_tags.length > 0 && (
                       <p className="mt-1 flex flex-wrap gap-1">
                         {item.diet_tags.map((tag) => (
@@ -454,6 +627,40 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
               />
             </div>
             <div>
+              <p className="mb-1 text-xs font-semibold text-gray-600">{t('photo')}</p>
+              <div className="flex items-center gap-3">
+                {itemDraft.photoPath ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={menuPhotoUrl(itemDraft.photoPath) ?? ''} alt="" className="h-20 w-20 rounded-xl object-cover" />
+                ) : (
+                  <span className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 text-gray-400">
+                    <Camera className="h-6 w-6" />
+                  </span>
+                )}
+                <div className="flex flex-col items-start gap-1.5">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                    {uploadingPhoto ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                    {itemDraft.photoPath ? t('changePhoto') : t('addPhoto')}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingPhoto}
+                      onChange={(e) => {
+                        choosePhoto(e.target.files?.[0])
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                  {itemDraft.photoPath && (
+                    <button type="button" onClick={() => setItemDraft({ ...itemDraft, photoPath: null })} className="text-xs font-semibold text-red-500">
+                      {t('removePhoto')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div>
               <p className="mb-1 text-xs font-semibold text-gray-600">{t('descriptions')}</p>
               <div className="space-y-2">
                 {orderedLanguages(languages, lang).map((l) => (
@@ -518,6 +725,36 @@ export default function MenuBuilder({ initial, siteUrl }: { initial: MenuData; s
                     >
                       {tp(`tag_${tag}`)}
                     </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-semibold text-gray-600">{t('allergens')}</p>
+              <p className="mb-2 text-xs text-gray-500">{t('allergensHint')}</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {MENU_ALLERGENS.map((allergen) => {
+                  const on = itemDraft.allergens.includes(allergen)
+                  return (
+                    <label
+                      key={allergen}
+                      className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
+                        on ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 accent-amber-500"
+                        checked={on}
+                        onChange={() =>
+                          setItemDraft({
+                            ...itemDraft,
+                            allergens: on ? itemDraft.allergens.filter((x) => x !== allergen) : [...itemDraft.allergens, allergen],
+                          })
+                        }
+                      />
+                      {allergenNumber(allergen)}. {tp(`allergen_${allergen}`)}
+                    </label>
                   )
                 })}
               </div>

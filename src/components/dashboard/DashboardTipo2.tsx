@@ -1,6 +1,5 @@
 import { getTranslations } from 'next-intl/server'
 import Link from '@/components/LocalizedLink'
-import ProfileCompleter from '@/components/ProfileCompleter'
 import UnreadMessagesBadge from '@/components/UnreadMessagesBadge'
 import CommunityPreview from './CommunityPreview'
 import KumanoDelGiornoPreview from './KumanoDelGiornoPreview'
@@ -10,7 +9,7 @@ import type { MarketplaceTool } from '@/lib/marketplaceTools'
 import { MARKETPLACE_CATEGORIES, type MarketplaceCategory } from '@/lib/marketplaceTools'
 import type { DashboardNetworkData } from '@/lib/dashboardNetworkData'
 import { RANKS } from '@/lib/ranks'
-import { Users, ArrowRight, Star, CheckCircle2 } from 'lucide-react'
+import { Users, ArrowRight, Star, CheckCircle2, Crown, Hourglass } from 'lucide-react'
 import CopyButton from '@/components/CopyButton'
 import VoucherActivationButton from '@/components/VoucherActivationButton'
 import KuBadge from '@/components/ku/KuBadge'
@@ -29,6 +28,7 @@ export default async function DashboardTipo2({
   lockedToolNames,
   proToolNames,
   favoriteToolNames,
+  proTrialDaysLeft = null,
   network,
   userId,
 }: {
@@ -40,11 +40,15 @@ export default async function DashboardTipo2({
   lockedToolNames: string[]
   proToolNames: string[]
   favoriteToolNames: string[]
+  // Prova Pro in corso: il riquadro dell'abbonamento propone Pro come
+  // scelta principale e il Base come alternativa.
+  proTrialDaysLeft?: number | null
   network: DashboardNetworkData
   userId: string
 }) {
   const t = await getTranslations('dashboard')
   const marketplaceT = await getTranslations('marketplace')
+  const pt = await getTranslations('proArea')
 
   const { activeKumani, pendingKumani, currentRank, directSponsorCount } = network
   const nextRank = RANKS.find((rank) => directSponsorCount < rank.threshold) || null
@@ -65,8 +69,6 @@ export default async function DashboardTipo2({
 
   return (
     <>
-      {profile?.date_of_birth === '2000-01-01' && <ProfileCompleter initialData={profile} />}
-
       {/* Scorciatoia ai servizi preferiti */}
       <Link
         href="/marketplace/preferiti?from=dashboard"
@@ -111,6 +113,28 @@ export default async function DashboardTipo2({
                 )}
               </div>
             </div>
+          ) : proTrialDaysLeft !== null ? (
+            <>
+              <div className="flex items-center gap-2.5 rounded-lg border border-[var(--gold)]/50 bg-[var(--gold-pale)] px-3 py-2">
+                <Hourglass className="h-5 w-5 shrink-0 text-[var(--gold)]" />
+                <div>
+                  <p className="text-sm font-bold text-[var(--ink)]">{pt('subscriptionTrialTitle')}</p>
+                  <p className="text-xs text-[var(--muted)]">{pt('trialLeft', { days: proTrialDaysLeft })}</p>
+                </div>
+              </div>
+              <div className="mt-2 space-y-1.5">
+                <Link
+                  href="/pro"
+                  className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-3 py-2 text-sm font-bold text-[var(--ink)]"
+                >
+                  <Crown className="h-4 w-4" /> {pt('activatePro')}
+                </Link>
+                <Link href="/billing" className="block text-center text-xs font-medium text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline">
+                  {pt('orBaseOnly')}
+                </Link>
+                <VoucherActivationButton />
+              </div>
+            </>
           ) : (
             <>
               <div className="flex items-center gap-2">

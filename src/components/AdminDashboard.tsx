@@ -45,7 +45,6 @@ import {
   listMessageableUsers,
 } from '@/app/actions/adminMessages'
 import type { LocalizedText, MessageType } from '@/lib/adminMessages'
-import { DASHBOARD_LAYOUTS, DEFAULT_DASHBOARD_LAYOUT } from '@/lib/dashboardLayouts'
 import { SPOTLIGHT_HOME_MIN_POOL } from '@/lib/spotlight'
 import KuManagementPanel from '@/components/admin/KuManagementPanel'
 import {
@@ -175,7 +174,6 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({
     maintenance_mode: false,
     maintenance_message: 'Sito in manutenzione. Torna presto!',
-    dashboard_layout: DEFAULT_DASHBOARD_LAYOUT,
     matrix_slot_bonus_points: 5,
     matrix_spillover_bonus_points: 5,
     activity_thanks_points: 3,
@@ -2434,35 +2432,6 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <LayoutDashboard className="w-4 h-4" />
-            Tipo di Dashboard
-          </label>
-          <p className="text-xs text-gray-500 mb-3">Scegli quale versione della dashboard vedono tutti gli utenti.</p>
-          <div className="space-y-2">
-            {DASHBOARD_LAYOUTS.map((layoutOption) => {
-              const isSelected = (systemSettings.dashboard_layout || DEFAULT_DASHBOARD_LAYOUT) === layoutOption.id
-              return (
-                <button
-                  key={layoutOption.id}
-                  type="button"
-                  onClick={() => setSystemSettings({ ...systemSettings, dashboard_layout: layoutOption.id })}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
-                    isSelected ? 'border-[var(--gold)] bg-[var(--gold-pale)]' : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`font-medium ${isSelected ? 'text-[var(--ink)]' : 'text-gray-900'}`}>{layoutOption.name}</span>
-                    {isSelected && <span className="text-xs font-bold text-[var(--gold)] bg-[var(--gold-pale)] px-2 py-0.5 rounded-full">Attivo</span>}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">{layoutOption.description}</p>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <BadgeCheck className="w-4 h-4" />
             Prezzo Abbonamento
           </label>
@@ -2522,7 +2491,8 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
               </div>
             </div>
           )}
-          <div className="flex items-center gap-2 max-w-xs">
+          <label className="block max-w-xs">
+            <span className="mb-1 block text-xs font-medium text-gray-600">Punti Community / ringraziamento attività</span>
             <input
               type="number"
               min="0"
@@ -2530,8 +2500,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
               onChange={(e) => setSystemSettings({ ...systemSettings, activity_thanks_points: parseInt(e.target.value, 10) || 0 })}
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
             />
-            <span className="text-sm text-gray-500 whitespace-nowrap">Punti Community / ringraziamento attività</span>
-          </div>
+          </label>
         </div>
 
         <div>
@@ -2544,8 +2513,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             con un abbonato realmente attivo (pagante Stripe). Il tasso applicato dipende da come quel posto si è
             riempito: sponsorizzazione diretta o spillover di qualcun altro. Fino a 5 posti per persona.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
-            <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+            <label className="block max-w-xs">
+              <span className="mb-1 block text-xs font-medium text-gray-600">Punti Community / posto</span>
               <input
                 type="number"
                 min="0"
@@ -2553,9 +2523,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                 onChange={(e) => setSystemSettings({ ...systemSettings, matrix_slot_bonus_points: parseInt(e.target.value, 10) || 0 })}
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
-              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Community / posto</span>
-            </div>
-            <div className="flex items-center gap-2">
+            </label>
+            <label className="block max-w-xs">
+              <span className="mb-1 block text-xs font-medium text-gray-600">Punti Community / Spillover</span>
               <input
                 type="number"
                 min="0"
@@ -2563,8 +2533,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                 onChange={(e) => setSystemSettings({ ...systemSettings, matrix_spillover_bonus_points: parseInt(e.target.value, 10) || 0 })}
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
-              <span className="text-sm text-gray-500 whitespace-nowrap">Punti Community / Spillover</span>
-            </div>
+            </label>
           </div>
         </div>
 
@@ -2579,8 +2548,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             proporzione al prezzo Pro). <strong>Prova Pro:</strong> giorni di Pro gratis per chi si registra come
             professionista o la attiva dalla pagina Pro (una sola volta per account, senza carta).
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
-            <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+            <label className="block max-w-xs">
+              <span className="mb-1 block text-xs font-medium text-gray-600">Punti extra / invito Pro</span>
               <input
                 type="number"
                 min="0"
@@ -2588,9 +2558,9 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                 onChange={(e) => setSystemSettings({ ...systemSettings, pro_invite_extra_points: parseInt(e.target.value, 10) || 0 })}
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
-              <span className="text-sm text-gray-500 whitespace-nowrap">Punti extra / invito Pro</span>
-            </div>
-            <div className="flex items-center gap-2">
+            </label>
+            <label className="block max-w-xs">
+              <span className="mb-1 block text-xs font-medium text-gray-600">Giorni di prova</span>
               <input
                 type="number"
                 min="1"
@@ -2598,8 +2568,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                 onChange={(e) => setSystemSettings({ ...systemSettings, pro_trial_days: parseInt(e.target.value, 10) || 1 })}
                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
               />
-              <span className="text-sm text-gray-500 whitespace-nowrap">Giorni di prova</span>
-            </div>
+            </label>
           </div>
         </div>
 

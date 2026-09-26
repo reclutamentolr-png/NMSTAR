@@ -1,4 +1,5 @@
 // KUMANI Menu — tipi e regole condivise da builder, azioni e pagina pubblica.
+import type { MenuTemplate } from '@/lib/menuThemes'
 
 export const MENU_LOCALES = ['it', 'en', 'fr', 'es', 'pt', 'de', 'ru'] as const
 export type MenuLocale = (typeof MENU_LOCALES)[number]
@@ -17,7 +18,37 @@ export const MENU_LOCALE_NAMES: Record<MenuLocale, string> = {
 export const MENU_DIET_TAGS = ['vegetarian', 'vegan', 'gluten_free', 'spicy', 'chef', 'new'] as const
 export type MenuDietTag = (typeof MENU_DIET_TAGS)[number]
 
+// I 14 allergeni del Reg. UE 1169/2011 (Allegato II), nell'ordine ufficiale:
+// il numero mostrato nel menù è la posizione in questa lista + 1.
+export const MENU_ALLERGENS = [
+  'gluten',
+  'crustaceans',
+  'eggs',
+  'fish',
+  'peanuts',
+  'soy',
+  'milk',
+  'nuts',
+  'celery',
+  'mustard',
+  'sesame',
+  'sulphites',
+  'lupin',
+  'molluscs',
+] as const
+export type MenuAllergen = (typeof MENU_ALLERGENS)[number]
+
+export function allergenNumber(allergen: MenuAllergen): number {
+  return MENU_ALLERGENS.indexOf(allergen) + 1
+}
+
 export type LocalizedText = Partial<Record<MenuLocale, string>>
+
+// URL pubblico della foto di un piatto (bucket pubblico menu-photos).
+export function menuPhotoUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/menu-photos/${path}`
+}
 
 export type MenuItem = {
   id: string
@@ -28,6 +59,8 @@ export type MenuItem = {
   descriptions: LocalizedText
   price: number | null
   diet_tags: MenuDietTag[]
+  allergens: MenuAllergen[]
+  photo_path: string | null
   available: boolean
   is_daily_special: boolean
 }
@@ -42,6 +75,8 @@ export type MenuSettings = {
   id: string
   restaurant_name: string
   tagline: string | null
+  review_url: string | null
+  template: MenuTemplate
   token: string
   default_locale: MenuLocale
   languages: MenuLocale[]

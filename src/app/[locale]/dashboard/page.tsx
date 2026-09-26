@@ -14,15 +14,14 @@ import RenewalReminderModal from '@/components/RenewalReminderModal'
 import AdminMessagePopup from '@/components/AdminMessagePopup'
 import { isAdmin } from '@/lib/admin-auth'
 import { getDashboardNetworkData } from '@/lib/dashboardNetworkData'
-import { getActiveDashboardLayout } from '@/lib/dashboardLayout-server'
 import { getMarketplaceAccessState } from '@/lib/marketplaceAccess'
 import { getMarketplaceTools } from '@/lib/marketplaceTools'
 import { getFavoriteToolNames } from '@/lib/favorites'
-import DashboardTipo1 from '@/components/dashboard/DashboardTipo1'
 import DashboardTipo2 from '@/components/dashboard/DashboardTipo2'
 import ProArea from '@/components/dashboard/ProArea'
 import ProTeaser from '@/components/dashboard/ProTeaser'
 import { getProAreaStats } from '@/lib/proAreaStats'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -49,12 +48,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   // dal browser/sessione utente le colonne personali non sono più leggibili.
   const { data: profile } = await supabase.rpc('get_my_profile').maybeSingle<Record<string, any>>()
 
-  // 4. Layout attivo (impostazione admin, "system_settings" key 'dashboard_layout')
-  const layout = await getActiveDashboardLayout(supabase)
-
-  // 5. Dati "rete" — condivisi da Tipo 1 (inline) e dalla pagina /dashboard/rete
-  //    (Tipo 2 mostra solo un riepilogo, ma serve comunque per i popup
-  //    qualifiche/rinnovo, quindi si recupera sempre).
+  // 4. Dati "rete": la dashboard mostra solo un riepilogo (il dettaglio è in
+  //    /dashboard/rete), ma servono anche per i popup qualifiche/rinnovo.
   const network = await getDashboardNetworkData(supabase, user, profile, locale)
   const { newlyAchievedRank } = network
 
@@ -85,34 +80,46 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
   // Area Professionisti: dati dell'attività, giorni di prova rimasti o data di rinnovo
   let proAreaStats: Awaited<ReturnType<typeof getProAreaStats>> = {}
-  let trialDaysLeft: number | null = null
   let proRenewsOn: string | null = null
+  // Prova Pro in corso (non ancora pagato): giorni rimasti, scadenza, prezzo.
+  let proTrial: { daysLeft: number; totalDays: number; endsOn: string; price: number } | null = null
+  const paidPro = profile?.subscription_status === 'active' && profile?.subscription_plan === 'pro'
+  const trialEnd = profile?.pro_trial_ends_at ? new Date(profile.pro_trial_ends_at).getTime() : 0
+  const nowMs = new Date().getTime()
+  // Prova finita senza passare a Pro: l'invito in dashboard lo dice.
+  const proTrialExpired = !isPro && trialEnd > 0 && trialEnd <= nowMs
+  if (isPro && !paidPro && trialEnd > nowMs) {
+    const { data: planSettings } = await createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+      .from('system_settings')
+      .select('key, value')
+      .in('key', ['pro_trial_days', 'pro_price_eur'])
+    const setting = (key: string, fallback: number) =>
+      Number(String(planSettings?.find((row) => row.key === key)?.value ?? fallback).replace(/"/g, '')) || fallback
+    proTrial = {
+      daysLeft: Math.ceil((trialEnd - nowMs) / (1000 * 60 * 60 * 24)),
+      totalDays: setting('pro_trial_days', 15),
+      endsOn: new Date(trialEnd).toLocaleDateString(locale),
+      price: setting('pro_price_eur', 149),
+    }
+  }
   if (isPro && proTools.length > 0) {
     proAreaStats = await getProAreaStats(supabase, user.id)
-    const paidPro = profile?.subscription_status === 'active' && profile?.subscription_plan === 'pro'
-    const trialEnd = profile?.pro_trial_ends_at ? new Date(profile.pro_trial_ends_at).getTime() : 0
-    if (!paidPro && trialEnd > new Date().getTime()) {
-      trialDaysLeft = Math.ceil((trialEnd - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    } else if (profile?.subscription_expires_at) {
+    if (!proTrial && profile?.subscription_expires_at) {
       proRenewsOn = new Date(profile.subscription_expires_at).toLocaleDateString(locale)
     }
   }
 
-  let visibleTools: ReturnType<typeof getMarketplaceTools> = []
-  let lockedToolNames: string[] = []
-  let proToolNames: string[] = []
-  let favoriteToolNames: string[] = []
-  if (layout === 'tipo2') {
-    // Chi è Pro trova gli strumenti Pro nell'Area Professionisti: non si
-    // ripetono nelle categorie sotto.
-    visibleTools = isPro ? enabledTools.filter((tool) => requiredPlan(tool.toolName) !== 'pro') : enabledTools
-    // Admin-enabled but not usable by THIS user (no active subscription) —
-    // shown locked instead of silently hidden, same distinction the
-    // marketplace category grid already makes via MarketplaceCard.
-    lockedToolNames = visibleTools.filter((tool) => !isToolEnabled(tool.toolName)).map((tool) => tool.toolName)
-    proToolNames = visibleTools.filter((tool) => requiredPlan(tool.toolName) === 'pro').map((tool) => tool.toolName)
-    favoriteToolNames = await getFavoriteToolNames(supabase, user.id)
-  }
+  // Chi è Pro trova gli strumenti Pro nell'Area Professionisti: non si
+  // ripetono nelle categorie sotto.
+  const visibleTools = isPro ? enabledTools.filter((tool) => requiredPlan(tool.toolName) !== 'pro') : enabledTools
+  // Admin-enabled but not usable by THIS user (no active subscription) —
+  // shown locked instead of silently hidden, same distinction the
+  // marketplace category grid already makes via MarketplaceCard.
+  const lockedToolNames = visibleTools.filter((tool) => !isToolEnabled(tool.toolName)).map((tool) => tool.toolName)
+  const proToolNames = visibleTools.filter((tool) => requiredPlan(tool.toolName) === 'pro').map((tool) => tool.toolName)
+  const favoriteToolNames = await getFavoriteToolNames(supabase, user.id)
 
   return (
     <div className="min-h-screen bg-[var(--background)]" suppressHydrationWarning>
@@ -151,34 +158,24 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         <ActivityTracker userId={user.id} />
 
         {isPro && proTools.length > 0 ? (
-          <ProArea tools={proTools} stats={proAreaStats} trialDaysLeft={trialDaysLeft} renewsOn={proRenewsOn} />
+          <ProArea tools={proTools} stats={proAreaStats} trial={proTrial} renewsOn={proRenewsOn} />
         ) : (
-          !isPro && proTools.length > 0 && <ProTeaser />
+          !isPro && proTools.length > 0 && <ProTeaser trialExpired={proTrialExpired} />
         )}
 
-        {layout === 'tipo2' ? (
-          <DashboardTipo2
-            profile={profile}
-            shareUrl={shareUrl}
-            recentListings={recentListings}
-            unreadMessagesCount={unreadMessagesCount || 0}
-            visibleTools={visibleTools}
-            lockedToolNames={lockedToolNames}
-            proToolNames={proToolNames}
-            favoriteToolNames={favoriteToolNames}
-            network={network}
-            userId={user.id}
-          />
-        ) : (
-          <DashboardTipo1
-            user={user}
-            profile={profile}
-            shareUrl={shareUrl}
-            recentListings={recentListings}
-            unreadMessagesCount={unreadMessagesCount || 0}
-            network={network}
-          />
-        )}
+        <DashboardTipo2
+          profile={profile}
+          shareUrl={shareUrl}
+          recentListings={recentListings}
+          unreadMessagesCount={unreadMessagesCount || 0}
+          visibleTools={visibleTools}
+          lockedToolNames={lockedToolNames}
+          proToolNames={proToolNames}
+          favoriteToolNames={favoriteToolNames}
+          proTrialDaysLeft={proTrial?.daysLeft ?? null}
+          network={network}
+          userId={user.id}
+        />
       </main>
 
       <ChatModalWrapper userId={user.id} />

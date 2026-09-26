@@ -48,7 +48,7 @@ export default function ToolShareButton({ referralCode }: { referralCode: string
     <button
       type="button"
       onClick={share}
-      className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-full border border-[var(--gold)]/40 bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_35px_rgba(23,23,23,0.35)] transition-all hover:-translate-y-0.5 hover:text-[var(--gold-bright)]"
+      className="fixed bottom-4 left-4 z-40 flex items-center print:hidden gap-2 rounded-full border border-[var(--gold)]/40 bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_35px_rgba(23,23,23,0.35)] transition-all hover:-translate-y-0.5 hover:text-[var(--gold-bright)]"
     >
       {copied ? <Check className="h-4 w-4 text-green-400" /> : <Share2 className="h-4 w-4 text-[var(--gold-bright)]" />}
       {copied ? t('linkCopied') : t('shareButton')}

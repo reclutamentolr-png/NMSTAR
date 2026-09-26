@@ -21,9 +21,12 @@ import {
 
 type ProfileCompleterProps = {
   initialData: any
+  // Nel popup promemoria: "Più tardi" / chiudi e fine salvataggio li gestisce chi lo apre.
+  onDismiss?: () => void
+  onSaved?: () => void
 }
 
-export default function ProfileCompleter({ initialData }: ProfileCompleterProps) {
+export default function ProfileCompleter({ initialData, onDismiss, onSaved }: ProfileCompleterProps) {
   const t = useTranslations('dashboard')
   const commonT = useTranslations('common')
   const router = useRouter()
@@ -64,8 +67,9 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
       if (error) throw error
 
       setSuccess(true)
-      setSaved(true) 
-      
+      setSaved(true)
+      onSaved?.()
+
       router.refresh()
       
     } catch (err: any) {
@@ -92,7 +96,7 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
           </div>
         </div>
         <button 
-          onClick={() => setDismissed(true)}
+          onClick={() => (onDismiss ? onDismiss() : setDismissed(true))}
           className="text-amber-600 hover:text-amber-800"
           title={commonT('close')}
         >
@@ -219,7 +223,12 @@ export default function ProfileCompleter({ initialData }: ProfileCompleterProps)
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2">
+          {onDismiss && (
+            <button type="button" onClick={onDismiss} className="px-4 py-2 rounded-lg font-medium text-amber-800 hover:bg-amber-100">
+              {t('profileLater')}
+            </button>
+          )}
           <button
             type="submit"
             disabled={saving}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import Link from '@/components/LocalizedLink' // ✅ CAMBIATO: usa LocalizedLink invece di next/link
 import { logout } from '@/app/actions/logout'
 import {
@@ -20,6 +21,9 @@ type DashboardHeaderActionsProps = {
 
 export default function DashboardHeaderActions({ user, profile, isAdmin }: DashboardHeaderActionsProps) {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const t = useTranslations('dashboard')
+  // Profilo ancora da completare (data di nascita provvisoria): pallino arancione.
+  const profileIncomplete = profile?.date_of_birth === '2000-01-01'
   
   const userInitial = profile?.first_name?.charAt(0) || user?.email?.charAt(0) || 'U'
 
@@ -30,13 +34,17 @@ export default function DashboardHeaderActions({ user, profile, isAdmin }: Dashb
         <button
           onClick={() => setIsProfileModalOpen(true)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
-          title="Modifica profilo"
+          title={profileIncomplete ? t('completeProfileShort') : 'Modifica profilo'}
         >
-          <div className="w-8 h-8 rounded-full bg-[var(--gold)] flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:shadow-md transition-shadow">
+          <div className="relative w-8 h-8 rounded-full bg-[var(--gold)] flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:shadow-md transition-shadow">
             {userInitial.toUpperCase()}
+            {profileIncomplete && (
+              <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[var(--ink)] bg-orange-500" />
+            )}
           </div>
-          <span className="text-sm text-[var(--gold-bright)] font-medium hidden sm:block">
-            {profile?.first_name || 'Il mio profilo'}
+          <span className="hidden sm:block text-left leading-tight">
+            <span className="block text-sm text-[var(--gold-bright)] font-medium">{profile?.first_name || 'Il mio profilo'}</span>
+            {profileIncomplete && <span className="block text-[10px] font-semibold text-orange-400">{t('completeProfileShort')}</span>}
           </span>
         </button>
 

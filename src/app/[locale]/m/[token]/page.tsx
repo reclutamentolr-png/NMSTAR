@@ -1,43 +1,33 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getTranslations } from 'next-intl/server'
-import { Globe, Star } from 'lucide-react'
+import { Globe, MessageSquareHeart, Stamp } from 'lucide-react'
+import PublicMenuView, { type PublicCategory, type PublicMenuLabels } from '@/components/menu/PublicMenuView'
 import { createClient } from '@/lib/supabase/server'
-import {
-  detectMenuLocale,
-  formatMenuPrice,
-  isMenuLocale,
-  MENU_LOCALE_NAMES,
-  pickText,
-  type LocalizedText,
-  type MenuDietTag,
-  type MenuLocale,
-} from '@/lib/menu'
+import { isMenuTemplate, MENU_THEMES, menuThemeStyle } from '@/lib/menuThemes'
+import { detectMenuLocale, isMenuLocale, MENU_ALLERGENS, MENU_DIET_TAGS, MENU_LOCALE_NAMES, type MenuLocale } from '@/lib/menu'
 
-type PublicItem = {
-  id: string
-  name: string
-  names: LocalizedText
-  descriptions: LocalizedText
-  price: number | null
-  diet_tags: MenuDietTag[]
-  available: boolean
-  is_daily_special: boolean
-}
 type PublicMenu = {
   restaurant_name: string
   tagline: string | null
+  template?: string
   currency: string
   default_locale: string
   languages: string[]
-  categories: { id: string; names: LocalizedText; items: PublicItem[] }[]
+  review_url?: string | null
+  fidelity?: { prize: string; stamps_needed: number } | null
+  categories: PublicCategory[]
 }
 
 async function loadMenu(token: string): Promise<PublicMenu | null> {
   if (!/^[a-z0-9]{6,16}$/i.test(token)) return null
   const supabase = await createClient()
   const { data } = await supabase.rpc('get_public_menu', { p_token: token })
-  return (data as PublicMenu | null) ?? null
+  const menu = (data as PublicMenu | null) ?? null
+  if (!menu) return null
+  // Compatibilità: prima della Fase 2 i piatti non avevano "allergens".
+  menu.categories = menu.categories.map((c) => ({ ...c, items: c.items.map((i) => ({ ...i, allergens: i.allergens ?? [] })) }))
+  return menu
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
@@ -77,26 +67,40 @@ export default async function PublicMenuPage({
       : detectMenuLocale((await headers()).get('accept-language'), available, fallback)
 
   const t = await getTranslations({ locale: lang, namespace: 'menuPublic' })
-  const specials = menu.categories.flatMap((c) => c.items).filter((item) => item.is_daily_special && item.available)
-
-  const itemName = (item: PublicItem) => item.names?.[lang]?.trim() || item.name
+  const template = isMenuTemplate(menu.template) ? menu.template : 'elegante'
+  const theme = MENU_THEMES[template]
+  const labels: PublicMenuLabels = {
+    dailySpecial: t('dailySpecial'),
+    soldOut: t('soldOut'),
+    empty: t('empty'),
+    allergensLabel: t('allergensLabel'),
+    legendTitle: t('legendTitle'),
+    filterTitle: t('filterTitle'),
+    filterDiet: t('filterDiet'),
+    filterExclude: t('filterExclude'),
+    clearFilters: t('clearFilters'),
+    noResults: t('noResults'),
+    filterDisclaimer: t('filterDisclaimer'),
+    tags: Object.fromEntries(MENU_DIET_TAGS.map((tag) => [tag, t(`tag_${tag}`)])),
+    allergens: Object.fromEntries(MENU_ALLERGENS.map((a) => [a, t(`allergen_${a}`)])),
+  }
 
   return (
-    <div lang={lang} className="min-h-screen bg-[#141311] text-[#f4efe3]">
-      <header className="border-b border-[#c79a3b]/30 px-5 pb-8 pt-10 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#e7c56a]">Menu</p>
-        <h1 className="mt-3 font-serif text-4xl font-bold leading-tight sm:text-5xl">{menu.restaurant_name}</h1>
-        {menu.tagline && <p className="mx-auto mt-3 max-w-md font-serif italic text-[#f4efe3]/70">{menu.tagline}</p>}
+    <div lang={lang} style={menuThemeStyle(template)} className={`min-h-screen bg-[var(--m-bg)] text-[var(--m-text)] ${theme.bodyFont}`}>
+      <header className="border-b border-[var(--m-line)]/30 px-5 pb-8 pt-10 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--m-accent)]">Menu</p>
+        <h1 className={`mt-3 ${theme.headingFont} text-4xl font-bold leading-tight sm:text-5xl`}>{menu.restaurant_name}</h1>
+        {menu.tagline && <p className={`mx-auto mt-3 max-w-md ${theme.headingFont} italic text-[var(--m-text)]/70`}>{menu.tagline}</p>}
 
         {available.length > 1 && (
           <nav className="mt-6 flex flex-wrap items-center justify-center gap-1.5" aria-label={t('language')}>
-            <Globe className="mr-1 h-4 w-4 text-[#e7c56a]" />
+            <Globe className="mr-1 h-4 w-4 text-[var(--m-accent)]" />
             {available.map((l) => (
               <a
                 key={l}
                 href={`?lang=${l}`}
                 className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  l === lang ? 'bg-[#e7c56a] text-[#141311]' : 'border border-[#c79a3b]/40 text-[#f4efe3]/80'
+                  l === lang ? 'bg-[var(--m-accent)] text-[var(--m-accent-ink)]' : 'border border-[var(--m-line)]/40 text-[var(--m-text)]/80'
                 }`}
               >
                 {MENU_LOCALE_NAMES[l]}
@@ -107,65 +111,40 @@ export default async function PublicMenuPage({
       </header>
 
       <main className="mx-auto max-w-2xl px-5 py-8">
-        {specials.length > 0 && (
-          <section className="mb-10 rounded-2xl border border-[#c79a3b]/50 bg-[#c79a3b]/10 p-5">
-            <h2 className="flex items-center gap-2 font-serif text-xl font-bold text-[#e7c56a]">
-              <Star className="h-5 w-5 fill-[#e7c56a]" /> {t('dailySpecial')}
-            </h2>
-            <ul className="mt-3 space-y-3">
-              {specials.map((item) => (
-                <li key={item.id} className="flex items-baseline justify-between gap-4">
-                  <span className="font-semibold">{itemName(item)}</span>
-                  <span className="shrink-0 font-semibold text-[#e7c56a]">{formatMenuPrice(item.price, lang, menu.currency)}</span>
-                </li>
-              ))}
-            </ul>
+        <PublicMenuView
+          categories={menu.categories}
+          lang={lang}
+          fallback={fallback}
+          currency={menu.currency}
+          labels={labels}
+          headingFont={theme.headingFont}
+        />
+
+        {(menu.review_url || menu.fidelity) && (
+          <section className="mt-10 space-y-3">
+            {menu.review_url && (
+              <a
+                href={menu.review_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl bg-[var(--m-accent)] px-5 py-3.5 font-bold text-[var(--m-accent-ink)]"
+              >
+                <MessageSquareHeart className="h-5 w-5" /> {t('reviewCta')}
+              </a>
+            )}
+            {menu.fidelity && (
+              <p className="flex items-center justify-center gap-2 rounded-xl border border-[var(--m-line)]/40 px-5 py-3 text-center text-sm text-[var(--m-text)]/85">
+                <Stamp className="h-5 w-5 shrink-0 text-[var(--m-accent)]" />
+                {t('fidelityCta', { prize: menu.fidelity.prize, stamps: menu.fidelity.stamps_needed })}
+              </p>
+            )}
           </section>
         )}
-
-        {menu.categories.filter((c) => c.items.length > 0).length === 0 && <p className="text-center text-[#f4efe3]/60">{t('empty')}</p>}
-
-        {menu.categories
-          .filter((category) => category.items.length > 0)
-          .map((category) => (
-            <section key={category.id} className="mb-10">
-              <h2 className="mb-4 border-b border-[#c79a3b]/30 pb-2 text-center font-serif text-2xl font-bold tracking-wide text-[#e7c56a]">
-                {pickText(category.names, lang, fallback)}
-              </h2>
-              <ul className="space-y-5">
-                {category.items.map((item) => {
-                  const description = pickText(item.descriptions, lang, fallback)
-                  return (
-                    <li key={item.id} className={item.available ? '' : 'opacity-45'}>
-                      <div className="flex items-baseline gap-3">
-                        <span className="font-semibold">{itemName(item)}</span>
-                        <span className="min-w-4 flex-1 border-b border-dotted border-[#f4efe3]/25" />
-                        <span className="shrink-0 font-semibold text-[#e7c56a]">
-                          {item.available ? formatMenuPrice(item.price, lang, menu.currency) : t('soldOut')}
-                        </span>
-                      </div>
-                      {itemName(item) !== item.name && <p className="text-xs italic text-[#f4efe3]/45">{item.name}</p>}
-                      {description && <p className="mt-1 text-sm leading-6 text-[#f4efe3]/70">{description}</p>}
-                      {item.diet_tags.length > 0 && (
-                        <p className="mt-1.5 flex flex-wrap gap-1.5">
-                          {item.diet_tags.map((tag) => (
-                            <span key={tag} className="rounded-full border border-[#c79a3b]/40 px-2 py-0.5 text-[10px] font-semibold text-[#e7c56a]">
-                              {t(`tag_${tag}`)}
-                            </span>
-                          ))}
-                        </p>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))}
       </main>
 
-      <footer className="border-t border-[#c79a3b]/20 px-5 py-6 text-center text-xs text-[#f4efe3]/45">
+      <footer className="border-t border-[var(--m-line)]/20 px-5 py-6 text-center text-xs text-[var(--m-text)]/45">
         {t('allergenNotice')}
-        <p className="mt-3 tracking-[0.25em] text-[#e7c56a]/70">KUMANI MENU</p>
+        <p className="mt-3 tracking-[0.25em] text-[var(--m-accent)]/70">KUMANI MENU</p>
       </footer>
     </div>
   )
