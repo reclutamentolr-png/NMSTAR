@@ -6,6 +6,7 @@ import { Check, Dices, HeartHandshake, LoaderCircle, RotateCcw, Share2, ShieldCh
 import { deleteAffinityMap, saveAffinityMap } from '@/app/actions/affinity'
 import { AFFINITY_AXES, computeAffinityMap, computeArchetype, type AffinityArchetype, type AffinityMap } from '@/lib/affinity'
 import { renderAffinityShareCard } from '@/lib/affinityShareCard'
+import AffinityFriends from './AffinityFriends'
 import AffinityQuiz from './AffinityQuiz'
 import AffinityRadar from './AffinityRadar'
 import ArchetypeIcon from './ArchetypeIcon'
@@ -185,7 +186,7 @@ export default function AffinityGame({ initial, siteUrl }: { initial: Saved | nu
         </div>
       </div>
 
-      <p className="rounded-2xl bg-[var(--gold-pale)] px-5 py-4 text-center text-sm font-medium text-[var(--ink)]">{t('comingSoon')}</p>
+      <AffinityFriends myMap={saved.map} />
 
       <div className="flex flex-col items-center gap-2 text-center text-xs text-[var(--muted)]">
         <p className="flex items-start gap-2">

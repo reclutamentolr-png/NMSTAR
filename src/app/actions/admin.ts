@@ -1062,3 +1062,40 @@ export async function updateToolPlan(toolName: string, plan: 'free' | 'base' | '
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
+
+// ============================================================
+// Affinity Amicizie: segnalazioni degli utenti
+// ============================================================
+
+export async function listAffinityReports() {
+  const admin = await verifyAdmin('listings.read')
+  if (!admin) return { reports: [], error: 'Non autorizzato' }
+  const service = getServiceClient()
+  const { data, error } = await service
+    .from('affinity_reports')
+    .select('id, reason, status, created_at, reporter:profiles!affinity_reports_reporter_fkey(id, first_name, last_name, email), reported:profiles!affinity_reports_reported_fkey(id, first_name, last_name, email, is_blocked)')
+    .order('status', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (error) return { reports: [], error: error.message }
+  return { reports: data ?? [], error: null }
+}
+
+// Chiude la segnalazione; con blockUser blocca anche l'account segnalato.
+export async function resolveAffinityReport(reportId: string, blockUser: boolean) {
+  const admin = await verifyAdmin('listings.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+  const service = getServiceClient()
+  const { data: report, error } = await service
+    .from('affinity_reports')
+    .update({ status: 'closed' })
+    .eq('id', reportId)
+    .select('reported')
+    .single()
+  if (error || !report) return { success: false, error: error?.message || 'Segnalazione non trovata' }
+  if (blockUser) {
+    const { error: blockError } = await service.from('profiles').update({ is_blocked: true }).eq('id', report.reported)
+    if (blockError) return { success: false, error: blockError.message }
+  }
+  return { success: true }
+}

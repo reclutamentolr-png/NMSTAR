@@ -13,6 +13,7 @@ import { Users, ArrowRight, Star, CheckCircle2, Crown, Hourglass } from 'lucide-
 import CopyButton from '@/components/CopyButton'
 import VoucherActivationButton from '@/components/VoucherActivationButton'
 import KuBadge from '@/components/ku/KuBadge'
+import AffinityBadge from './AffinityBadge'
 
 // Tipo 2: the Marketplace-first layout. Tools are the main focus; the
 // network (KUMI, matrix, KUMANI lists, qualifications) is reduced to one
@@ -82,6 +83,9 @@ export default async function DashboardTipo2({
         </div>
         <ArrowRight className="h-4 w-4 text-[var(--ink)] transition-transform group-hover:translate-x-1" />
       </Link>
+
+      {/* Novità di Affinity Amicizie (solo per chi partecipa) */}
+      <AffinityBadge />
 
       {/* Striscia di stato compatta */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

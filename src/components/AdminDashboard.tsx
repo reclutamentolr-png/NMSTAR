@@ -47,6 +47,7 @@ import {
 import type { LocalizedText, MessageType } from '@/lib/adminMessages'
 import { SPOTLIGHT_HOME_MIN_POOL } from '@/lib/spotlight'
 import KuManagementPanel from '@/components/admin/KuManagementPanel'
+import AffinityReportsPanel from '@/components/admin/AffinityReportsPanel'
 import {
   LayoutDashboard,
   Star,
@@ -179,6 +180,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     activity_thanks_points: 3,
     pro_invite_extra_points: 20,
     pro_trial_days: 15,
+    affinity_intros_per_week: 3,
     listing_feature_cost_7d: 20,
     listing_feature_cost_15d: 35,
     subscription_price_eur: 49
@@ -937,6 +939,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
   { id: 'marketplace', label: 'Marketplace', Icon: ShoppingBag, permission: 'marketplace.read' as Permission },
   { id: 'listingReports', label: 'Bacheca', Icon: Flag, permission: 'listings.read' as Permission },
   { id: 'spotlight', label: 'Kumano del Giorno', Icon: Star, permission: 'listings.read' as Permission },
+  { id: 'affinity', label: 'Affinity', Icon: Flag, permission: 'listings.read' as Permission },
   { id: 'coupons', label: 'Coupon', Icon: Ticket, permission: 'coupons.read' as Permission },
   { id: 'vouchers', label: 'Voucher', Icon: BadgeCheck, permission: 'vouchers.read' as Permission },
   { id: 'rewards', label: 'Premi', Icon: Gift, permission: 'rewards.read' as Permission },
@@ -2574,6 +2577,28 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Affinity Amicizie
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Quante persone Kumi presenta ogni settimana a chi partecipa ad Affinity Amicizie (solo abbonati, 18+). Con pochi
+            iscritti conviene tenerlo basso; si può alzare man mano che la community cresce. 0 = presentazioni sospese.
+          </p>
+          <label className="block max-w-xs">
+            <span className="mb-1 block text-xs font-medium text-gray-600">Presentazioni a settimana</span>
+            <input
+              type="number"
+              min="0"
+              max="20"
+              value={systemSettings.affinity_intros_per_week ?? 3}
+              onChange={(e) => setSystemSettings({ ...systemSettings, affinity_intros_per_week: Math.min(20, parseInt(e.target.value, 10) || 0) })}
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--gold)] focus:outline-none"
+            />
+          </label>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
             Annunci in Vetrina
           </label>
@@ -2803,6 +2828,7 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
         {activeSection === 'listingReports' && renderListingReports()}
         {activeSection === 'spotlight' && renderSpotlight()}
         {activeSection === 'kuManagement' && <KuManagementPanel />}
+        {activeSection === 'affinity' && <AffinityReportsPanel />}
         {activeSection === 'settings' && renderSettings()}
       </div>
 
