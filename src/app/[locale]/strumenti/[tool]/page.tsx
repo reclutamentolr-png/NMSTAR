@@ -4,6 +4,7 @@ import { ArrowRight, Sparkles } from 'lucide-react'
 import Link from '@/components/LocalizedLink'
 import Logo from '@/components/Logo'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { getMarketplaceTools } from '@/lib/marketplaceTools'
 import { marketplaceIconMap } from '@/lib/marketplaceIcons'
 
@@ -26,6 +27,16 @@ export default async function ToolSharePage({
 
   const tool = getMarketplaceTools(tm).find((item) => item.toolName === toolName)
   if (!tool) notFound()
+
+  // Piano richiesto dallo strumento (deciso dall'admin): Gratis / Base / Pro.
+  const { data: setting } = await createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+    .from('marketplace_settings')
+    .select('required_plan')
+    .eq('tool_name', tool.toolName)
+    .maybeSingle()
+  const requiredPlan = (setting?.required_plan as string | undefined) ?? (tool.requiresSubscription ? 'base' : 'free')
   const Icon = marketplaceIconMap[tool.iconName]
 
   // Chi ha condiviso: solo nome e codice, tramite la funzione pubblica.
@@ -55,7 +66,7 @@ export default async function ToolSharePage({
           </div>
           <h1 className="text-3xl font-bold">{tool.title}</h1>
           <p className="mt-3 leading-relaxed text-gray-300">{tool.description}</p>
-          <p className="mt-4 text-sm text-gray-400">{tool.requiresSubscription ? t('includedPaid') : t('includedFree')}</p>
+          <p className="mt-4 text-sm text-gray-400">{requiredPlan === 'pro' ? t('includedPro') : requiredPlan === 'base' ? t('includedPaid') : t('includedFree')}</p>
 
           {inviter && (
             <p className="mt-6 rounded-xl bg-white/5 px-4 py-3 text-sm text-gray-200">

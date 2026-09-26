@@ -621,6 +621,7 @@
     "notAvailable": "NOT AVAILABLE",
     "temporarilyOffline": "Temporarily offline",
     "subscriptionRequired": "Subscription required",
+    "proRequired": "Pro plan only",
     "free": "FREE",
     "toolUnavailable": "The tool \"{title}\" is temporarily unavailable. Please try again later.",
     "favoritesTitle": "Favorites",
@@ -2169,7 +2170,8 @@
     "ctaRegister": "Sign up and try it",
     "ctaDiscover": "Discover all KUMANI tools",
     "includedPaid": "Included in the KUMANI subscription, together with all the other tools.",
-    "includedFree": "Free for everyone signed up to KUMANI."
+    "includedFree": "Free for everyone signed up to KUMANI.",
+    "includedPro": "Included in the KUMANI Pro plan (€149/year, with a 15-day trial)."
   },
   "kuRewards": {
     "title": "Use your KU Points",
@@ -2223,5 +2225,27 @@
     "print": "Print",
     "adminSummary": "{available} coupons available to print out of {total}",
     "noneAvailable": "No coupons available: they have all been used."
+  },
+  "plans": {
+    "backToDashboard": "Back to dashboard",
+    "backToHome": "Back to Home",
+    "proTitle": "KUMANI Pro for professionals",
+    "proSubtitle": "Tools built for people who work with customers: loyalty, quotes, receipts and promotions, all in one place.",
+    "toolIsPro": "{tool} is part of the Pro plan.",
+    "proIncludes": "The Pro plan includes",
+    "proIncludesBase": "All Base plan tools",
+    "perYear": "/ year",
+    "proUnavailable": "The Pro plan will be available soon.",
+    "ctaRegister": "Sign up and choose Pro",
+    "alreadyPro": "Your Pro plan is already active.",
+    "ctaUpgrade": "Upgrade to Pro",
+    "upgradeNote": "Your Base subscription becomes Pro: you only pay the difference for the remaining period now.",
+    "ctaSubscribePro": "Activate Pro for €{price}/year",
+    "upgradeDone": "Done! Your Pro plan is active.",
+    "upgradeError_not_logged": "Log in to upgrade to Pro.",
+    "upgradeError_not_stripe": "We could not find a card subscription to upgrade: use the activation button.",
+    "upgradeError_unavailable": "The Pro plan is not available yet.",
+    "upgradeError_already_pro": "You already have the Pro plan.",
+    "upgradeError_stripe_error": "Payment failed. Please try again shortly."
   }
 }

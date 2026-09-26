@@ -26,6 +26,7 @@ export default function CategoryToolsAccordion({
   toolsLabel,
   tools,
   lockedToolNames,
+  proToolNames = [],
   favoriteToolNames,
 }: {
   category: MarketplaceCategory
@@ -33,6 +34,8 @@ export default function CategoryToolsAccordion({
   toolsLabel: string
   tools: MarketplaceTool[]
   lockedToolNames: string[]
+  // Strumenti del piano Pro (badge PRO; se bloccati portano a "Passa a Pro").
+  proToolNames?: string[]
   favoriteToolNames: string[]
 }) {
   const t = useTranslations('marketplace')
@@ -68,17 +71,18 @@ export default function CategoryToolsAccordion({
           {tools.map((tool) => {
             const Icon = marketplaceIconMap[tool.iconName] || Smartphone
             const locked = lockedToolNames.includes(tool.toolName)
+            const isPro = proToolNames.includes(tool.toolName)
 
             if (locked) {
               return (
                 <Link
                   key={tool.toolName}
-                  href="/billing"
+                  href={isPro ? `/pro?tool=${tool.toolName}` : '/billing'}
                   className="group relative rounded-xl border border-[var(--gold)]/25 bg-[var(--background)] p-4 opacity-50 transition-opacity hover:opacity-80"
-                  title={t('subscriptionRequired')}
+                  title={isPro ? t('proRequired') : t('subscriptionRequired')}
                 >
-                  <span className="absolute right-3 top-3 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                    {t('subscriptionRequired')}
+                  <span className={`absolute right-3 top-3 rounded-full px-2 py-0.5 text-[10px] font-bold ${isPro ? 'bg-[var(--ink)] text-[var(--gold-bright)]' : 'bg-red-500 text-white'}`}>
+                    {isPro ? t('proRequired') : t('subscriptionRequired')}
                   </span>
                   <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ink)] text-[var(--gold-bright)]">
                     <Lock className="h-4.5 w-4.5" strokeWidth={1.7} />
@@ -99,6 +103,11 @@ export default function CategoryToolsAccordion({
                 className="group relative rounded-xl border border-[var(--gold)]/25 bg-[var(--background)] p-4 transition-all hover:-translate-y-0.5 hover:border-[var(--gold)]/60 hover:shadow-md"
               >
                 <FavoriteStarButton toolName={tool.toolName} initialIsFavorite={favoriteToolNames.includes(tool.toolName)} variant="light" />
+                {isPro && (
+                  <span className="absolute left-14 top-[22px] rounded-full bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-[var(--ink)]">
+                    PRO
+                  </span>
+                )}
                 <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ink)] text-[var(--gold-bright)]">
                   <Icon className="h-4.5 w-4.5" strokeWidth={1.7} />
                 </div>

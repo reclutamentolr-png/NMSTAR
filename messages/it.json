@@ -608,6 +608,7 @@
     "notAvailable": "NON DISPONIBILE",
     "temporarilyOffline": "Temporaneamente offline",
     "subscriptionRequired": "Abbonamento richiesto",
+    "proRequired": "Solo piano Pro",
     "free": "GRATIS",
     "toolUnavailable": "Lo strumento \"{title}\" è temporaneamente non disponibile. Riprova più tardi.",
     "favoritesTitle": "Preferiti",
@@ -2171,7 +2172,8 @@
     "ctaRegister": "Iscriviti e provalo",
     "ctaDiscover": "Scopri tutti gli strumenti KUMANI",
     "includedPaid": "Incluso nell'abbonamento KUMANI, insieme a tutti gli altri strumenti.",
-    "includedFree": "Gratuito per tutti gli iscritti a KUMANI."
+    "includedFree": "Gratuito per tutti gli iscritti a KUMANI.",
+    "includedPro": "Incluso nel piano Pro di KUMANI (149 €/anno, con 15 giorni di prova)."
   },
   "kuRewards": {
     "title": "Usa i tuoi KU Points",
@@ -2225,5 +2227,27 @@
     "print": "Stampa",
     "adminSummary": "{available} coupon disponibili da stampare su {total}",
     "noneAvailable": "Nessun coupon disponibile: sono già stati tutti utilizzati."
+  },
+  "plans": {
+    "backToDashboard": "Torna alla dashboard",
+    "backToHome": "Torna alla Home",
+    "proTitle": "KUMANI Pro per professionisti",
+    "proSubtitle": "Gli strumenti pensati per chi lavora con i clienti: fidelizzazione, preventivi, ricevute e promozioni, tutto in un unico posto.",
+    "toolIsPro": "{tool} fa parte del piano Pro.",
+    "proIncludes": "Il piano Pro include",
+    "proIncludesBase": "Tutti gli strumenti del piano Base",
+    "perYear": "/ anno",
+    "proUnavailable": "Il piano Pro sarà disponibile a breve.",
+    "ctaRegister": "Registrati e scegli Pro",
+    "alreadyPro": "Hai già il piano Pro attivo.",
+    "ctaUpgrade": "Passa a Pro",
+    "upgradeNote": "Il tuo abbonamento Base diventa Pro: paghi subito solo la differenza per il periodo che resta.",
+    "ctaSubscribePro": "Attiva Pro a {price} €/anno",
+    "upgradeDone": "Fatto! Il piano Pro è attivo.",
+    "upgradeError_not_logged": "Accedi per passare a Pro.",
+    "upgradeError_not_stripe": "Non abbiamo trovato un abbonamento con carta da aggiornare: usa il pulsante di attivazione.",
+    "upgradeError_unavailable": "Il piano Pro non è ancora disponibile.",
+    "upgradeError_already_pro": "Hai già il piano Pro.",
+    "upgradeError_stripe_error": "Pagamento non riuscito. Riprova tra poco."
   }
 }

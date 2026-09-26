@@ -10,10 +10,9 @@ const intlMiddleware = createMiddleware({
   localePrefix: 'as-needed'
 });
 
-// Mirrors src/lib/marketplaceAccess.ts REQUIRES_SUBSCRIPTION — duplicated
-// here (not imported) because middleware runs in the Edge runtime, which
-// can't pull in that file's Supabase-typed server code. Keep the two lists
-// in sync when a tool's subscription requirement changes.
+// Fallback usato solo se la migrazione dei piani (can_use_tool) non è ancora
+// applicata. La regola vera è nel database: piano richiesto da ogni
+// strumento deciso dall'admin (Admin → Marketplace), vedi can_use_tool().
 const REQUIRES_SUBSCRIPTION = [
   'link-in-bio',
   'memolife',
@@ -77,6 +76,24 @@ export async function middleware(request: NextRequest) {
   // /dashboard, where both "Abbonati ora" and "Attiva tramite Voucher"
   // are one click away.
   const toolName = extractToolName(request.nextUrl.pathname);
+  if (user && toolName) {
+    const segments = request.nextUrl.pathname.split('/').filter(Boolean);
+    const localePrefix = segments[0] && locales.includes(segments[0]) ? `/${segments[0]}` : '';
+    const { data: access, error: accessError } = await supabase
+      .rpc('can_use_tool', { p_tool: toolName })
+      .maybeSingle<{ allowed: boolean; required_plan: string; known: boolean }>();
+
+    if (!accessError && access) {
+      // Solo gli strumenti censiti (le altre pagine del marketplace, es.
+      // bacheca o categorie, non passano da qui). Strumento Pro senza piano
+      // Pro → pagina "Passa a Pro"; altrimenti dashboard con "Abbonati ora".
+      if (access.known && !access.allowed) {
+        const target = access.required_plan === 'pro' ? `${localePrefix}/pro?tool=${toolName}` : `${localePrefix}/dashboard`;
+        return NextResponse.redirect(new URL(target, request.url));
+      }
+      return response;
+    }
+  }
   if (user && toolName && REQUIRES_SUBSCRIPTION.includes(toolName)) {
     const { data: profile } = await supabase
       .from('profiles')

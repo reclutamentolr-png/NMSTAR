@@ -1,86 +1,59 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { LEGACY_PAID_TOOLS, planCovers, type RequiredPlan, type UserPlan } from '@/lib/plans'
 
-export const REQUIRES_SUBSCRIPTION = [
-  'link-in-bio',
-  'memolife',
-  'neurobalance',
-  'svat',
-  'offermaker',
-  'qr-code-pro',
-  'life-calendar',
-  'findo',
-  'digital-receipt',
-  'aureya',
-  'preventivi',
-  'kumani-cv',
-  'spendly',
-  'fidelity',
-]
+export type ToolDisabledReason = 'offline' | 'subscription' | 'pro'
 
 export interface MarketplaceAccessState {
+  userPlan: UserPlan
   isSettingEnabled: (toolName: string) => boolean
   isToolEnabled: (toolName: string) => boolean
+  requiredPlan: (toolName: string) => RequiredPlan
+  disabledReason: (toolName: string) => ToolDisabledReason | undefined
 }
 
+type SettingRow = { tool_name: string; is_enabled: boolean; required_plan?: RequiredPlan }
+
 /**
- * Shared by the marketplace landing page and each category page: fetches
- * the user's subscription status and the admin's per-tool on/off settings,
- * and exposes the two gating checks every marketplace listing needs.
+ * Stato d'accesso per le schede del Marketplace e della dashboard: piano
+ * dell'utente (my_plan) e, per ogni strumento, acceso/spento e piano
+ * richiesto (marketplace_settings, deciso dall'admin). Il controllo vero
+ * resta can_use_tool() lato database/middleware: qui è solo presentazione.
  */
-export async function getMarketplaceAccessState(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<MarketplaceAccessState> {
-  let profile: { subscription_status?: string; subscription_expires_at?: string | null } | null = null
-  try {
-    const { data, error } = await supabase
+export async function getMarketplaceAccessState(supabase: SupabaseClient, userId: string): Promise<MarketplaceAccessState> {
+  let settings: SettingRow[] = []
+  const withPlan = await supabase.from('marketplace_settings').select('tool_name, is_enabled, required_plan')
+  if (!withPlan.error) {
+    settings = (withPlan.data ?? []) as SettingRow[]
+  } else {
+    const legacy = await supabase.from('marketplace_settings').select('tool_name, is_enabled')
+    settings = (legacy.data ?? []) as SettingRow[]
+  }
+  const byTool = new Map(settings.map((row) => [row.tool_name, row]))
+
+  let userPlan: UserPlan = 'none'
+  const planResult = await supabase.rpc('my_plan')
+  if (!planResult.error && typeof planResult.data === 'string') {
+    userPlan = planResult.data as UserPlan
+  } else {
+    // Migrazione dei piani non ancora applicata: abbonamento attivo = Base.
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('id, subscription_status, subscription_expires_at')
+      .select('subscription_status, subscription_expires_at')
       .eq('id', userId)
-      .single()
-
-    if (error) {
-      // Fallback: column might not exist yet, retry with just subscription_status
-      if (
-        error.message?.includes('subscription_expires_at') ||
-        error.message?.includes('column') ||
-        error.message?.includes('DoesNotExist')
-      ) {
-        const { data: fallbackData } = await supabase
-          .from('profiles')
-          .select('id, subscription_status')
-          .eq('id', userId)
-          .single()
-        profile = fallbackData
-      } else {
-        profile = data
-      }
-    } else {
-      profile = data
-    }
-  } catch {
-    // If anything fails, still show the marketplace (cards will be disabled for premium)
+      .maybeSingle()
+    const expires = profile?.subscription_expires_at ? new Date(profile.subscription_expires_at).getTime() : null
+    if (profile?.subscription_status === 'active' && (expires === null || expires > new Date().getTime())) userPlan = 'base'
   }
 
-  const { data: toolsSettings } = await supabase.from('marketplace_settings').select('tool_name, is_enabled')
-
-  const toolsStatus: Record<string, boolean> = {}
-  toolsSettings?.forEach((tool: { tool_name: string; is_enabled: boolean }) => {
-    toolsStatus[tool.tool_name] = tool.is_enabled
-  })
-
-  const isSettingEnabled = (toolName: string): boolean => toolsStatus[toolName] !== false
-
-  const now = new Date()
-  const subscriptionExpiresAt = profile?.subscription_expires_at ? new Date(profile.subscription_expires_at) : null
-  const hasActiveSubscription =
-    profile?.subscription_status === 'active' && (!subscriptionExpiresAt || subscriptionExpiresAt.getTime() > now.getTime())
-
-  const isToolEnabled = (toolName: string): boolean => {
-    if (!isSettingEnabled(toolName)) return false
-    if (REQUIRES_SUBSCRIPTION.includes(toolName) && !hasActiveSubscription) return false
-    return true
+  const isSettingEnabled = (toolName: string) => byTool.get(toolName)?.is_enabled !== false
+  const requiredPlan = (toolName: string): RequiredPlan =>
+    byTool.get(toolName)?.required_plan ?? (LEGACY_PAID_TOOLS.includes(toolName) ? 'base' : 'free')
+  const isToolEnabled = (toolName: string) => isSettingEnabled(toolName) && planCovers(userPlan, requiredPlan(toolName))
+  const disabledReason = (toolName: string): ToolDisabledReason | undefined => {
+    if (!isSettingEnabled(toolName)) return 'offline'
+    if (isToolEnabled(toolName)) return undefined
+    return requiredPlan(toolName) === 'pro' ? 'pro' : 'subscription'
   }
 
-  return { isSettingEnabled, isToolEnabled }
+  return { userPlan, isSettingEnabled, isToolEnabled, requiredPlan, disabledReason }
 }

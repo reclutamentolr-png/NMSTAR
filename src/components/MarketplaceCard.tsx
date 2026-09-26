@@ -15,7 +15,9 @@ type MarketplaceCardProps = {
   title: string
   description: string
   color: string
-  disabledReason?: 'offline' | 'subscription'
+  disabledReason?: 'offline' | 'subscription' | 'pro'
+  // Strumento del piano Pro: badge "PRO" sulla scheda.
+  isPro?: boolean
   isFavorite?: boolean
   onFavoriteToggle?: (toolName: string, isFavorite: boolean) => void
 }
@@ -30,14 +32,18 @@ export default function MarketplaceCard({
    description,
    color,
    disabledReason,
+   isPro = false,
    isFavorite = false,
    onFavoriteToggle,
 }: MarketplaceCardProps) {
   const t = useTranslations('marketplace')
   const Icon = marketplaceIconMap[iconName] || Smartphone
   
+  // Strumento Pro senza piano Pro: la scheda porta a "Passa a Pro".
+  const upgradeHref = disabledReason === 'pro' ? `/pro?tool=${toolName}` : null
+
   const handleClick = (e: React.MouseEvent) => {
-    if (!isEnabled) {
+    if (!isEnabled && !upgradeHref) {
       e.preventDefault()
       alert(t('toolUnavailable', { title }))
     }
@@ -45,12 +51,14 @@ export default function MarketplaceCard({
 
   return (
     <Link
-      href={isEnabled ? href : '#'}
+      href={isEnabled ? href : upgradeHref ?? '#'}
       onClick={handleClick}
       className={`group flex h-full min-h-[356px] flex-col rounded-xl border transition-all duration-300 overflow-hidden ${
         isEnabled
           ? 'border-[var(--gold)]/45 bg-[var(--paper)] shadow-[0_12px_35px_rgba(23,23,23,0.08)] hover:-translate-y-1 hover:border-[var(--gold-bright)] hover:shadow-[0_18px_45px_rgba(23,23,23,0.16)] cursor-pointer'
-          : 'border-stone-300 bg-stone-100 cursor-not-allowed opacity-70'
+          : upgradeHref
+            ? 'border-[var(--gold)]/45 bg-[var(--paper)] opacity-80 hover:opacity-100 cursor-pointer'
+            : 'border-stone-300 bg-stone-100 cursor-not-allowed opacity-70'
       }`}
     >
       <div
@@ -63,9 +71,14 @@ export default function MarketplaceCard({
         <Icon className="relative z-10 h-16 w-16 text-[var(--gold-bright)] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.4} />
       </div>
       <div className="relative flex flex-1 flex-col p-6">
+        {isPro && (
+          <div className="absolute left-4 top-4 rounded-full bg-gradient-to-r from-[var(--gold)] to-[var(--gold-bright)] px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-[var(--ink)]">
+            PRO
+          </div>
+        )}
         {!isEnabled && (
-          <div className="absolute right-4 top-4 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
-                  {disabledReason === 'subscription' ? t('subscriptionRequired') : t('notAvailable')}
+          <div className={`absolute right-4 top-4 rounded-full px-2 py-1 text-xs font-bold ${upgradeHref ? 'bg-[var(--ink)] text-[var(--gold-bright)]' : 'bg-red-500 text-white'}`}>
+            {disabledReason === 'pro' ? t('proRequired') : disabledReason === 'subscription' ? t('subscriptionRequired') : t('notAvailable')}
           </div>
         )}
         <div className="flex justify-between items-start mb-2">

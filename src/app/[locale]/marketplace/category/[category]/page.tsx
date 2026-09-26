@@ -26,7 +26,7 @@ export default async function MarketplaceCategoryPage({
   } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login`)
 
-  const { isSettingEnabled, isToolEnabled } = await getMarketplaceAccessState(supabase, user.id)
+  const { isSettingEnabled, isToolEnabled, disabledReason, requiredPlan } = await getMarketplaceAccessState(supabase, user.id)
 
   const categoryLabels: Record<MarketplaceCategory, string> = {
     marketing: t('categoryMarketing'),
@@ -121,9 +121,8 @@ export default async function MarketplaceCategoryPage({
                     title={tool.title}
                     description={tool.description}
                     color={tool.color}
-                    disabledReason={
-                      !isToolEnabled(tool.toolName) && tool.requiresSubscription ? 'subscription' : undefined
-                    }
+                    disabledReason={disabledReason(tool.toolName)}
+                    isPro={requiredPlan(tool.toolName) === 'pro'}
                   />
                 ))}
               </div>

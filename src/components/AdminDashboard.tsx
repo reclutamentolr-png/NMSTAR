@@ -24,6 +24,7 @@ import {
   getAdminFinancialSummary,
   listListingReports,
   adminListUsers,
+  updateToolPlan,
   createVoucherBatch,
   listVoucherBatches,
   getVoucherBatchCodes,
@@ -616,6 +617,14 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
     }
   }
 
+  const changeToolPlan = async (toolName: string, plan: 'free' | 'base' | 'pro') => {
+    setSavingTool(toolName)
+    const result = await updateToolPlan(toolName, plan)
+    if (result.success) await loadMarketplaceData()
+    else alert('Errore: ' + (result.error || 'aggiornamento non riuscito'))
+    setSavingTool(null)
+  }
+
   const toggleToolEnabled = async (toolName: string, currentStatus: boolean) => {
     setSavingTool(toolName)
     const { error } = await supabase.from('marketplace_settings').update({ is_enabled: !currentStatus, updated_at: new Date().toISOString() }).eq('tool_name', toolName)
@@ -1141,7 +1150,11 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
             <ShoppingBag className="w-7 h-7" />
             Gestione Marketplace
           </h2>
-          <p className="text-gray-600 mt-1">Abilita o disabilita gli strumenti per tutti gli utenti</p>
+          <p className="text-gray-600 mt-1">
+            Abilita o disabilita gli strumenti e scegli per ognuno il piano richiesto: <strong>Gratis</strong> (tutti gli
+            iscritti), <strong>Base</strong> (abbonamento 49 €/anno) o <strong>Pro</strong> (149 €/anno, include il Base).
+            La scelta vale subito ovunque, anche per gli strumenti che verranno aggiunti.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1163,6 +1176,31 @@ export default function AdminDashboard({ userId, permissions, userName, locale, 
                     <ToggleLeft className="w-14 h-8 text-gray-400" />
                   )}
                 </button>
+              </div>
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-xs text-gray-500 uppercase">Piano richiesto</span>
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                  {(['free', 'base', 'pro'] as const).map((plan) => {
+                    const active = (tool.required_plan ?? 'base') === plan
+                    return (
+                      <button
+                        key={plan}
+                        type="button"
+                        onClick={() => !active && changeToolPlan(tool.tool_name, plan)}
+                        disabled={savingTool === tool.tool_name}
+                        className={`px-3 py-1 text-xs font-semibold ${
+                          active
+                            ? plan === 'pro'
+                              ? 'bg-[var(--ink)] text-[var(--gold-bright)]'
+                              : 'bg-gray-800 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        {plan === 'free' ? 'Gratis' : plan === 'base' ? 'Base' : 'Pro'}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div>

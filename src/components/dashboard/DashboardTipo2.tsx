@@ -27,6 +27,7 @@ export default async function DashboardTipo2({
   unreadMessagesCount,
   visibleTools,
   lockedToolNames,
+  proToolNames,
   favoriteToolNames,
   network,
   userId,
@@ -37,6 +38,7 @@ export default async function DashboardTipo2({
   unreadMessagesCount: number
   visibleTools: MarketplaceTool[]
   lockedToolNames: string[]
+  proToolNames: string[]
   favoriteToolNames: string[]
   network: DashboardNetworkData
   userId: string
@@ -148,6 +150,7 @@ export default async function DashboardTipo2({
               toolsLabel={marketplaceT('categoryToolCount', { count: tools.length })}
               tools={tools}
               lockedToolNames={lockedToolNames}
+              proToolNames={proToolNames}
               favoriteToolNames={favoriteToolNames}
             />
           ))}

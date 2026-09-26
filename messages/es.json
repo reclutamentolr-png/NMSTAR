@@ -664,6 +664,7 @@
     "goToListings": "Ir a los anuncios",
     "backToMarketplace": "Volver al Marketplace",
     "subscriptionRequired": "Suscripción requerida",
+    "proRequired": "Solo plan Pro",
     "svat": "SVAT - Verificación Antifraude",
     "svatDescription": "Verifica la fiabilidad de un sitio web y de una empresa con una puntuación de riesgo detallada en segundos.",
     "offermaker": "OfferMaker AI",
@@ -2198,7 +2199,8 @@
     "ctaRegister": "Regístrate y pruébala",
     "ctaDiscover": "Descubre todas las herramientas KUMANI",
     "includedPaid": "Incluida en la suscripción KUMANI, junto con todas las demás herramientas.",
-    "includedFree": "Gratis para todos los registrados en KUMANI."
+    "includedFree": "Gratis para todos los registrados en KUMANI.",
+    "includedPro": "Incluido en el plan KUMANI Pro (149 €/año, con 15 días de prueba)."
   },
   "kuRewards": {
     "title": "Usa tus KU Points",
@@ -2252,5 +2254,27 @@
     "print": "Imprimir",
     "adminSummary": "{available} cupones disponibles para imprimir de {total}",
     "noneAvailable": "No hay cupones disponibles: ya se han usado todos."
+  },
+  "plans": {
+    "backToDashboard": "Volver al panel",
+    "backToHome": "Volver al inicio",
+    "proTitle": "KUMANI Pro para profesionales",
+    "proSubtitle": "Herramientas pensadas para quien trabaja con clientes: fidelización, presupuestos, recibos y promociones, todo en un solo lugar.",
+    "toolIsPro": "{tool} forma parte del plan Pro.",
+    "proIncludes": "El plan Pro incluye",
+    "proIncludesBase": "Todas las herramientas del plan Base",
+    "perYear": "/ año",
+    "proUnavailable": "El plan Pro estará disponible pronto.",
+    "ctaRegister": "Regístrate y elige Pro",
+    "alreadyPro": "Ya tienes el plan Pro activo.",
+    "ctaUpgrade": "Pasar a Pro",
+    "upgradeNote": "Tu suscripción Base pasa a Pro: ahora solo pagas la diferencia por el periodo restante.",
+    "ctaSubscribePro": "Activar Pro por {price} €/año",
+    "upgradeDone": "¡Listo! El plan Pro está activo.",
+    "upgradeError_not_logged": "Inicia sesión para pasar a Pro.",
+    "upgradeError_not_stripe": "No encontramos una suscripción con tarjeta para actualizar: usa el botón de activación.",
+    "upgradeError_unavailable": "El plan Pro aún no está disponible.",
+    "upgradeError_already_pro": "Ya tienes el plan Pro.",
+    "upgradeError_stripe_error": "El pago no se realizó. Inténtalo de nuevo en un momento."
   }
 }

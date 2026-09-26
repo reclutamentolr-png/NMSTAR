@@ -16,7 +16,9 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const { success, session_id } = await searchParams
 
   // get_my_profile: l'email non è più leggibile con una select diretta.
-  let { data: profile } = await supabase.rpc('get_my_profile').maybeSingle<{ subscription_status: string | null; email: string | null }>()
+  let { data: profile } = await supabase
+    .rpc('get_my_profile')
+    .maybeSingle<{ subscription_status: string | null; email: string | null; subscription_plan: string | null }>()
 
   // Fallback: l'attivazione "normale" avviene tramite il webhook Stripe
   // (checkout.session.completed), ma quel webhook non può raggiungere
@@ -26,12 +28,14 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   // direttamente con l'API di Stripe e attiviamo subito — evitando che
   // l'utente resti bloccato su "Completa il tuo abbonamento" nonostante il
   // pagamento sia andato a buon fine.
-  if (success === 'true' && session_id && profile?.subscription_status !== 'active') {
+  if (success === 'true' && session_id) {
     try {
       const session = await getStripe().checkout.sessions.retrieve(session_id)
       const isPaidForThisUser = session.payment_status === 'paid' && session.metadata?.userId === user.id
+      const paidPlan = session.metadata?.plan === 'pro' ? 'pro' : 'base'
+      const alreadyActive = profile?.subscription_status === 'active' && (profile?.subscription_plan ?? 'base') === paidPlan
 
-      if (isPaidForThisUser) {
+      if (isPaidForThisUser && !alreadyActive) {
         const supabaseAdmin = createAdminClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -46,9 +50,10 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
             subscription_status: 'active',
             subscription_expires_at: expiresAt.toISOString(),
             subscription_source: 'stripe',
+            subscription_plan: paidPlan,
           })
           .eq('id', user.id)
-          .select('subscription_status, email')
+          .select('subscription_status, email, subscription_plan')
           .single()
 
         if (error) {
@@ -99,6 +104,12 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
             <p>Stato: <strong>Attivo</strong></p>
             <p className="text-xs mt-1">Email fatturazione: {profile?.email}</p>
           </div>
+        )}
+
+        {profile?.subscription_plan !== 'pro' && (
+          <Link href="/pro" className="mt-6 block text-sm font-semibold text-indigo-600 hover:underline">
+            Sei un professionista? Scopri il piano Pro →
+          </Link>
         )}
 
         <Link href="/dashboard" className="mt-6 inline-block text-sm text-indigo-600 hover:underline font-medium">

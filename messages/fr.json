@@ -664,6 +664,7 @@
     "goToListings": "Voir les annonces",
     "backToMarketplace": "Retour au Marketplace",
     "subscriptionRequired": "Abonnement requis",
+    "proRequired": "Offre Pro uniquement",
     "svat": "SVAT - Vérification Anti-Fraude",
     "svatDescription": "Vérifie la fiabilité d'un site et d'une entreprise avec un score de risque détaillé en quelques secondes.",
     "offermaker": "OfferMaker AI",
@@ -2198,7 +2199,8 @@
     "ctaRegister": "Inscris-toi et essaie-le",
     "ctaDiscover": "Découvre tous les outils KUMANI",
     "includedPaid": "Inclus dans l'abonnement KUMANI, avec tous les autres outils.",
-    "includedFree": "Gratuit pour tous les inscrits à KUMANI."
+    "includedFree": "Gratuit pour tous les inscrits à KUMANI.",
+    "includedPro": "Inclus dans l'offre KUMANI Pro (149 €/an, avec 15 jours d'essai)."
   },
   "kuRewards": {
     "title": "Utilise tes KU Points",
@@ -2252,5 +2254,27 @@
     "print": "Imprimer",
     "adminSummary": "{available} coupons disponibles à imprimer sur {total}",
     "noneAvailable": "Aucun coupon disponible : ils ont tous été utilisés."
+  },
+  "plans": {
+    "backToDashboard": "Retour au tableau de bord",
+    "backToHome": "Retour à l'accueil",
+    "proTitle": "KUMANI Pro pour les professionnels",
+    "proSubtitle": "Des outils pensés pour ceux qui travaillent avec des clients : fidélité, devis, reçus et promotions, au même endroit.",
+    "toolIsPro": "{tool} fait partie de l'offre Pro.",
+    "proIncludes": "L'offre Pro comprend",
+    "proIncludesBase": "Tous les outils de l'offre Base",
+    "perYear": "/ an",
+    "proUnavailable": "L'offre Pro sera bientôt disponible.",
+    "ctaRegister": "Inscris-toi et choisis Pro",
+    "alreadyPro": "Ton offre Pro est déjà active.",
+    "ctaUpgrade": "Passer à Pro",
+    "upgradeNote": "Ton abonnement Base devient Pro : tu paies maintenant seulement la différence pour la période restante.",
+    "ctaSubscribePro": "Activer Pro pour {price} €/an",
+    "upgradeDone": "C'est fait ! L'offre Pro est active.",
+    "upgradeError_not_logged": "Connecte-toi pour passer à Pro.",
+    "upgradeError_not_stripe": "Aucun abonnement par carte à mettre à jour : utilise le bouton d'activation.",
+    "upgradeError_unavailable": "L'offre Pro n'est pas encore disponible.",
+    "upgradeError_already_pro": "Tu as déjà l'offre Pro.",
+    "upgradeError_stripe_error": "Le paiement a échoué. Réessaie dans un instant."
   }
 }

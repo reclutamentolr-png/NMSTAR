@@ -664,6 +664,7 @@
     "goToListings": "К объявлениям",
     "backToMarketplace": "Назад в Маркетплейс",
     "subscriptionRequired": "Требуется подписка",
+    "proRequired": "Только тариф Pro",
     "svat": "SVAT — Проверка на мошенничество",
     "svatDescription": "Проверьте надёжность сайта и компании с подробной оценкой риска за несколько секунд.",
     "offermaker": "OfferMaker AI",
@@ -2198,7 +2199,8 @@
     "ctaRegister": "Зарегистрируйся и попробуй",
     "ctaDiscover": "Все инструменты KUMANI",
     "includedPaid": "Входит в подписку KUMANI вместе со всеми остальными инструментами.",
-    "includedFree": "Бесплатно для всех зарегистрированных в KUMANI."
+    "includedFree": "Бесплатно для всех зарегистрированных в KUMANI.",
+    "includedPro": "Входит в тариф KUMANI Pro (149 €/год, 15 дней пробного периода)."
   },
   "kuRewards": {
     "title": "Используй свои KU Points",
@@ -2252,5 +2254,27 @@
     "print": "Печать",
     "adminSummary": "Доступно для печати: {available} из {total} купонов",
     "noneAvailable": "Нет доступных купонов: все уже использованы."
+  },
+  "plans": {
+    "backToDashboard": "Назад в панель",
+    "backToHome": "На главную",
+    "proTitle": "KUMANI Pro для профессионалов",
+    "proSubtitle": "Инструменты для тех, кто работает с клиентами: лояльность, сметы, чеки и акции — всё в одном месте.",
+    "toolIsPro": "{tool} входит в тариф Pro.",
+    "proIncludes": "Тариф Pro включает",
+    "proIncludesBase": "Все инструменты тарифа Base",
+    "perYear": "/ год",
+    "proUnavailable": "Тариф Pro скоро будет доступен.",
+    "ctaRegister": "Зарегистрируйтесь и выберите Pro",
+    "alreadyPro": "У вас уже активен тариф Pro.",
+    "ctaUpgrade": "Перейти на Pro",
+    "upgradeNote": "Ваша подписка Base станет Pro: сейчас вы платите только разницу за оставшийся период.",
+    "ctaSubscribePro": "Активировать Pro за {price} €/год",
+    "upgradeDone": "Готово! Тариф Pro активен.",
+    "upgradeError_not_logged": "Войдите, чтобы перейти на Pro.",
+    "upgradeError_not_stripe": "Не найдена подписка с картой для обновления: используйте кнопку активации.",
+    "upgradeError_unavailable": "Тариф Pro пока недоступен.",
+    "upgradeError_already_pro": "У вас уже есть тариф Pro.",
+    "upgradeError_stripe_error": "Платёж не прошёл. Попробуйте ещё раз чуть позже."
   }
 }

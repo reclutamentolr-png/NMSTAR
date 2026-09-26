@@ -1045,3 +1045,17 @@ export async function getVoucherBatchCodes(batchId: string) {
   ])
   return { batch, codes: codes || [] }
 }
+
+// Piano richiesto da uno strumento (Gratis / Base / Pro): vale subito per
+// schede, dashboard, middleware e server (can_use_tool legge questo valore).
+export async function updateToolPlan(toolName: string, plan: 'free' | 'base' | 'pro') {
+  const admin = await verifyAdmin('marketplace.write')
+  if (!admin) return { success: false, error: 'Non autorizzato' }
+  if (!['free', 'base', 'pro'].includes(plan)) return { success: false, error: 'Piano non valido' }
+  const { error } = await getServiceClient()
+    .from('marketplace_settings')
+    .update({ required_plan: plan, updated_at: new Date().toISOString() })
+    .eq('tool_name', toolName)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}

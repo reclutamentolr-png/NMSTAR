@@ -664,6 +664,7 @@
     "goToListings": "Zu den Anzeigen",
     "backToMarketplace": "Zurück zum Marketplace",
     "subscriptionRequired": "Abonnement erforderlich",
+    "proRequired": "Nur Pro-Tarif",
     "svat": "SVAT - Betrugsprävention",
     "svatDescription": "Überprüfe die Vertrauenswürdigkeit einer Website oder eines Unternehmens mit einem detaillierten Risiko-Score in Sekunden.",
     "offermaker": "OfferMaker AI",
@@ -2198,7 +2199,8 @@
     "ctaRegister": "Registrieren und ausprobieren",
     "ctaDiscover": "Alle KUMANI-Tools entdecken",
     "includedPaid": "Im KUMANI-Abo enthalten, zusammen mit allen anderen Tools.",
-    "includedFree": "Kostenlos für alle, die bei KUMANI registriert sind."
+    "includedFree": "Kostenlos für alle, die bei KUMANI registriert sind.",
+    "includedPro": "Im KUMANI Pro-Tarif enthalten (149 €/Jahr, mit 15 Tagen Testphase)."
   },
   "kuRewards": {
     "title": "Nutze deine KU Points",
@@ -2252,5 +2254,27 @@
     "print": "Drucken",
     "adminSummary": "{available} von {total} Gutscheinen zum Drucken verfügbar",
     "noneAvailable": "Keine Gutscheine verfügbar: Alle wurden bereits verwendet."
+  },
+  "plans": {
+    "backToDashboard": "Zurück zum Dashboard",
+    "backToHome": "Zurück zur Startseite",
+    "proTitle": "KUMANI Pro für Profis",
+    "proSubtitle": "Werkzeuge für alle, die mit Kunden arbeiten: Kundenbindung, Angebote, Belege und Aktionen, alles an einem Ort.",
+    "toolIsPro": "{tool} gehört zum Pro-Tarif.",
+    "proIncludes": "Der Pro-Tarif umfasst",
+    "proIncludesBase": "Alle Werkzeuge des Basis-Tarifs",
+    "perYear": "/ Jahr",
+    "proUnavailable": "Der Pro-Tarif ist bald verfügbar.",
+    "ctaRegister": "Registrieren und Pro wählen",
+    "alreadyPro": "Dein Pro-Tarif ist bereits aktiv.",
+    "ctaUpgrade": "Auf Pro wechseln",
+    "upgradeNote": "Dein Basis-Abo wird zu Pro: Du zahlst jetzt nur die Differenz für den verbleibenden Zeitraum.",
+    "ctaSubscribePro": "Pro für {price} €/Jahr aktivieren",
+    "upgradeDone": "Erledigt! Der Pro-Tarif ist aktiv.",
+    "upgradeError_not_logged": "Melde dich an, um auf Pro zu wechseln.",
+    "upgradeError_not_stripe": "Kein Kartenabo zum Aktualisieren gefunden: Nutze den Aktivierungsbutton.",
+    "upgradeError_unavailable": "Der Pro-Tarif ist noch nicht verfügbar.",
+    "upgradeError_already_pro": "Du hast bereits den Pro-Tarif.",
+    "upgradeError_stripe_error": "Zahlung fehlgeschlagen. Bitte versuche es gleich noch einmal."
   }
 }

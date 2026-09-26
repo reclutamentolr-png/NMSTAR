@@ -12,7 +12,8 @@ type FavoriteTool = {
   title: string
   description: string
   color: string
-  disabledReason?: 'offline' | 'subscription'
+  disabledReason?: 'offline' | 'subscription' | 'pro'
+  isPro?: boolean
 }
 
 // Client wrapper so un-starring a tool here removes its card immediately,

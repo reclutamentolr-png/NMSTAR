@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
           subscription_status: 'active',
           subscription_expires_at: expiresAt.toISOString(),
           subscription_source: 'stripe',
+          subscription_plan: session.metadata?.plan === 'pro' ? 'pro' : 'base',
         })
         .eq('id', userId)
         .select()
@@ -62,6 +63,12 @@ export async function POST(req: NextRequest) {
       const updateData: Record<string, any> = {
         subscription_status: newStatus,
         subscription_source: newStatus === 'active' ? 'stripe' : null,
+      }
+
+      // Piano dal prezzo dell'abbonamento (cambia anche col passaggio a Pro).
+      const priceId = subscription.items?.data?.[0]?.price?.id
+      if (newStatus === 'active' && priceId) {
+        updateData.subscription_plan = priceId === process.env.STRIPE_PRICE_ID_PRO ? 'pro' : 'base'
       }
 
       // Calculate next billing date

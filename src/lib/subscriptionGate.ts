@@ -45,15 +45,23 @@ async function getSubscriptionProfile(
 
 /**
  * Gate used by premium marketplace tools that must re-check access server-side
- * (not just hide the marketplace card), because each use has a real cost or
- * consumes a shared resource. Checks both an active subscription and the
- * per-tool `marketplace_settings.is_enabled` admin toggle.
+ * (not just hide the marketplace card). The real rule lives in the database:
+ * can_use_tool() checks the admin on/off toggle and whether the user's plan
+ * (Base/Pro, trial included) covers the plan the admin requires for the tool.
+ * Must be called with the user's session client (it uses auth.uid()).
  */
 export async function hasActiveToolAccess(
   supabase: SupabaseClient,
   userId: string,
   toolName: string
 ): Promise<boolean> {
+  const { data, error } = await supabase
+    .rpc('can_use_tool', { p_tool: toolName })
+    .maybeSingle<{ allowed: boolean; required_plan: string; known: boolean }>()
+  if (!error && data) return data.allowed
+
+  // Fallback finché la migrazione dei piani non è applicata: regola storica
+  // (abbonamento attivo + strumento acceso).
   const profile = await getSubscriptionProfile(supabase, userId)
 
   if (!isActiveSubscription(profile)) return false
