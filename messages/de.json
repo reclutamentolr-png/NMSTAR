@@ -2177,5 +2177,16 @@
     "registerNow": "Jetzt registrieren",
     "alreadyRegistered": "Schon registriert?",
     "goToDashboard": "Zum Dashboard"
+  },
+  "toolShare": {
+    "shareButton": "Teilen",
+    "linkCopied": "Link kopiert!",
+    "shareText": "Ich nutze {tool} auf KUMANI und bin begeistert: schau mal rein!",
+    "eyebrow": "KUMANI-Tool",
+    "invitedBy": "{name} empfiehlt dir dieses Tool",
+    "ctaRegister": "Registrieren und ausprobieren",
+    "ctaDiscover": "Alle KUMANI-Tools entdecken",
+    "includedPaid": "Im KUMANI-Abo enthalten, zusammen mit allen anderen Tools.",
+    "includedFree": "Kostenlos für alle, die bei KUMANI registriert sind."
   }
 }

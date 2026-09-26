@@ -2177,5 +2177,16 @@
     "registerNow": "Зарегистрироваться",
     "alreadyRegistered": "Уже зарегистрирован(а)?",
     "goToDashboard": "Перейти в панель"
+  },
+  "toolShare": {
+    "shareButton": "Поделиться",
+    "linkCopied": "Ссылка скопирована!",
+    "shareText": "Пользуюсь {tool} в KUMANI и очень доволен(а): посмотри!",
+    "eyebrow": "Инструмент KUMANI",
+    "invitedBy": "{name} рекомендует тебе этот инструмент",
+    "ctaRegister": "Зарегистрируйся и попробуй",
+    "ctaDiscover": "Все инструменты KUMANI",
+    "includedPaid": "Входит в подписку KUMANI вместе со всеми остальными инструментами.",
+    "includedFree": "Бесплатно для всех зарегистрированных в KUMANI."
   }
 }
