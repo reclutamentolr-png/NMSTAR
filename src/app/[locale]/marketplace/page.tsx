@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from '@/components/LocalizedLink'
 import { getTranslations } from 'next-intl/server'
-import { Megaphone, ShieldCheck, CalendarClock, Waves, Briefcase, Tag, ArrowRight, Crown, HeartHandshake } from 'lucide-react'
+import { Megaphone, ShieldCheck, CalendarClock, Waves, Briefcase, Tag, ArrowRight, Crown, HeartHandshake, PartyPopper } from 'lucide-react'
 import { getMarketplaceAccessState } from '@/lib/marketplaceAccess'
 import { getMarketplaceTools, MARKETPLACE_CATEGORIES, type MarketplaceCategory } from '@/lib/marketplaceTools'
 
@@ -13,6 +13,7 @@ const CATEGORY_ICONS: Record<MarketplaceCategory, typeof Megaphone> = {
   wellness: Waves,
   lavoro: Briefcase,
   affinity: HeartHandshake,
+  svago: PartyPopper,
   community: Tag,
 }
 
@@ -37,6 +38,7 @@ export default async function MarketplacePage({ params }: { params: Promise<{ lo
     wellness: t('categoryWellness'),
     lavoro: t('categoryLavoro'),
     affinity: t('categoryAffinity'),
+    svago: t('categorySvago'),
     community: t('categoryCommunity'),
   }
 
@@ -47,6 +49,7 @@ export default async function MarketplacePage({ params }: { params: Promise<{ lo
     wellness: t('categoryWellnessDesc'),
     lavoro: t('categoryLavoroDesc'),
     affinity: t('categoryAffinityDesc'),
+    svago: t('categorySvagoDesc'),
     community: t('categoryCommunityDesc'),
   }
 

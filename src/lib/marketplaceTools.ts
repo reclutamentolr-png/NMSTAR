@@ -1,4 +1,4 @@
-export const MARKETPLACE_CATEGORIES = ['marketing', 'security', 'personal', 'wellness', 'lavoro', 'affinity', 'community'] as const
+export const MARKETPLACE_CATEGORIES = ['marketing', 'security', 'personal', 'wellness', 'lavoro', 'affinity', 'svago', 'community'] as const
 export type MarketplaceCategory = (typeof MARKETPLACE_CATEGORIES)[number]
 
 export interface MarketplaceTool {
@@ -225,6 +225,16 @@ export function getMarketplaceTools(t: (key: string) => string): MarketplaceTool
       description: t('affinityDescription'),
       color: 'gold',
       category: 'affinity',
+    },
+    {
+      toolName: 'veritas',
+      href: '/marketplace/veritas',
+      gradient: 'bg-[var(--ink)]',
+      iconName: 'VenetianMask',
+      title: t('veritas'),
+      description: t('veritasDescription'),
+      color: 'gold',
+      category: 'svago',
     },
   ]
 }

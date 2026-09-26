@@ -18,6 +18,7 @@ import {
   Stamp,
   HeartHandshake,
   UtensilsCrossed,
+  VenetianMask,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -45,4 +46,5 @@ export const marketplaceIconMap: Record<string, LucideIcon> = {
   Stamp,
   HeartHandshake,
   UtensilsCrossed,
+  VenetianMask,
 }
